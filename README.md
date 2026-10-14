@@ -29,21 +29,19 @@ Put `database_id` into `wrangler.toml`. Also update `ALLOWED_ORIGIN` there if Pa
 
 ```bash
 npm run db:init                        # creates the table
-npx wrangler secret put INGEST_TOKEN   # pick a long token; the same one goes into iSpindel
 npm run deploy                         # prints the URL, e.g. https://ispindel.<name>.workers.dev
 ```
 
 Check: open `https://ispindel.<name>.workers.dev/api/health` — it should return `{"ok":true,...}`.
 
-Optional: `npx wrangler secret put READ_TOKEN` — then data can only be read with this key (enter it in the app settings).
+Optional: `npx wrangler secret put INGEST_TOKEN` — a token that always works, even without registering it in the app.
 
 ### Or: set up and deploy the worker from GitHub Actions (no local tools)
 
 1. Cloudflare → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template, add **Account → D1 → Edit**.
 2. GitHub → Settings → Secrets and variables → Actions → New repository secret:
    - `CLOUDFLARE_API_TOKEN` — the token from step 1;
-   - `INGEST_TOKEN` — any long random string; the same goes into iSpindel;
-   - `READ_TOKEN` (optional) — require a key to read data;
+   - `INGEST_TOKEN` (optional) — a token that always works, even without registering it in the app;
    - `CLOUDFLARE_ACCOUNT_ID` (only if the token can access several accounts).
 3. Actions → **Worker** → Run workflow.
 
@@ -51,7 +49,17 @@ The workflow creates the `ispindel` D1 database if needed, applies `schema.sql`,
 
 If the account has never used Workers, open Workers & Pages in the Cloudflare dashboard once so it gets a `*.workers.dev` subdomain.
 
+## Device tokens
+
+A token is a private space. You pick it in the app (Settings → Device token, or press Generate), the app registers it on the worker, and you enter the same token in the iSpindel. The iSpindel sends readings with it, the app reads with it, and each token sees only its own devices. The worker stores only the SHA-256 of a token.
+
+Rules: 8–64 characters, no spaces, quotes or backslashes. Registration is open: anyone who can reach the worker can create a token, but only sees data sent with that token.
+
+Settings also contain a step-by-step **How to set up the iSpindel** guide with the server URL and token ready to copy.
+
 ## 2. iSpindel
+
+The app shows these steps with your values filled in (Settings → How to set up the iSpindel).
 
 Configuration mode (double-reset) → Configuration:
 
@@ -59,7 +67,7 @@ Configuration mode (double-reset) → Configuration:
 |---|---|
 | Service Type | **HTTPS Post** |
 | Server URL | `https://ispindel.<name>.workers.dev/ingest` |
-| Token | the `INGEST_TOKEN` value |
+| Token | your device token from the app settings |
 | Interval | 60 for testing, then 900 |
 
 If no data arrives with HTTPS Post, try **HTTP**: Server Address `ispindel.<name>.workers.dev`, Port `80`, Path `/ingest`, same Token.
@@ -79,7 +87,7 @@ To watch incoming requests: `npx wrangler tail` in the `worker` folder.
 
 Offline, the app opens from cache and shows the latest received data marked "no connection". Each deploy bumps the service worker version, so updates are picked up automatically on the next launch.
 
-Local run: `npx http-server web -p 8080` and `cd worker && npx wrangler dev` (set `INGEST_TOKEN=...` and `ALLOWED_ORIGIN=*` in `worker/.dev.vars`, and run `npm run db:init:local` first).
+Local run: `npx http-server web -p 8080` and `cd worker && npx wrangler dev` (set `ALLOWED_ORIGIN=*` in `worker/.dev.vars`, and run `npm run db:init:local` first).
 
 ## Features
 

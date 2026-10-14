@@ -7,7 +7,7 @@
 const VERSION = "v2";
 const SHELL = `shell-${VERSION}`;
 const STATIC = `static-${VERSION}`;
-const DATA = "data-v1";
+const DATA = "data-v2";
 
 const SHELL_FILES = [
   "./",
@@ -73,17 +73,23 @@ async function cacheFirst(req) {
   return res;
 }
 
-// from/to в запросе меняются каждый раз, поэтому ключ кэша — путь и устройство.
-function dataKey(url) {
+// from/to в запросе меняются каждый раз, поэтому ключ кэша — путь, устройство и токен
+// (хешем: у каждого токена свои данные, сам токен в кэш не пишем).
+async function dataKey(req, url) {
   const key = new URL(url.origin + url.pathname);
   const device = url.searchParams.get("device");
   if (device) key.searchParams.set("device", device);
+  const token = req.headers.get("X-Token");
+  if (token) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+    key.searchParams.set("t", [...new Uint8Array(buf)].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join(""));
+  }
   return key.toString();
 }
 
 async function data(req, url) {
   const cache = await caches.open(DATA);
-  const key = dataKey(url);
+  const key = await dataKey(req, url);
   try {
     const res = await fetch(req);
     if (res.ok) {

@@ -140,14 +140,39 @@ dialog {
   background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.25);
 }
 dialog::backdrop { background: rgba(10, 14, 12, .45); }
-dialog form { padding: 22px; display: grid; gap: 16px; }
+dialog form { padding: 22px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (max-width: 480px) { dialog form { padding: 18px 16px; } }
 dialog h2 { font: 600 24px/1.1 var(--display); margin: 0; }
 label { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
-label input { border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 15px; color: var(--ink); }
+label input { border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 15px; color: var(--ink); min-width: 0; width: 100%; }
 label small { font-size: 13px; }
 .row { display: flex; gap: 8px; align-items: end; }
-.row label { flex: 1; }
+.row label { flex: 1; min-width: 0; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.field-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.field-row button { flex: none; }
+.field-row input { flex: 1 1 160px; min-width: 0; width: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.field-error { color: var(--alert); font-size: 13px; }
+.field-error:empty { display: none; }
+.link { background: none; border: 0; padding: 0; color: var(--amber-deep); text-decoration: underline; cursor: pointer; font-size: 14px; }
+.server { font-size: 14px; color: var(--muted); display: grid; gap: 6px; }
+.server b { color: var(--ink); font-weight: 500; word-break: break-all; }
+.guide { border: 1px solid var(--rule); border-radius: 10px; padding: 10px 14px; background: var(--bg); }
+.guide summary { cursor: pointer; font-weight: 600; color: var(--ink); }
+.guide ol { margin: 10px 0 4px; padding-left: 20px; display: grid; gap: 8px; font-size: 14px; }
+.guide dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; margin: 8px 0 0; align-items: center; }
+.guide dt { color: var(--muted); font-size: 13px; }
+.guide dd { margin: 0; display: flex; gap: 6px; align-items: center; min-width: 0; }
+.guide code { font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 6px; overflow-wrap: anywhere; }
+.copy { font-size: 12px; padding: 2px 8px; border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; cursor: pointer; flex: none; }
+.guide .note { color: var(--muted); font-size: 13px; }
+.guide dd code { flex: 1 1 auto; min-width: 0; }
+@media (max-width: 480px) {
+  .guide { padding: 10px 12px; }
+  .guide ol { padding-left: 18px; }
+  .guide dl { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .guide dt { margin-top: 6px; }
+}
 .primary { background: var(--amber); color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-weight: 600; }
 .secondary { background: transparent; border: 1px solid var(--rule); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
 
@@ -217,13 +242,34 @@ label small { font-size: 13px; }
 <dialog id="settings">
   <form method="dialog" id="settings-form">
     <h2 data-i18n="settings.title"></h2>
-    <label><span data-i18n="settings.api"></span>
-      <input name="api" type="url" data-i18n-placeholder="settings.apiPlaceholder" autocomplete="off">
+    <label><span data-i18n="settings.token"></span>
+      <span class="field-row">
+        <input name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64">
+        <button class="secondary" type="button" id="token-show" data-i18n="settings.show"></button>
+        <button class="secondary" type="button" id="token-gen" data-i18n="settings.generate"></button>
+      </span>
+      <small data-i18n="settings.tokenHint"></small>
+      <small class="field-error" id="token-error"></small>
     </label>
-    <label><span data-i18n="settings.key"></span>
-      <input name="key" type="password" autocomplete="off">
-      <small data-i18n="settings.keyHint"></small>
-    </label>
+
+    <details class="guide" id="guide">
+      <summary data-i18n="guide.title"></summary>
+      <ol>
+        <li data-i18n="guide.step1"></li>
+        <li data-i18n="guide.step2"></li>
+        <li><span data-i18n="guide.step3"></span>
+          <dl>
+            <dt data-i18n="guide.serviceType"></dt><dd><code>HTTPS Post</code></dd>
+            <dt data-i18n="guide.serverUrl"></dt><dd><code id="guide-url"></code><button class="copy" type="button" data-copy="guide-url" data-i18n="ui.copy"></button></dd>
+            <dt data-i18n="guide.token"></dt><dd><code id="guide-token"></code><button class="copy" type="button" data-copy="guide-token" data-i18n="ui.copy"></button></dd>
+            <dt data-i18n="guide.interval"></dt><dd><code data-i18n="guide.intervalValue"></code></dd>
+          </dl>
+        </li>
+        <li data-i18n="guide.step4"></li>
+        <li data-i18n="guide.step5"></li>
+      </ol>
+      <p class="note" id="guide-fallback"></p>
+    </details>
     <div class="row">
       <label><span data-i18n="settings.batchStart"></span>
         <input name="batchStart" type="datetime-local">
@@ -234,6 +280,17 @@ label small { font-size: 13px; }
       <input name="formula" type="text" placeholder="-0.0322987*tilt^2+2.643882645*tilt-38.64180015" autocomplete="off" spellcheck="false">
       <small data-i18n="settings.formulaHint"></small>
     </label>
+    <div class="server">
+      <div><span data-i18n="settings.server"></span>: <b id="server-name"></b> <span id="server-default" data-i18n="settings.serverDefault"></span></div>
+      <div><button class="link" type="button" id="server-edit" data-i18n="settings.serverCustom"></button></div>
+      <label id="server-field" hidden><span data-i18n="settings.serverAddress"></span>
+        <span class="field-row">
+          <input name="api" type="url" data-i18n-placeholder="settings.apiPlaceholder" autocomplete="off" spellcheck="false">
+          <button class="secondary" type="button" id="server-reset" data-i18n="settings.serverReset"></button>
+        </span>
+        <small class="field-error" id="api-error"></small>
+      </label>
+    </div>
     <div class="dialog-actions">
       <button class="secondary" value="cancel" formnovalidate data-i18n="settings.cancel"></button>
       <button class="primary" value="save" data-i18n="settings.save"></button>
@@ -262,13 +319,20 @@ label small { font-size: 13px; }
   // ---------- Настройки ----------
   const STORE = "ispindel.cfg";
   const RANGES = { "6h": 6 * 3600e3, "24h": 24 * 3600e3, "3d": 3 * 86400e3, "7d": 7 * 86400e3 };
-  const defaults = Object.assign({ api: "", key: "", device: "", batchStart: null, formula: "", range: "24h", smooth: true },
-    window.ISPINDEL_DEFAULTS || {});
+  // Адрес воркера по умолчанию — из config.js; cfg.api хранит только свой адрес, если он задан.
+  const DEFAULT_API = ((window.ISPINDEL_DEFAULTS || {}).api || "").replace(/\/+$/, "");
+  const defaults = { api: "", token: "", device: "", batchStart: null, formula: "", range: "24h", smooth: true };
   let cfg = load();
+  const apiBase = () => (cfg.api || DEFAULT_API).replace(/\/+$/, "");
 
   function load() {
-    try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem(STORE) || "{}")); }
-    catch { return Object.assign({}, defaults); }
+    let c;
+    try { c = Object.assign({}, defaults, JSON.parse(localStorage.getItem(STORE) || "{}")); }
+    catch { c = Object.assign({}, defaults); }
+    // Раньше сохранялся и адрес по умолчанию, и ключ чтения — приводим к новому виду.
+    if (c.api && c.api.replace(/\/+$/, "") === DEFAULT_API) c.api = "";
+    delete c.key;
+    return c;
   }
   function save() {
     try { localStorage.setItem(STORE, JSON.stringify(cfg)); } catch { /* приватный режим */ }
@@ -340,11 +404,10 @@ label small { font-size: 13px; }
   let cachedAt = null;
 
   async function api(path, params = {}) {
-    const url = new URL(cfg.api.replace(/\/+$/, "") + path);
+    const url = new URL(apiBase() + path);
     Object.entries(params).forEach(([k, v]) => v != null && v !== "" && url.searchParams.set(k, v));
-    const headers = cfg.key ? { "X-Read-Token": cfg.key } : {};
-    const res = await fetch(url, { headers });
-    if (res.status === 401) throw new Error(t("err.needKey"));
+    const res = await fetch(url, { headers: { "X-Token": cfg.token } });
+    if (res.status === 401) throw new Error(t("err.unknownToken"));
     if (!res.ok) throw new Error(t("err.workerStatus", { status: res.status }));
     const fromCache = res.headers.get("X-From-Cache");
     if (fromCache) cachedAt = Math.min(cachedAt ?? Infinity, Number(fromCache) || Date.now());
@@ -438,10 +501,10 @@ label small { font-size: 13px; }
 
   async function refresh() {
     if (busy) return;
-    if (!cfg.api) {
+    if (!apiBase() || !cfg.token) {
       ["hero", "device", "charts"].forEach((id) => $(id).hidden = true);
       $("seen").textContent = t("status.notConnected");
-      notice(t("notice.setApi"));
+      notice(t(apiBase() ? "notice.setToken" : "notice.setApi"));
       return;
     }
     busy = true;
@@ -614,21 +677,135 @@ label small { font-size: 13px; }
     d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
     return d.toISOString().slice(0, 16);
   };
+
+  // Токен: те же правила, что и на воркере (iSpindel хранит его в JSON-конфиге).
+  const TOKEN_MIN = 8, TOKEN_MAX = 64;
+  function tokenProblem(tok) {
+    if (tok.length < TOKEN_MIN) return t("err.tokenShort", { n: TOKEN_MIN });
+    if (tok.length > TOKEN_MAX) return t("err.tokenLong", { n: TOKEN_MAX });
+    if (!/^[\x21-\x7e]+$/.test(tok) || /["\\]/.test(tok)) return t("err.tokenChars");
+    return null;
+  }
+  function generateToken() {
+    const abc = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+    const bytes = crypto.getRandomValues(new Uint8Array(20));
+    return Array.from(bytes, (b) => abc[b % abc.length]).join("");
+  }
+  async function registerToken(base, tok) {
+    const res = await fetch(base + "/api/register", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: tok }),
+    });
+    if (!res.ok) {
+      let msg = String(res.status);
+      try { msg = (await res.json()).error || msg; } catch { /* не JSON */ }
+      throw new Error(msg);
+    }
+  }
+
+  // Сервер: по умолчанию скрыт, свой адрес — по кнопке.
+  let serverCustom = false;
+  function syncServer() {
+    const custom = serverCustom;
+    $("server-field").hidden = !custom;
+    $("server-edit").hidden = custom;
+    $("server-default").hidden = custom;
+    const shown = custom ? (form.elements.api.value.trim() || "–") : DEFAULT_API;
+    $("server-name").textContent = shown.replace(/^https?:\/\//, "");
+    syncGuide();
+  }
+  function formBase() {
+    return (serverCustom ? form.elements.api.value.trim() : DEFAULT_API).replace(/\/+$/, "");
+  }
+  function syncGuide() {
+    const base = formBase();
+    const tok = form.elements.token.value.trim();
+    $("guide-url").textContent = base ? base + "/ingest" : "–";
+    $("guide-token").textContent = tok || t("guide.tokenUnset");
+    $("guide-token").nextElementSibling.hidden = !tok;
+    let host = "–";
+    try { host = new URL(base).hostname; } catch { /* ещё не адрес */ }
+    $("guide-fallback").textContent = t("guide.fallback", { host });
+  }
+
   $("open-settings").onclick = () => {
+    form.elements.token.value = cfg.token;
+    form.elements.token.type = "password";
+    $("token-show").textContent = t("settings.show");
     form.elements.api.value = cfg.api;
-    form.elements.key.value = cfg.key;
+    serverCustom = !!cfg.api;
     form.elements.batchStart.value = toLocalInput(cfg.batchStart);
     form.elements.formula.value = cfg.formula;
+    $("token-error").textContent = "";
+    $("api-error").textContent = "";
+    $("guide").open = !cfg.token;
+    syncServer();
     dlg.showModal();
   };
   $("batch-now").onclick = () => { form.elements.batchStart.value = toLocalInput(Date.now()); };
-  dlg.addEventListener("close", () => {
-    if (dlg.returnValue !== "save") return;
-    cfg.api = form.elements.api.value.trim();
-    cfg.key = form.elements.key.value.trim();
+  $("token-show").onclick = () => {
+    const hidden = form.elements.token.type === "password";
+    form.elements.token.type = hidden ? "text" : "password";
+    $("token-show").textContent = t(hidden ? "settings.hide" : "settings.show");
+  };
+  $("token-gen").onclick = () => {
+    form.elements.token.value = generateToken();
+    form.elements.token.type = "text";
+    $("token-show").textContent = t("settings.hide");
+    $("token-error").textContent = "";
+    syncGuide();
+  };
+  form.elements.token.addEventListener("input", () => { $("token-error").textContent = ""; syncGuide(); });
+  form.elements.api.addEventListener("input", () => { $("api-error").textContent = ""; syncServer(); });
+  $("server-edit").onclick = () => {
+    serverCustom = true;
+    if (!form.elements.api.value) form.elements.api.value = DEFAULT_API;
+    syncServer();
+    form.elements.api.focus();
+    form.elements.api.select();
+  };
+  $("server-reset").onclick = () => {
+    serverCustom = false;
+    form.elements.api.value = "";
+    $("api-error").textContent = "";
+    syncServer();
+  };
+  dlg.addEventListener("click", async (e) => {
+    const b = e.target.closest("button[data-copy]");
+    if (!b) return;
+    const text = $(b.dataset.copy).textContent;
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const r = document.createRange(); r.selectNodeContents($(b.dataset.copy));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      return;
+    }
+    b.textContent = t("ui.copied");
+    setTimeout(() => { b.textContent = t("ui.copy"); }, 1500);
+  });
+
+  // Сохранение: сначала заводим токен на сервере, и только потом закрываем окно.
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (e.submitter && e.submitter.value === "cancel") { dlg.close(); return; }
+    const tok = form.elements.token.value.trim();
+    let api = serverCustom ? form.elements.api.value.trim().replace(/\/+$/, "") : "";
+    if (api === DEFAULT_API) api = "";
+    if (serverCustom && api && !/^https?:\/\/[^/\s]+/.test(api)) { $("api-error").textContent = t("err.badUrl"); return; }
+    const problem = tokenProblem(tok);
+    if (problem) { $("token-error").textContent = problem; form.elements.token.focus(); return; }
+    const base = (api || DEFAULT_API).replace(/\/+$/, "");
+    if (tok !== cfg.token || api !== cfg.api) {
+      const btn = e.submitter; if (btn) btn.disabled = true;
+      try { await registerToken(base, tok); }
+      catch (err) { $("token-error").textContent = t("err.register", { message: err.message }); return; }
+      finally { if (btn) btn.disabled = false; }
+      cfg.device = "";
+    }
+    cfg.token = tok;
+    cfg.api = api;
     cfg.batchStart = form.elements.batchStart.value ? new Date(form.elements.batchStart.value).getTime() : null;
     cfg.formula = form.elements.formula.value.trim();
-    save(); syncRanges(); refresh();
+    save(); syncRanges(); dlg.close(); refresh();
   });
 
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
@@ -650,6 +827,7 @@ label small { font-size: 13px; }
   langSel.onchange = (e) => {
     I18N.use(e.target.value, true);
     applyStatic();
+    if (dlg.open) syncServer();
     // Axis ticks and tooltips are baked into the chart options, so rebuild them.
     Object.values(charts).forEach((c) => c.destroy());
     charts = {};
@@ -660,7 +838,7 @@ label small { font-size: 13px; }
   syncRanges();
   refresh();
   setInterval(() => { if (!document.hidden) refresh(); }, 60e3);
-  if (!cfg.api) $("open-settings").click();
+  if (!cfg.token) $("open-settings").click();
 })();
 </script>
 </body>
