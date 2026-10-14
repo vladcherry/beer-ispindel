@@ -37,14 +37,19 @@ Check: open `https://ispindel.<name>.workers.dev/api/health` — it should retur
 
 Optional: `npx wrangler secret put READ_TOKEN` — then data can only be read with this key (enter it in the app settings).
 
-### Auto-deploy the worker from GitHub (optional)
+### Or: set up and deploy the worker from GitHub Actions (no local tools)
 
-After the first manual setup (database created, `database_id` committed, secrets set with `wrangler secret put`), the worker can be deployed from Actions:
+1. Cloudflare → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template, add **Account → D1 → Edit**.
+2. GitHub → Settings → Secrets and variables → Actions → New repository secret:
+   - `CLOUDFLARE_API_TOKEN` — the token from step 1;
+   - `INGEST_TOKEN` — any long random string; the same goes into iSpindel;
+   - `READ_TOKEN` (optional) — require a key to read data;
+   - `CLOUDFLARE_ACCOUNT_ID` (only if the token can access several accounts).
+3. Actions → **Worker** → Run workflow.
 
-1. Cloudflare → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template (add **D1: Edit** permission).
-2. GitHub → Settings → Secrets and variables → Actions → `CLOUDFLARE_API_TOKEN`.
+The workflow creates the `ispindel` D1 database if needed, applies `schema.sql`, deploys the worker, sets its secrets and prints the worker URL in the run summary. After that every push to `main` that changes `worker/` redeploys it. Without `CLOUDFLARE_API_TOKEN` the job is skipped.
 
-Every push to `main` that changes `worker/` then applies `schema.sql` and deploys the worker. Without the secret the job is skipped.
+If the account has never used Workers, open Workers & Pages in the Cloudflare dashboard once so it gets a `*.workers.dev` subdomain.
 
 ## 2. iSpindel
 
