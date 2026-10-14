@@ -28,6 +28,7 @@ jobs:
         run: |
           [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || unset CLOUDFLARE_ACCOUNT_ID
           url=https://ispindel.vladcherry.workers.dev
+          scripts/resolve-db.sh
           {
             echo "### Health"
             echo '```'

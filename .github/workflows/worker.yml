@@ -53,15 +53,7 @@ jobs:
         if: steps.token.outputs.skip != 'true'
         run: |
           [ -n "$CLOUDFLARE_ACCOUNT_ID" ] || unset CLOUDFLARE_ACCOUNT_ID
-          find_id() { npx wrangler d1 list --json | jq -r '.[] | select(.name == "ispindel") | .uuid'; }
-          id=$(find_id)
-          if [ -z "$id" ]; then
-            npx wrangler d1 create ispindel
-            id=$(find_id)
-          fi
-          [ -n "$id" ] || { echo "::error::Could not find or create D1 database 'ispindel'"; exit 1; }
-          echo "D1 ispindel: $id"
-          sed -i "s/^database_id = .*/database_id = \"$id\"/" wrangler.toml
+          CREATE=1 scripts/resolve-db.sh
           npx wrangler d1 execute ispindel --remote --file=schema.sql
 
       - name: Deploy
