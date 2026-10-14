@@ -134,6 +134,14 @@ const I18N = (() => {
     'batch.confirmReset': 'A batch has been running since {date}.\n\nStarting a new one resets it for everyone connected to this iSpindel: original gravity, attenuation, alcohol and the batch history will be counted from the new start.\n\nReset the batch for all users?',
     'err.batch': 'Could not save the batch start: {message}',
     'settings.batchHint': 'Shared by everyone connected to this iSpindel.',
+    'install.title': 'Install the app',
+    'install.text': 'Add iSpindel to your home screen: it opens full screen and works offline with the latest readings.',
+    'install.button': 'Install',
+    'install.later': 'Not now',
+    'install.ok': 'Got it',
+    'install.ios1': 'Tap Share in Safari',
+    'install.ios2': 'Scroll down and choose “Add to Home Screen”.',
+    'install.ios3': 'Tap “Add” — the app appears on your home screen.',
     'settings.cancel': 'Cancel',
     'settings.save': 'Save'
   };
@@ -268,6 +276,14 @@ const I18N = (() => {
     'batch.confirmReset': 'Партия уже идёт с {date}.\n\nНовая партия сбросит её для всех, кто подключён к этому iSpindel: начальная плотность, степень сбраживания, алкоголь и история партии будут считаться с нового старта.\n\nСбросить партию для всех пользователей?',
     'err.batch': 'Не удалось сохранить начало партии: {message}',
     'settings.batchHint': 'Общее для всех, кто подключён к этому iSpindel.',
+    'install.title': 'Установи приложение',
+    'install.text': 'Добавь iSpindel на главный экран: откроется на весь экран и покажет последние показания даже без сети.',
+    'install.button': 'Установить',
+    'install.later': 'Не сейчас',
+    'install.ok': 'Понятно',
+    'install.ios1': 'Нажми «Поделиться» в Safari',
+    'install.ios2': 'Пролистай вниз и выбери «На экран „Домой“».',
+    'install.ios3': 'Нажми «Добавить» — приложение появится на главном экране.',
     'settings.cancel': 'Отмена',
     'settings.save': 'Сохранить'
   };
@@ -402,6 +418,14 @@ const I18N = (() => {
     'batch.confirmReset': 'Партія вже триває з {date}.\n\nНова партія скине її для всіх, хто підключений до цього iSpindel: початкова густина, ступінь зброджування, алкоголь та історія партії рахуватимуться з нового старту.\n\nСкинути партію для всіх користувачів?',
     'err.batch': 'Не вдалося зберегти початок партії: {message}',
     'settings.batchHint': 'Спільний для всіх, хто підключений до цього iSpindel.',
+    'install.title': 'Встанови застосунок',
+    'install.text': 'Додай iSpindel на головний екран: відкриється на весь екран і покаже останні показання навіть без мережі.',
+    'install.button': 'Встановити',
+    'install.later': 'Не зараз',
+    'install.ok': 'Зрозуміло',
+    'install.ios1': 'Натисни «Поділитися» в Safari',
+    'install.ios2': 'Прогорни вниз і вибери «На початковий екран».',
+    'install.ios3': 'Натисни «Додати» — застосунок з’явиться на головному екрані.',
     'settings.cancel': 'Скасувати',
     'settings.save': 'Зберегти'
   };
@@ -536,6 +560,14 @@ const I18N = (() => {
     'batch.confirmReset': 'Hay un lote en marcha desde {date}.\n\nEmpezar uno nuevo lo reinicia para todos los conectados a este iSpindel: la densidad inicial, la atenuación, el alcohol y el historial del lote se contarán desde el nuevo inicio.\n\n¿Reiniciar el lote para todos los usuarios?',
     'err.batch': 'No se ha podido guardar el inicio del lote: {message}',
     'settings.batchHint': 'Común para todos los conectados a este iSpindel.',
+    'install.title': 'Instala la app',
+    'install.text': 'Añade iSpindel a la pantalla de inicio: se abre a pantalla completa y muestra las últimas lecturas incluso sin conexión.',
+    'install.button': 'Instalar',
+    'install.later': 'Ahora no',
+    'install.ok': 'Entendido',
+    'install.ios1': 'Toca Compartir en Safari',
+    'install.ios2': 'Desplázate y elige «Añadir a pantalla de inicio».',
+    'install.ios3': 'Toca «Añadir»: la app aparecerá en tu pantalla de inicio.',
     'settings.cancel': 'Cancelar',
     'settings.save': 'Guardar'
   };

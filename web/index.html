@@ -191,6 +191,26 @@ label small { font-size: 13px; }
 .primary { background: var(--amber); color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-weight: 600; }
 .secondary { background: transparent; border: 1px solid var(--rule); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
 
+/* Предложение установить приложение */
+.install {
+  position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 10;
+  max-width: 520px; margin: 0 auto; display: flex; gap: 12px; align-items: flex-start;
+  padding: 14px; border-radius: 14px; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--rule); box-shadow: 0 12px 40px rgba(0, 0, 0, .22);
+}
+.install img { border-radius: 10px; flex: none; }
+body.has-install main { padding-bottom: 220px; }
+.install-body { flex: 1; min-width: 0; display: grid; gap: 6px; font-size: 14px; }
+.install-body b { font: 600 18px/1.2 var(--display); }
+.install-body p { margin: 0; color: var(--muted); }
+.install-body ol { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.install-actions { display: flex; gap: 8px; margin-top: 4px; }
+.ios-share { width: 18px; height: 18px; vertical-align: -3px; color: #0a84ff; }
+@media (prefers-reduced-motion: no-preference) {
+  .install:not([hidden]) { animation: install-in .35s cubic-bezier(.2, .7, .2, 1); }
+  @keyframes install-in { from { transform: translateY(24px); opacity: 0; } }
+}
+
 @media (max-width: 640px) {
   main { padding: 16px 14px 40px; }
   .hero { grid-template-columns: 84px 1fr; gap: 16px; }
@@ -253,6 +273,23 @@ label small { font-size: 13px; }
     <div class="chart-box"><canvas id="chart-t"></canvas></div>
   </section>
 </main>
+
+<aside class="install" id="install" hidden role="dialog" aria-labelledby="install-title">
+  <img src="icons/icon-192.png" alt="" width="44" height="44">
+  <div class="install-body">
+    <b id="install-title" data-i18n="install.title"></b>
+    <p id="install-android" data-i18n="install.text"></p>
+    <ol id="install-ios" hidden>
+      <li><span data-i18n="install.ios1"></span> <svg class="ios-share" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 10H6.5A1.5 1.5 0 0 0 5 11.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5H16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></li>
+      <li data-i18n="install.ios2"></li>
+      <li data-i18n="install.ios3"></li>
+    </ol>
+    <div class="install-actions">
+      <button class="primary" type="button" id="install-go" data-i18n="install.button"></button>
+      <button class="secondary" type="button" id="install-later"></button>
+    </div>
+  </div>
+</aside>
 
 <dialog id="settings">
   <form method="dialog" id="settings-form">
@@ -1029,6 +1066,48 @@ label small { font-size: 13px; }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
   addEventListener("online", refresh);
 
+  // ---------- Установка на телефон ----------
+  // Android/Chrome: ловим beforeinstallprompt и показываем свою кнопку.
+  // iOS: такого события нет — показываем инструкцию «Поделиться → На экран „Домой“».
+  // Не показываем, если приложение уже запущено как установленное или недавно нажали «Не сейчас».
+  const INSTALL_STORE = "ispindel.installLater";
+  const installed = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  let deferredInstall = null, installIOS = false;
+  const syncInstallText = () => { $("install-later").textContent = t(installIOS ? "install.ok" : "install.later"); };
+  function installSnoozed() {
+    try { return Date.now() - Number(localStorage.getItem(INSTALL_STORE) || 0) < 14 * 86400e3; } catch { return false; }
+  }
+  function showInstall(ios) {
+    if (installed() || installSnoozed()) return;
+    installIOS = ios;
+    $("install-android").hidden = ios;
+    $("install-ios").hidden = !ios;
+    $("install-go").hidden = ios;
+    syncInstallText();
+    $("install").hidden = false;
+    document.body.classList.add("has-install");
+  }
+  addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstall = e;
+    showInstall(false);
+  });
+  const hideInstall = () => { $("install").hidden = true; document.body.classList.remove("has-install"); };
+  addEventListener("appinstalled", () => { hideInstall(); deferredInstall = null; });
+  $("install-go").onclick = async () => {
+    hideInstall();
+    if (!deferredInstall) return;
+    deferredInstall.prompt();
+    try { await deferredInstall.userChoice; } catch { /* закрыли */ }
+    deferredInstall = null;
+  };
+  $("install-later").onclick = () => {
+    hideInstall();
+    try { localStorage.setItem(INSTALL_STORE, String(Date.now())); } catch { /* приватный режим */ }
+  };
+  if (isIOS) setTimeout(() => showInstall(true), 2500);
+
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker not registered", e));
   }
@@ -1047,7 +1126,7 @@ label small { font-size: 13px; }
   langBtn.onclick = () => {
     const next = LANG_CYCLE[(LANG_CYCLE.indexOf(I18N.lang()) + 1) % LANG_CYCLE.length];
     I18N.use(next, true);
-    applyStatic(); syncLang();
+    applyStatic(); syncLang(); syncInstallText();
     if (dlg.open) { renderSticks(); syncServer(); }
     // Axis ticks and tooltips are baked into the chart options, so rebuild them.
     Object.values(charts).forEach((c) => c.destroy());
