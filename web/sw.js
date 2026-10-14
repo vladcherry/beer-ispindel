@@ -4,7 +4,7 @@
 //   GET /api/* воркера — сначала сеть, без сети — последний ответ с заголовком X-From-Cache.
 // При изменении файлов оболочки подними VERSION, чтобы старый кэш удалился.
 
-const VERSION = "v1";
+const VERSION = "v2";
 const SHELL = `shell-${VERSION}`;
 const STATIC = `static-${VERSION}`;
 const DATA = "data-v1";
@@ -13,6 +13,7 @@ const SHELL_FILES = [
   "./",
   "./index.html",
   "./config.js",
+  "./i18n.js",
   "./vendor/chart-4.4.1.umd.min.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",

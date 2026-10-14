@@ -1,8 +1,8 @@
 {
-  "name": "Брожение — iSpindel",
-  "short_name": "Брожение",
-  "description": "Плотность, температура и заряд iSpindel во время брожения.",
-  "lang": "ru",
+  "name": "Beer iSpindel",
+  "short_name": "iSpindel",
+  "description": "Gravity, temperature and battery from an iSpindel while the beer ferments.",
+  "lang": "en",
   "id": "./",
   "start_url": "./",
   "scope": "./",

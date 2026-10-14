@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Брожение</title>
-<meta name="description" content="Плотность, температура и заряд iSpindel во время брожения.">
+<title>Beer iSpindel</title>
+<meta name="description" content="Gravity, temperature and battery from an iSpindel while the beer ferments.">
 <meta name="theme-color" content="#eef1ec" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#131715" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Брожение">
+<meta name="apple-mobile-web-app-title" content="Beer iSpindel">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
@@ -20,6 +20,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="vendor/chart-4.4.1.umd.min.js"></script>
 <script src="config.js"></script>
+<script src="i18n.js"></script>
 <style>
 :root {
   color-scheme: light;
@@ -74,9 +75,10 @@ button, input, select { font: inherit; color: inherit; }
 /* Шапка */
 .top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .top h1 { font: 600 28px/1.1 var(--display); margin: 0; letter-spacing: .01em; }
-.top select {
+.top h1 select {
   font: 600 28px/1.1 var(--display); border: 0; background: transparent; padding: 0; cursor: pointer;
 }
+.top-actions select.icon-btn { padding: 6px 8px; }
 .seen { color: var(--muted); font-size: 15px; }
 .seen.stale { color: var(--alert); }
 .top-actions { display: flex; gap: 8px; align-items: center; }
@@ -165,12 +167,13 @@ label small { font-size: 13px; }
 <main>
   <header class="top">
     <div>
-      <h1 id="title">Брожение</h1>
-      <div class="seen" id="seen">Загрузка…</div>
+      <h1 id="title" data-i18n="app.name"></h1>
+      <div class="seen" id="seen" data-i18n="status.loading"></div>
     </div>
     <div class="top-actions">
-      <button class="icon-btn" id="refresh" type="button" title="Обновить">Обновить</button>
-      <button class="icon-btn" id="open-settings" type="button">Настройки</button>
+      <button class="icon-btn" id="refresh" type="button" data-i18n="ui.refresh" data-i18n-title="ui.refresh"></button>
+      <button class="icon-btn" id="open-settings" type="button" data-i18n="ui.settings"></button>
+      <select class="icon-btn" id="lang" data-i18n-label="ui.language"></select>
     </div>
   </header>
 
@@ -194,46 +197,46 @@ label small { font-size: 13px; }
 
   <section class="charts" id="charts" hidden>
     <div class="charts-head">
-      <h2>История</h2>
-      <div class="ranges" id="ranges" role="group" aria-label="Период">
-        <button type="button" data-range="6h">6 ч</button>
-        <button type="button" data-range="24h">24 ч</button>
-        <button type="button" data-range="3d">3 дня</button>
-        <button type="button" data-range="7d">7 дней</button>
-        <button type="button" data-range="batch" hidden>Партия</button>
+      <h2 data-i18n="charts.history"></h2>
+      <div class="ranges" id="ranges" role="group" data-i18n-label="charts.period">
+        <button type="button" data-range="6h" data-i18n="range.6h"></button>
+        <button type="button" data-range="24h" data-i18n="range.24h"></button>
+        <button type="button" data-range="3d" data-i18n="range.3d"></button>
+        <button type="button" data-range="7d" data-i18n="range.7d"></button>
+        <button type="button" data-range="batch" hidden data-i18n="range.batch"></button>
       </div>
     </div>
-    <div class="chart-label"><span class="sw" style="background:var(--amber)"></span>Плотность, °P
-      <label class="smooth"><input type="checkbox" id="smooth" checked>сглаживать</label></div>
+    <div class="chart-label"><span class="sw" style="background:var(--amber)"></span><span data-i18n="charts.gravity"></span>
+      <label class="smooth"><input type="checkbox" id="smooth" checked><span data-i18n="charts.smooth"></span></label></div>
     <div class="chart-box"><canvas id="chart-g"></canvas></div>
-    <div class="chart-label"><span class="sw" style="background:var(--teal)"></span>Температура</div>
+    <div class="chart-label"><span class="sw" style="background:var(--teal)"></span><span data-i18n="charts.temperature"></span></div>
     <div class="chart-box"><canvas id="chart-t"></canvas></div>
   </section>
 </main>
 
 <dialog id="settings">
   <form method="dialog" id="settings-form">
-    <h2>Настройки</h2>
-    <label>Адрес воркера
-      <input name="api" type="url" placeholder="https://ispindel.имя.workers.dev" autocomplete="off">
+    <h2 data-i18n="settings.title"></h2>
+    <label><span data-i18n="settings.api"></span>
+      <input name="api" type="url" data-i18n-placeholder="settings.apiPlaceholder" autocomplete="off">
     </label>
-    <label>Ключ чтения
+    <label><span data-i18n="settings.key"></span>
       <input name="key" type="password" autocomplete="off">
-      <small>Нужен, только если на воркере задан READ_TOKEN.</small>
+      <small data-i18n="settings.keyHint"></small>
     </label>
     <div class="row">
-      <label>Начало партии
+      <label><span data-i18n="settings.batchStart"></span>
         <input name="batchStart" type="datetime-local">
       </label>
-      <button class="secondary" type="button" id="batch-now">Сейчас</button>
+      <button class="secondary" type="button" id="batch-now" data-i18n="settings.now"></button>
     </div>
-    <label>Своя формула плотности
+    <label><span data-i18n="settings.formula"></span>
       <input name="formula" type="text" placeholder="-0.0322987*tilt^2+2.643882645*tilt-38.64180015" autocomplete="off" spellcheck="false">
-      <small>Пусто — берётся плотность, посчитанная самим iSpindel. Если заполнить, плотность пересчитается по наклону для всей истории.</small>
+      <small data-i18n="settings.formulaHint"></small>
     </label>
     <div class="dialog-actions">
-      <button class="secondary" value="cancel" formnovalidate>Отмена</button>
-      <button class="primary" value="save">Сохранить</button>
+      <button class="secondary" value="cancel" formnovalidate data-i18n="settings.cancel"></button>
+      <button class="primary" value="save" data-i18n="settings.save"></button>
     </div>
   </form>
 </dialog>
@@ -241,6 +244,20 @@ label small { font-size: 13px; }
 <script>
 (() => {
   "use strict";
+
+  // ---------- Язык ----------
+  const t = (key, params) => I18N.t(key, params);
+
+  function applyStatic() {
+    document.documentElement.lang = I18N.lang();
+    document.title = t("app.name");
+    const desc = document.querySelector('meta[name="description"]');
+    if (desc) desc.content = t("app.description");
+    document.querySelectorAll("[data-i18n]").forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll("[data-i18n-title]").forEach((el) => { el.title = t(el.dataset.i18nTitle); });
+    document.querySelectorAll("[data-i18n-label]").forEach((el) => { el.setAttribute("aria-label", t(el.dataset.i18nLabel)); });
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => { el.placeholder = t(el.dataset.i18nPlaceholder); });
+  }
 
   // ---------- Настройки ----------
   const STORE = "ispindel.cfg";
@@ -272,20 +289,20 @@ label small { font-size: 13px; }
   }
   function rssiText(r) {
     if (r == null) return "–";
-    if (r >= -60) return "отличный";
-    if (r >= -70) return "хороший";
-    if (r >= -80) return "слабый";
-    return "очень слабый";
+    if (r >= -60) return t("wifi.excellent");
+    if (r >= -70) return t("wifi.good");
+    if (r >= -80) return t("wifi.weak");
+    return t("wifi.veryWeak");
   }
 
   // Формула: только числа, tilt, + - * / ^ ( )
   function compileFormula(src) {
     if (!src || !src.trim()) return null;
     const s = src.replace(/tilt/gi, "t").replace(/\s+/g, "");
-    if (!/^[0-9t.+\-*/^()eE]+$/.test(s)) throw new Error("В формуле допустимы только числа, tilt и + − * / ^ ( )");
+    if (!/^[0-9t.+\-*/^()eE]+$/.test(s)) throw new Error(t("err.formulaChars"));
     const fn = new Function("t", '"use strict"; return (' + s.replace(/\^/g, "**") + ");");
     const probe = fn(25);
-    if (typeof probe !== "number" || !Number.isFinite(probe)) throw new Error("Формула не считается при tilt = 25");
+    if (typeof probe !== "number" || !Number.isFinite(probe)) throw new Error(t("err.formulaProbe"));
     return fn;
   }
 
@@ -306,17 +323,17 @@ label small { font-size: 13px; }
   }
 
   // ---------- Формат ----------
-  const fmt = (n, d = 1) => n == null ? "–" : n.toLocaleString("ru-RU", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmt = (n, d = 1) => n == null ? "–" : n.toLocaleString(I18N.locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
   function ago(ts) {
     const s = Math.round((Date.now() - ts) / 1000);
-    if (s < 60) return "только что";
+    if (s < 60) return t("time.justNow");
     const m = Math.round(s / 60);
-    if (m < 60) return `${m} мин назад`;
+    if (m < 60) return t("time.minAgo", { m });
     const h = Math.floor(m / 60);
-    if (h < 24) return `${h} ч ${m % 60} мин назад`;
-    return new Date(ts).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    if (h < 24) return t("time.hourMinAgo", { h, m: m % 60 });
+    return dayTime(ts);
   }
-  const dayTime = (ts) => new Date(ts).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  const dayTime = (ts) => new Date(ts).toLocaleString(I18N.locale(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
   // ---------- API ----------
   // Время, когда сохранены данные, если ответ пришёл из кэша service worker'а (нет сети).
@@ -327,8 +344,8 @@ label small { font-size: 13px; }
     Object.entries(params).forEach(([k, v]) => v != null && v !== "" && url.searchParams.set(k, v));
     const headers = cfg.key ? { "X-Read-Token": cfg.key } : {};
     const res = await fetch(url, { headers });
-    if (res.status === 401) throw new Error("Воркер просит ключ чтения — укажи его в настройках.");
-    if (!res.ok) throw new Error(`Воркер ответил ${res.status}.`);
+    if (res.status === 401) throw new Error(t("err.needKey"));
+    if (!res.ok) throw new Error(t("err.workerStatus", { status: res.status }));
     const fromCache = res.headers.get("X-From-Cache");
     if (fromCache) cachedAt = Math.min(cachedAt ?? Infinity, Number(fromCache) || Date.now());
     return res.json();
@@ -357,7 +374,7 @@ label small { font-size: 13px; }
     const level = current != null ? y(current) : bottom + 40;
     const ogMark = og != null
       ? `<g><line x1="44" x2="58" y1="${y(og)}" y2="${y(og)}" stroke="${muted}" stroke-width="1.5" stroke-dasharray="2 2"/>
-         <text x="40" y="${y(og) + 4}" text-anchor="end" font-family="Barlow Condensed, sans-serif" font-size="12" fill="${muted}">НП</text></g>`
+         <text x="40" y="${y(og) + 4}" text-anchor="end" font-family="Barlow Condensed, sans-serif" font-size="12" fill="${muted}">${escapeHtml(t("stem.og"))}</text></g>`
       : "";
     $("stem").innerHTML = `
       <defs>
@@ -378,7 +395,7 @@ label small { font-size: 13px; }
   function renderChart(id, points, raw, color, unit, decimals) {
     const grid = css("--rule"), muted = css("--muted");
     const ds = [];
-    if (raw) ds.push({ data: raw, borderColor: color, backgroundColor: color, borderWidth: 0, pointRadius: 1.5, pointHoverRadius: 3, showLine: false, label: "сырые" });
+    if (raw) ds.push({ data: raw, borderColor: color, backgroundColor: color, borderWidth: 0, pointRadius: 1.5, pointHoverRadius: 3, showLine: false, label: t("charts.raw") });
     ds.push({ data: points, borderColor: color, borderWidth: 2.2, pointRadius: 0, pointHoverRadius: 4, tension: .25, spanGaps: false, label: unit });
     const xMin = points[0]?.x ?? raw?.[0]?.x, xMax = points.at(-1)?.x ?? raw?.at(-1)?.x;
     const opts = {
@@ -403,8 +420,8 @@ label small { font-size: 13px; }
             callback: (v) => {
               const d = new Date(v), span = (xMax - xMin) || 1;
               return span > 36 * 3600e3
-                ? d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
-                : d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+                ? d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" })
+                : d.toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
             },
           },
         },
@@ -423,8 +440,8 @@ label small { font-size: 13px; }
     if (busy) return;
     if (!cfg.api) {
       ["hero", "device", "charts"].forEach((id) => $(id).hidden = true);
-      $("seen").textContent = "Не подключено";
-      notice("Укажи адрес воркера в <b>настройках</b>, чтобы увидеть показания.");
+      $("seen").textContent = t("status.notConnected");
+      notice(t("notice.setApi"));
       return;
     }
     busy = true;
@@ -433,13 +450,13 @@ label small { font-size: 13px; }
       const msgs = [];
       let formula = null;
       try { formula = compileFormula(cfg.formula); }
-      catch (e) { msgs.push(e.message + " Пока используется плотность из iSpindel."); }
+      catch (e) { msgs.push(e.message + t("err.formulaFallback")); }
 
       devices = (await api("/api/devices")).devices || [];
       if (!devices.length) {
         ["hero", "device", "charts"].forEach((id) => $(id).hidden = true);
-        $("seen").textContent = "Данных пока нет";
-        notice("Воркер работает, но iSpindel ещё ничего не прислал. Проверь сервис и токен в портале iSpindel.");
+        $("seen").textContent = t("status.noData");
+        notice(t("notice.noReadings"));
         return;
       }
       if (!devices.some((d) => d.device === cfg.device)) cfg.device = devices[0].device;
@@ -465,15 +482,15 @@ label small { font-size: 13px; }
       renderDevice(last);
       renderCharts(rows.filter((r) => r.ts >= rangeFrom), last);
       if (!valid.some((r) => r.ts >= rangeFrom)) {
-        msgs.push("За этот период нет правдоподобной плотности: похоже, iSpindel лежит или стоит, а не плавает в жидкости.");
+        msgs.push(t("notice.implausible"));
       }
       if (cachedAt != null) {
-        msgs.unshift(`Нет связи — показаны данные, сохранённые ${ago(cachedAt)}.`);
+        msgs.unshift(t("notice.offline", { ago: ago(cachedAt) }));
       }
       notice(msgs.map(escapeHtml).join("<br>"), msgs.length && cfg.formula && !formula ? "error" : "");
     } catch (e) {
-      notice(`Не удалось получить данные: ${e.message}`, "error");
-      $("seen").textContent = "Нет связи с воркером";
+      notice(escapeHtml(t("err.fetch", { message: e.message })), "error");
+      $("seen").textContent = t("status.noConnection");
     } finally {
       busy = false;
     }
@@ -482,11 +499,11 @@ label small { font-size: 13px; }
   function renderTitle() {
     const title = $("title");
     if (devices.length > 1) {
-      title.innerHTML = `<select id="device-select" aria-label="Устройство">${devices.map((d) =>
+      title.innerHTML = `<select id="device-select" aria-label="${escapeHtml(t("ui.device"))}">${devices.map((d) =>
         `<option ${d.device === cfg.device ? "selected" : ""}>${escapeHtml(d.device)}</option>`).join("")}</select>`;
       $("device-select").onchange = (e) => { cfg.device = e.target.value; save(); refresh(); };
     } else {
-      title.textContent = cfg.device;
+      title.textContent = cfg.device || t("app.name");
     }
   }
 
@@ -502,7 +519,7 @@ label small { font-size: 13px; }
     }
 
     $("g-value").textContent = current == null ? "–" : fmt(current, 1);
-    $("g-sg").textContent = current == null ? "Нет правдоподобной плотности" : `SG ${sgFromPlato(current).toFixed(3)}`;
+    $("g-sg").textContent = current == null ? t("hero.noGravity") : `SG ${sgFromPlato(current).toFixed(3)}`;
 
     // Динамика за сутки
     const dayAgo = Date.now() - 24 * 3600e3;
@@ -511,17 +528,17 @@ label small { font-size: 13px; }
     const state = $("state");
     state.className = "state";
     if (current == null) {
-      state.innerHTML = "Опусти iSpindel в сусло — плотность появится, когда он будет плавать.";
+      state.innerHTML = escapeHtml(t("state.notFloating"));
     } else if (then == null) {
-      state.innerHTML = "Данных меньше суток — скорость брожения появится позже.";
+      state.innerHTML = escapeHtml(t("state.tooSoon"));
     } else {
       const delta = current - then;
       if (delta <= -0.3) {
         state.classList.add("ok");
-        state.innerHTML = `<b>Брожение идёт.</b> За сутки плотность упала на ${fmt(-delta, 1)} °P.`;
+        state.innerHTML = t("state.fermenting", { delta: fmt(-delta, 1) });
       } else {
         state.classList.add("idle");
-        state.innerHTML = `<b>Брожение затихло.</b> За сутки изменение ${fmt(delta, 1)} °P. Если так держится 2–3 дня, пиво, скорее всего, добродило.`;
+        state.innerHTML = t("state.stalled", { delta: fmt(delta, 1) });
       }
     }
 
@@ -530,14 +547,14 @@ label small { font-size: 13px; }
       const att = og > 0 ? ((og - current) / og) * 100 : null;
       const days = (Date.now() - cfg.batchStart) / 86400e3;
       batch.innerHTML = `
-        <div><dt>Начальная</dt><dd>${fmt(og, 1)} °P</dd></div>
-        <div><dt>Сброжено</dt><dd>${att == null ? "–" : fmt(Math.max(att, 0), 0) + "%"}</dd></div>
-        <div><dt>Алкоголь</dt><dd>${fmt(Math.max(abv(og, current), 0), 1)}%</dd></div>
-        <div class="hint">Партия идёт ${fmt(days, 1)} дн. с ${dayTime(cfg.batchStart)}. Алкоголь — оценка по ареометру.</div>`;
+        <div><dt>${escapeHtml(t("batch.og"))}</dt><dd>${fmt(og, 1)} °P</dd></div>
+        <div><dt>${escapeHtml(t("batch.attenuation"))}</dt><dd>${att == null ? "–" : fmt(Math.max(att, 0), 0) + "%"}</dd></div>
+        <div><dt>${escapeHtml(t("batch.abv"))}</dt><dd>${fmt(Math.max(abv(og, current), 0), 1)}%</dd></div>
+        <div class="hint">${escapeHtml(t("batch.running", { days: fmt(days, 1), date: dayTime(cfg.batchStart) }))}</div>`;
     } else if (hasBatch) {
-      batch.innerHTML = `<div class="hint">Партия с ${dayTime(cfg.batchStart)}: начальная плотность появится после первых показаний в сусле.</div>`;
+      batch.innerHTML = `<div class="hint">${escapeHtml(t("batch.waiting", { date: dayTime(cfg.batchStart) }))}</div>`;
     } else {
-      batch.innerHTML = `<div class="hint">Отметь начало партии, чтобы видеть начальную плотность, степень сбраживания и алкоголь. <button type="button" id="start-batch">Начать партию сейчас</button></div>`;
+      batch.innerHTML = `<div class="hint">${escapeHtml(t("batch.none"))} <button type="button" id="start-batch">${escapeHtml(t("batch.startNow"))}</button></div>`;
       $("start-batch").onclick = () => { cfg.batchStart = Date.now(); cfg.range = "batch"; save(); syncRanges(); refresh(); };
     }
     drawStem(current, og);
@@ -547,19 +564,19 @@ label small { font-size: 13px; }
     const el = $("device");
     el.hidden = false;
     const pct = batteryPct(last.battery);
-    const t = last.temperature;
+    const temp = last.temperature;
     const unit = last.temp_units === "F" ? "°F" : last.temp_units === "K" ? "K" : "°C";
     el.innerHTML = `
-      <div><dt>Температура</dt><dd>${fmt(t, 1)}<small>${unit}</small></dd></div>
-      <div><dt>Батарея</dt><dd class="${pct != null && pct <= 20 ? "warn" : ""}">${pct == null ? "–" : pct + "%"}<small>${fmt(last.battery, 2)} В</small></dd></div>
-      <div><dt>Наклон</dt><dd>${fmt(last.angle, 1)}°</dd></div>
-      <div><dt>Wi-Fi</dt><dd>${rssiText(last.rssi)}<small>${last.rssi ?? "–"} dBm</small></dd></div>
-      <div><dt>Интервал</dt><dd>${last.interval_s ? Math.round(last.interval_s / 60 * 10) / 10 + " мин" : "–"}</dd></div>`;
+      <div><dt>${escapeHtml(t("device.temperature"))}</dt><dd>${fmt(temp, 1)}<small>${unit}</small></dd></div>
+      <div><dt>${escapeHtml(t("device.battery"))}</dt><dd class="${pct != null && pct <= 20 ? "warn" : ""}">${pct == null ? "–" : pct + "%"}<small>${fmt(last.battery, 2)} ${escapeHtml(t("unit.volt"))}</small></dd></div>
+      <div><dt>${escapeHtml(t("device.tilt"))}</dt><dd>${fmt(last.angle, 1)}°</dd></div>
+      <div><dt>${escapeHtml(t("device.wifi"))}</dt><dd>${escapeHtml(rssiText(last.rssi))}<small>${last.rssi ?? "–"} dBm</small></dd></div>
+      <div><dt>${escapeHtml(t("device.interval"))}</dt><dd>${last.interval_s ? Math.round(last.interval_s / 60 * 10) / 10 + " " + escapeHtml(t("unit.min")) : "–"}</dd></div>`;
 
     const seen = $("seen");
     const expected = (last.interval_s || 900) * 1000;
     const stale = Date.now() - last.ts > expected * 3 + 120e3;
-    seen.textContent = `Последнее показание ${ago(last.ts)}` + (stale ? " — датчик молчит дольше обычного" : "");
+    seen.textContent = t("status.lastReading", { ago: ago(last.ts) }) + (stale ? t("status.stale") : "");
     seen.classList.toggle("stale", stale);
   }
 
@@ -623,8 +640,22 @@ label small { font-size: 13px; }
   addEventListener("online", refresh);
 
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker не зарегистрирован", e));
+    navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker not registered", e));
   }
+
+  const langSel = $("lang");
+  langSel.innerHTML = I18N.languages.map((code) =>
+    `<option value="${code}">${escapeHtml(I18N.name(code))}</option>`).join("");
+  langSel.value = I18N.use(I18N.detect());
+  langSel.onchange = (e) => {
+    I18N.use(e.target.value, true);
+    applyStatic();
+    // Axis ticks and tooltips are baked into the chart options, so rebuild them.
+    Object.values(charts).forEach((c) => c.destroy());
+    charts = {};
+    refresh();
+  };
+  applyStatic();
 
   syncRanges();
   refresh();
