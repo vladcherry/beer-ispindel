@@ -14,3 +14,15 @@ CREATE TABLE IF NOT EXISTS readings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_readings_device_ts ON readings (device, ts);
+
+-- Последние попытки отправки (для диагностики), хранится ~50 строк.
+CREATE TABLE IF NOT EXISTS ingest_log (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts           INTEGER NOT NULL,
+  path         TEXT,
+  status       INTEGER,
+  reason       TEXT,
+  content_type TEXT,
+  user_agent   TEXT,
+  body         TEXT                 -- начало тела запроса, токен замазан
+);

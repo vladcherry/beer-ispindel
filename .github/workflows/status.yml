@@ -45,4 +45,10 @@ jobs:
               "SELECT datetime(ts/1000,'unixepoch') AS utc, device, angle, temperature, gravity, battery, rssi, interval_s FROM readings ORDER BY ts DESC LIMIT 10" \
               | jq -c 'if type == "array" then .[0].results[] else . end'
             echo '```'
+            echo "### Last ingest attempts (UTC)"
+            echo '```'
+            npx wrangler d1 execute ispindel --remote --json --command \
+              "SELECT datetime(ts/1000,'unixepoch') AS utc, path, status, reason, user_agent, content_type, body FROM ingest_log ORDER BY id DESC LIMIT 10" \
+              | jq -c 'if type == "array" then .[0].results[] else . end'
+            echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"

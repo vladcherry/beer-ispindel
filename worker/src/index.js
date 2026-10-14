@@ -21,9 +21,14 @@ export default {
     }
 
     try {
-      // iSpindel иногда шлёт на "/" — принимаем и туда.
-      if (request.method === "POST" && (url.pathname === "/ingest" || url.pathname === "/")) {
-        return await ingest(request, env, url);
+      if (request.method === "POST") {
+        const raw = await request.text();
+        // iSpindel иногда шлёт на "/" — принимаем и туда.
+        const res = url.pathname === "/ingest" || url.pathname === "/"
+          ? await ingest(raw, env, url)
+          : text("Not found", 404);
+        await logAttempt(env, request, url, raw, res.status, res.headers.get("X-Reason"));
+        return res;
       }
       if (request.method === "GET" && url.pathname === "/api/health") {
         return json({ ok: true, time: Date.now() }, 200, cors);
@@ -41,17 +46,18 @@ export default {
   },
 };
 
-async function ingest(request, env, url) {
+async function ingest(raw, env, url) {
   let body;
   try {
-    body = await request.json();
+    body = JSON.parse(raw);
   } catch {
-    return text("Bad JSON", 400);
+    return text("Bad JSON", 400, "bad json");
   }
 
   const token = body.token ?? url.searchParams.get("token");
-  if (!env.INGEST_TOKEN || token !== env.INGEST_TOKEN) {
-    return text("Unauthorized", 401);
+  if (!env.INGEST_TOKEN) return text("Unauthorized", 401, "INGEST_TOKEN not set on worker");
+  if (token !== env.INGEST_TOKEN) {
+    return text("Unauthorized", 401, token ? "token mismatch" : "no token in request");
   }
 
   const device = String(body.name ?? "iSpindel").slice(0, 64);
@@ -144,6 +150,26 @@ function json(data, status, headers) {
   });
 }
 
-function text(body, status) {
-  return new Response(body, { status, headers: { "Content-Type": "text/plain" } });
+function text(body, status, reason) {
+  const headers = { "Content-Type": "text/plain" };
+  if (reason) headers["X-Reason"] = reason;
+  return new Response(body, { status, headers });
+}
+
+// Последние попытки отправки — чтобы понять, почему iSpindel не доходит. Токен в лог не пишем.
+const LOG_KEEP = 50;
+async function logAttempt(env, request, url, raw, status, reason) {
+  try {
+    const sample = raw.slice(0, 300).replace(/("token"\s*:\s*")[^"]*"/, '$1***"');
+    await env.DB.batch([
+      env.DB.prepare(
+        `INSERT INTO ingest_log (ts, path, status, reason, content_type, user_agent, body)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)`
+      ).bind(Date.now(), url.pathname + (url.search ? "?…" : ""), status, reason ?? null,
+             request.headers.get("Content-Type"), request.headers.get("User-Agent"), sample),
+      env.DB.prepare(`DELETE FROM ingest_log WHERE id <= (SELECT MAX(id) FROM ingest_log) - ${LOG_KEEP}`),
+    ]);
+  } catch (err) {
+    console.error("ingest_log", err);
+  }
 }
