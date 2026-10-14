@@ -1,6 +1,6 @@
-# iSpindel → своё приложение
+# iSpindel → your own app
 
-iSpindel шлёт показания в Cloudflare Worker, тот складывает их в D1 (SQLite), а PWA на GitHub Pages рисует плотность, температуру и заряд. Приложение ставится на телефон и открывается без сети с последними данными. Всё в бесплатных тарифах.
+iSpindel sends readings to a Cloudflare Worker, which stores them in D1 (SQLite). A PWA on GitHub Pages plots gravity, temperature and battery. The app installs on your phone and opens offline with the latest data. Everything fits in free tiers.
 
 ```
 iSpindel ──POST──▶ Worker /ingest ──▶ D1
@@ -8,87 +8,87 @@ PWA (GitHub Pages) ──GET /api/*──▶ Worker
 ```
 
 ```
-web/      PWA: index.html, manifest, service worker, иконки, Chart.js
-worker/   Cloudflare Worker + схема D1
-.github/workflows/pages.yml   деплой web/ на GitHub Pages
-.github/workflows/worker.yml  деплой воркера (если задан CLOUDFLARE_API_TOKEN)
+web/      PWA: index.html, manifest, service worker, icons, Chart.js
+worker/   Cloudflare Worker + D1 schema
+.github/workflows/pages.yml   deploys web/ to GitHub Pages
+.github/workflows/worker.yml  deploys the worker (if CLOUDFLARE_API_TOKEN is set)
 ```
 
-## 1. Воркер (один раз, ~10 минут)
+## 1. Worker (one-time, ~10 minutes)
 
-Нужен бесплатный аккаунт Cloudflare и Node.js.
+You need a free Cloudflare account and Node.js.
 
 ```bash
 cd worker
 npm install
-npx wrangler login                     # откроется браузер
-npx wrangler d1 create ispindel        # выведет database_id
+npx wrangler login                     # opens a browser
+npx wrangler d1 create ispindel        # prints database_id
 ```
 
-Вставь `database_id` в `wrangler.toml`. Там же поправь `ALLOWED_ORIGIN`, если Pages будут не под `vladcherry.github.io`.
+Put `database_id` into `wrangler.toml`. Also update `ALLOWED_ORIGIN` there if Pages is not served from `vladcherry.github.io`.
 
 ```bash
-npm run db:init                        # создаст таблицу
-npx wrangler secret put INGEST_TOKEN   # придумай длинный токен, он же пойдёт в iSpindel
-npm run deploy                         # выведет адрес, напр. https://ispindel.<имя>.workers.dev
+npm run db:init                        # creates the table
+npx wrangler secret put INGEST_TOKEN   # pick a long token; the same one goes into iSpindel
+npm run deploy                         # prints the URL, e.g. https://ispindel.<name>.workers.dev
 ```
 
-Проверка: открой `https://ispindel.<имя>.workers.dev/api/health` — должно быть `{"ok":true,...}`.
+Check: open `https://ispindel.<name>.workers.dev/api/health` — it should return `{"ok":true,...}`.
 
-Необязательно: `npx wrangler secret put READ_TOKEN` — тогда читать данные можно будет только с этим ключом (его вводишь в настройках страницы).
+Optional: `npx wrangler secret put READ_TOKEN` — then data can only be read with this key (enter it in the app settings).
 
-### Автодеплой воркера из GitHub (необязательно)
+### Auto-deploy the worker from GitHub (optional)
 
-После первой ручной настройки (база создана, `database_id` закоммичен, секреты заданы через `wrangler secret put`) можно деплоить из Actions:
+After the first manual setup (database created, `database_id` committed, secrets set with `wrangler secret put`), the worker can be deployed from Actions:
 
-1. Cloudflare → My Profile → API Tokens → Create Token → шаблон **Edit Cloudflare Workers** (добавь права **D1: Edit**).
+1. Cloudflare → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template (add **D1: Edit** permission).
 2. GitHub → Settings → Secrets and variables → Actions → `CLOUDFLARE_API_TOKEN`.
 
-Теперь каждый пуш в `main`, меняющий `worker/`, применяет `schema.sql` и деплоит воркер. Без секрета job просто пропускается.
+Every push to `main` that changes `worker/` then applies `schema.sql` and deploys the worker. Without the secret the job is skipped.
 
 ## 2. iSpindel
 
-Режим конфигурации (дважды замкнуть RST) → Configuration:
+Configuration mode (double-reset) → Configuration:
 
-| Поле | Значение |
+| Field | Value |
 |---|---|
 | Service Type | **HTTPS Post** |
-| Server URL | `https://ispindel.<имя>.workers.dev/ingest` |
-| Token | значение `INGEST_TOKEN` |
-| Interval | 60 для проверки, потом 900 |
+| Server URL | `https://ispindel.<name>.workers.dev/ingest` |
+| Token | the `INGEST_TOKEN` value |
+| Interval | 60 for testing, then 900 |
 
-Если с HTTPS Post данные не приходят, попробуй **HTTP**: Server Address `ispindel.<имя>.workers.dev`, Port `80`, Path `/ingest`, тот же Token.
+If no data arrives with HTTPS Post, try **HTTP**: Server Address `ispindel.<name>.workers.dev`, Port `80`, Path `/ingest`, same Token.
 
-Смотреть, доходят ли запросы: `npx wrangler tail` в папке `worker`.
+To watch incoming requests: `npx wrangler tail` in the `worker` folder.
 
-## 3. Приложение (GitHub Pages)
+## 3. App (GitHub Pages)
 
 1. Settings → Pages → Source: **GitHub Actions**.
-2. В `web/config.js` впиши адрес воркера (или укажи его потом в настройках приложения).
-3. Пуш в `main` → workflow **Pages** выкладывает папку `web/` на `https://vladcherry.github.io/beer-ispindel/`. Запустить вручную: Actions → Pages → Run workflow.
+2. Put the worker URL into `web/config.js` (or enter it later in the app settings).
+3. A push to `main` runs the **Pages** workflow, which publishes `web/` to `https://vladcherry.github.io/beer-ispindel/`. To run it manually: Actions → Pages → Run workflow.
 
-### Установка на телефон
+### Installing on a phone
 
-- Android / Chrome: меню → «Установить приложение» (или баннер внизу).
-- iPhone / Safari: «Поделиться» → «На экран „Домой“».
+- Android / Chrome: menu → "Install app" (or the banner at the bottom).
+- iPhone / Safari: Share → "Add to Home Screen".
 
-Без сети приложение открывается из кэша и показывает последние полученные данные с пометкой «Нет связи». Каждый деплой меняет версию service worker'а, поэтому обновление подтягивается само при следующем открытии.
+Offline, the app opens from cache and shows the latest received data marked "no connection". Each deploy bumps the service worker version, so updates are picked up automatically on the next launch.
 
-Локально: `npx http-server web -p 8080` и `cd worker && npx wrangler dev` (в `worker/.dev.vars` задай `INGEST_TOKEN=...` и `ALLOWED_ORIGIN=*`, перед этим `npm run db:init:local`).
+Local run: `npx http-server web -p 8080` and `cd worker && npx wrangler dev` (set `INGEST_TOKEN=...` and `ALLOWED_ORIGIN=*` in `worker/.dev.vars`, and run `npm run db:init:local` first).
 
-## Что умеет приложение
+## Features
 
-- Текущая плотность (медиана последних 5 показаний) в °P и SG, шкала-ареометр.
-- «Начать партию» — запоминает старт, считает начальную плотность, степень сбраживания и алкоголь.
-- Статус брожения по изменению плотности за сутки.
-- Графики плотности (со сглаживанием) и температуры: 6 ч, 24 ч, 3 дня, 7 дней, вся партия.
-- Батарея в процентах, наклон, уровень Wi-Fi, «датчик молчит дольше обычного».
-- Своя формула плотности по наклону — пересчитывает всю историю, удобно после перекалибровки.
-- Показания, где датчик явно не плавает (стоит или лежит), на графике плотности не показываются.
+- Current gravity (median of the last 5 readings) in °P and SG, with a hydrometer scale.
+- "Start batch" — remembers the start time, calculates original gravity, attenuation and ABV.
+- Fermentation status based on the gravity change over 24 hours.
+- Gravity (with smoothing) and temperature charts: 6 h, 24 h, 3 days, 7 days, whole batch.
+- Battery percentage, tilt, Wi-Fi strength, "sensor silent longer than usual" warning.
+- Custom gravity formula from tilt — recalculates the whole history, handy after recalibration.
+- Readings where the sensor is clearly not floating (standing or lying) are hidden from the gravity chart.
+- Works as an app: home screen icon, full-screen mode, offline access to the latest data.
 
-Настройки хранятся в браузере (localStorage), на каждом устройстве свои.
-- Работает как приложение: иконка на главном экране, полноэкранный режим, офлайн-доступ к последним данным.
+Settings are stored in the browser (localStorage), separately on each device. The app UI is in Russian.
 
-## Лимиты
+## Limits
 
-Бесплатные Workers и D1 с большим запасом покрывают один датчик: при интервале 15 мин это ~100 запросов и ~100 строк в сутки.
+Free Workers and D1 easily cover one sensor: at a 15-minute interval that's ~100 requests and ~100 rows per day.
