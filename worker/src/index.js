@@ -2,6 +2,7 @@
 //   POST /ingest            — сюда шлёт iSpindel (HTTP или HTTPS Post), JSON с полем token
 //   POST /api/register      — {token}: зарегистрировать токен стика, в ответ — ключ доступа
 //   POST /api/share         — новый ключ доступа к тому же стику (для ссылки «Поделиться»)
+//   POST /api/batch         — {start: ms | null}: начало партии, общее для всех, у кого есть доступ
 //   GET  /api/devices       — устройства стика с последним показанием
 //   GET  /api/readings      — история: ?device=&from=&to= (ms UTC)
 //   GET  /api/health        — проверка
@@ -37,6 +38,11 @@ export default {
         const stick = await stickByAccess(env, request.headers.get("X-Access"));
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return json({ access: await issueAccess(env, stick.hash, "share") }, 200, cors);
+      }
+      if (request.method === "POST" && url.pathname === "/api/batch") {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"));
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        return await setBatch(request, env, stick, cors);
       }
       if (request.method === "POST") {
         const raw = await request.text();
@@ -95,7 +101,7 @@ async function stickByToken(env, token) {
 async function stickByAccess(env, key) {
   if (!key) return null;
   return await env.DB.prepare(
-    "SELECT t.hash, t.id FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1"
+    "SELECT t.hash, t.id, t.batch_start FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1"
   ).bind(await sha256(key)).first();
 }
 
@@ -149,9 +155,9 @@ async function ensureSchema(env) {
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS access_keys (
       hash TEXT PRIMARY KEY, token_hash TEXT NOT NULL, kind TEXT NOT NULL, created INTEGER NOT NULL)`),
   ]);
-  if (!(await cols("tokens")).includes("id")) {
-    await env.DB.prepare("ALTER TABLE tokens ADD COLUMN id TEXT").run();
-  }
+  const tokenCols = await cols("tokens");
+  if (!tokenCols.includes("id")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN id TEXT").run();
+  if (!tokenCols.includes("batch_start")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN batch_start INTEGER").run();
   const fixes = [
     env.DB.prepare("UPDATE tokens SET id = lower(hex(randomblob(6))) WHERE id IS NULL"),
     env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_id ON tokens (id)"),
@@ -211,6 +217,19 @@ async function ingest(raw, env, url) {
   return text("ok", 200);
 }
 
+// Начало партии одно на стик: перезапуск партии виден всем, у кого есть доступ.
+async function setBatch(request, env, stick, cors) {
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
+  const start = body ? body.start : undefined;
+  const now = Date.now();
+  if (start !== null && !(Number.isInteger(start) && start > 1577836800000 && start < now + 86400000)) {
+    return json({ error: "bad start" }, 400, cors);
+  }
+  await env.DB.prepare("UPDATE tokens SET batch_start = ?1 WHERE hash = ?2").bind(start, stick.hash).run();
+  return json({ batch_start: start }, 200, cors);
+}
+
 // ---------- Чтение ----------
 
 async function devices(env, stick, cors) {
@@ -223,7 +242,7 @@ async function devices(env, stick, cors) {
      WHERE r.owner = ?1
      ORDER BY r.device`
   ).bind(owner).all();
-  return json({ stick: stick.id, devices: results }, 200, cors);
+  return json({ stick: stick.id, batch_start: stick.batch_start ?? null, devices: results }, 200, cors);
 }
 
 async function readings(env, owner, url, cors) {

@@ -301,6 +301,7 @@ label small { font-size: 13px; }
     <div class="row">
       <label><span data-i18n="settings.batchStart"></span>
         <input name="batchStart" type="datetime-local">
+        <small data-i18n="settings.batchHint"></small>
       </label>
       <button class="secondary" type="button" id="batch-now" data-i18n="settings.now"></button>
     </div>
@@ -532,6 +533,30 @@ label small { font-size: 13px; }
   let devices = [];
   let busy = false;
 
+  let rangePicked = false;
+
+  // Партия общая для всех, у кого есть доступ к стику: перезапуск идущей партии — только после подтверждения.
+  async function setBatch(start) {
+    const st = cur();
+    if (!st) return false;
+    if (st.batchStart && st.batchStart < Date.now() && start !== st.batchStart &&
+        !confirm(t("batch.confirmReset", { date: dayTime(st.batchStart) }))) return false;
+    try {
+      const res = await fetch(apiBase() + "/api/batch", {
+        method: "POST", headers: { "Content-Type": "application/json", "X-Access": st.access },
+        body: JSON.stringify({ start }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+    } catch (e) {
+      notice(escapeHtml(t("err.batch", { message: e.message })), "error");
+      return false;
+    }
+    st.batchStart = start;
+    if (start) { cfg.range = "batch"; rangePicked = false; }
+    save(); syncRanges(); refresh();
+    return true;
+  }
+
   async function refresh() {
     if (busy) return;
     const st = cur();
@@ -550,7 +575,10 @@ label small { font-size: 13px; }
       try { formula = compileFormula(st.formula); }
       catch (e) { msgs.push(e.message + t("err.formulaFallback")); }
 
-      devices = (await api("/api/devices")).devices || [];
+      const data = await api("/api/devices");
+      devices = data.devices || [];
+      // Начало партии хранится на сервере и общее для всех, у кого есть доступ к стику.
+      if ("batch_start" in data && st.batchStart !== data.batch_start) { st.batchStart = data.batch_start; save(); }
       if (devices.length && st.name !== devices[0].device) { st.name = devices[0].device; save(); }
       renderTitle();
       if (!devices.length) {
@@ -565,6 +593,8 @@ label small { font-size: 13px; }
       const hasBatch = !!st.batchStart && st.batchStart < now;
       $("ranges").querySelector('[data-range="batch"]').hidden = !hasBatch;
       if (cfg.range === "batch" && !hasBatch) { cfg.range = "24h"; syncRanges(); }
+      // Пока партия идёт, по умолчанию показываем её целиком.
+      if (hasBatch && !rangePicked && cfg.range !== "batch") { cfg.range = "batch"; syncRanges(); }
       const rangeFrom = cfg.range === "batch" ? st.batchStart : now - RANGES[cfg.range];
       // Для начальной плотности и динамики за сутки берём данные с начала партии или хотя бы за 26 ч
       const from = Math.min(rangeFrom, hasBatch ? st.batchStart : rangeFrom, now - 26 * 3600e3);
@@ -618,6 +648,7 @@ label small { font-size: 13px; }
   function switchStick(id) {
     cfg.current = id; cfg.device = ""; devices = [];
     if (cfg.range === "batch") cfg.range = "24h";
+    rangePicked = false;
     save(); syncRanges();
     Object.values(charts).forEach((c) => c.destroy()); charts = {};
     refresh();
@@ -666,12 +697,16 @@ label small { font-size: 13px; }
         <div><dt>${escapeHtml(t("batch.og"))}</dt><dd>${fmt(og, 1)} °P</dd></div>
         <div><dt>${escapeHtml(t("batch.attenuation"))}</dt><dd>${att == null ? "–" : fmt(Math.max(att, 0), 0) + "%"}</dd></div>
         <div><dt>${escapeHtml(t("batch.abv"))}</dt><dd>${fmt(Math.max(abv(og, current), 0), 1)}%</dd></div>
-        <div class="hint">${escapeHtml(t("batch.running", { days: fmt(days, 1), date: dayTime(cur().batchStart) }))}</div>`;
+        <div class="hint">${escapeHtml(t("batch.running", { days: fmt(days, 1), date: dayTime(cur().batchStart) }))}
+          <button type="button" id="new-batch">${escapeHtml(t("batch.newBatch"))}</button></div>`;
+      $("new-batch").onclick = () => setBatch(Date.now());
     } else if (hasBatch) {
-      batch.innerHTML = `<div class="hint">${escapeHtml(t("batch.waiting", { date: dayTime(cur().batchStart) }))}</div>`;
+      batch.innerHTML = `<div class="hint">${escapeHtml(t("batch.waiting", { date: dayTime(cur().batchStart) }))}
+        <button type="button" id="new-batch">${escapeHtml(t("batch.newBatch"))}</button></div>`;
+      $("new-batch").onclick = () => setBatch(Date.now());
     } else {
       batch.innerHTML = `<div class="hint">${escapeHtml(t("batch.none"))} <button type="button" id="start-batch">${escapeHtml(t("batch.startNow"))}</button></div>`;
-      $("start-batch").onclick = () => { cur().batchStart = Date.now(); cfg.range = "batch"; save(); syncRanges(); refresh(); };
+      $("start-batch").onclick = () => setBatch(Date.now());
     }
     drawStem(current, og);
   }
@@ -717,6 +752,7 @@ label small { font-size: 13px; }
   $("ranges").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-range]");
     if (!b) return;
+    rangePicked = true;
     cfg.range = b.dataset.range; save(); syncRanges(); refresh();
   });
   $("smooth").checked = cfg.smooth;
@@ -792,8 +828,12 @@ label small { font-size: 13px; }
     if (!cfg.legacy) return;
     const { token, batchStart, formula } = cfg.legacy;
     try {
-      await addStick(token, { batchStart, formula });
+      const st = await addStick(token, { formula });
       delete cfg.legacy; save();
+      if (batchStart) {
+        await fetch(apiBase() + "/api/batch", { method: "POST", headers: { "Content-Type": "application/json", "X-Access": st.access },
+          body: JSON.stringify({ start: batchStart }) }).catch(() => {});
+      }
     } catch (e) {
       if (e.code === "taken" || e.status === 400) { delete cfg.legacy; save(); }
     }
@@ -959,7 +999,7 @@ label small { font-size: 13px; }
   });
 
   // Сохранить: адрес сервера, партия и формула выбранного стика. Стики добавляются и удаляются сразу.
-  form.addEventListener("submit", (e) => {
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (e.submitter && e.submitter.value === "cancel") { dlg.close(); return; }
     let api = serverCustom ? form.elements.api.value.trim().replace(/\/+$/, "") : "";
@@ -968,8 +1008,15 @@ label small { font-size: 13px; }
     cfg.api = api;
     const st = cur();
     if (st) {
-      st.batchStart = form.elements.batchStart.value ? new Date(form.elements.batchStart.value).getTime() : null;
       st.formula = form.elements.formula.value.trim();
+      const v = form.elements.batchStart.value;
+      const start = v ? new Date(v).getTime() : null;
+      // datetime-local хранит минуты — сравниваем с точностью до минуты.
+      const same = (start === null && !st.batchStart) || (start !== null && st.batchStart && Math.abs(start - st.batchStart) < 60e3);
+      if (!same) {
+        save();
+        if (!(await setBatch(start))) return;
+      }
     }
     save(); syncRanges(); dlg.close(); refresh();
   });
