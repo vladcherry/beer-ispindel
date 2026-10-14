@@ -1,0 +1,44 @@
+name: Worker
+
+# Деплой воркера в Cloudflare. Нужен секрет репозитория CLOUDFLARE_API_TOKEN
+# (шаблон токена «Edit Cloudflare Workers») и database_id в worker/wrangler.toml.
+# Без секрета job пропускается.
+
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", ".github/workflows/worker.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check token
+        id: token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::notice::CLOUDFLARE_API_TOKEN не задан — деплой воркера пропущен."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.token.outputs.skip != 'true'
+        with:
+          node-version: 22
+      - name: Deploy
+        if: steps.token.outputs.skip != 'true'
+        working-directory: worker
+        run: |
+          npm ci --no-audit --no-fund
+          npx wrangler d1 execute ispindel --remote --file=schema.sql
+          npx wrangler deploy

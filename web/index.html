@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Брожение</title>
+<meta name="description" content="Плотность, температура и заряд iSpindel во время брожения.">
+<meta name="theme-color" content="#eef1ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#131715" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Брожение">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="vendor/chart-4.4.1.umd.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root {
+  color-scheme: light;
+  --bg: #eef1ec;
+  --surface: #f8faf6;
+  --ink: #1e2522;
+  --muted: #5e6a64;
+  --rule: #cfd6cf;
+  --amber: #c9861a;
+  --amber-soft: rgba(201, 134, 26, .18);
+  --amber-deep: #8a5a0f;
+  --teal: #2f6f73;
+  --alert: #b4412c;
+  --ok: #3f7a4a;
+  --glass: rgba(255, 255, 255, .55);
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #131715;
+    --surface: #1b201d;
+    --ink: #e6ebe7;
+    --muted: #94a199;
+    --rule: #2e3631;
+    --amber: #e3a43a;
+    --amber-soft: rgba(227, 164, 58, .2);
+    --amber-deep: #f0c070;
+    --teal: #6bb3b6;
+    --alert: #e0735c;
+    --ok: #7fbf8a;
+    --glass: rgba(255, 255, 255, .06);
+  }
+}
+*, *::before, *::after { box-sizing: inherit; }
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+main { max-width: 980px; margin: 0 auto; padding: 20px 20px 48px; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* Шапка */
+.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.top h1 { font: 600 28px/1.1 var(--display); margin: 0; letter-spacing: .01em; }
+.top select {
+  font: 600 28px/1.1 var(--display); border: 0; background: transparent; padding: 0; cursor: pointer;
+}
+.seen { color: var(--muted); font-size: 15px; }
+.seen.stale { color: var(--alert); }
+.top-actions { display: flex; gap: 8px; align-items: center; }
+.icon-btn {
+  border: 1px solid var(--rule); background: var(--surface); border-radius: 8px;
+  padding: 6px 12px; cursor: pointer; font-size: 15px;
+}
+.icon-btn:hover { border-color: var(--muted); }
+
+/* Главный блок: ареометр + показания */
+.hero { display: grid; grid-template-columns: 132px 1fr; gap: 28px; margin-top: 24px; align-items: stretch; }
+.stem-wrap { position: relative; }
+#stem { width: 100%; height: 100%; min-height: 360px; display: block; }
+.reading .value {
+  font: 500 clamp(76px, 15vw, 132px)/.9 var(--display); letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.reading .unit { font: 500 32px/1 var(--display); color: var(--muted); margin-left: 6px; }
+.reading .sg { font: 500 22px/1.2 var(--display); color: var(--muted); margin-top: 6px; }
+.state { margin-top: 18px; font-size: 17px; max-width: 46ch; }
+.state b { font-weight: 600; }
+.state.ok b { color: var(--ok); }
+.state.idle b { color: var(--amber-deep); }
+
+.batch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 26px; border-top: 1px solid var(--rule); }
+.batch div { padding: 12px 12px 0 0; }
+.batch dt { color: var(--muted); font-size: 14px; }
+.batch dd { margin: 0; font: 500 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.batch .hint { grid-column: 1 / -1; color: var(--muted); font-size: 14px; padding-top: 10px; }
+.batch .hint button { background: none; border: 0; padding: 0; color: var(--amber-deep); text-decoration: underline; cursor: pointer; font-size: 14px; }
+
+.device { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 28px; padding: 14px 16px; background: var(--surface); border-radius: 10px; }
+.device div { min-width: 110px; }
+.device dt { color: var(--muted); font-size: 13px; }
+.device dd { margin: 0; font: 500 22px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+.device dd small { font: 400 14px var(--body); color: var(--muted); margin-left: 4px; }
+.device .warn { color: var(--alert); }
+
+/* Графики */
+.charts { margin-top: 36px; }
+.charts-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.charts-head h2 { font: 600 22px/1.2 var(--display); margin: 0; }
+.ranges { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+.ranges button { border: 0; background: transparent; padding: 6px 12px; cursor: pointer; font-size: 14px; }
+.ranges button + button { border-left: 1px solid var(--rule); }
+.ranges button[aria-pressed="true"] { background: var(--amber); color: #fff; }
+.ranges button[hidden] { display: none; }
+.chart-box { position: relative; height: 240px; margin-top: 14px; }
+.chart-label { font-size: 14px; color: var(--muted); margin-top: 18px; }
+.chart-label .sw { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.smooth { font-size: 14px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; margin-left: 12px; }
+
+.notice { margin-top: 24px; padding: 14px 16px; border-left: 3px solid var(--amber); background: var(--surface); border-radius: 0 8px 8px 0; }
+.notice.error { border-left-color: var(--alert); }
+
+/* Настройки */
+dialog {
+  border: 0; border-radius: 14px; padding: 0; width: min(520px, calc(100vw - 32px));
+  background: var(--surface); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+dialog::backdrop { background: rgba(10, 14, 12, .45); }
+dialog form { padding: 22px; display: grid; gap: 16px; }
+dialog h2 { font: 600 24px/1.1 var(--display); margin: 0; }
+label { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+label input { border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 15px; color: var(--ink); }
+label small { font-size: 13px; }
+.row { display: flex; gap: 8px; align-items: end; }
+.row label { flex: 1; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.primary { background: var(--amber); color: #fff; border: 0; border-radius: 8px; padding: 8px 16px; cursor: pointer; font-weight: 600; }
+.secondary { background: transparent; border: 1px solid var(--rule); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+
+@media (max-width: 640px) {
+  main { padding: 16px 14px 40px; }
+  .hero { grid-template-columns: 84px 1fr; gap: 16px; }
+  #stem { min-height: 300px; }
+  .batch dd { font-size: 24px; }
+  .chart-box { height: 200px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  #liquid, #surface { transition: transform .8s cubic-bezier(.2, .7, .2, 1); }
+}
+</style>
+</head>
+<body>
+<main>
+  <header class="top">
+    <div>
+      <h1 id="title">Брожение</h1>
+      <div class="seen" id="seen">Загрузка…</div>
+    </div>
+    <div class="top-actions">
+      <button class="icon-btn" id="refresh" type="button" title="Обновить">Обновить</button>
+      <button class="icon-btn" id="open-settings" type="button">Настройки</button>
+    </div>
+  </header>
+
+  <div id="notice"></div>
+
+  <section class="hero" id="hero" hidden>
+    <div class="stem-wrap" aria-hidden="true">
+      <svg id="stem" viewBox="0 0 120 400" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+    <div>
+      <div class="reading">
+        <span class="value" id="g-value">–</span><span class="unit">°P</span>
+        <div class="sg" id="g-sg"></div>
+      </div>
+      <p class="state" id="state"></p>
+      <dl class="batch" id="batch"></dl>
+    </div>
+  </section>
+
+  <dl class="device" id="device" hidden></dl>
+
+  <section class="charts" id="charts" hidden>
+    <div class="charts-head">
+      <h2>История</h2>
+      <div class="ranges" id="ranges" role="group" aria-label="Период">
+        <button type="button" data-range="6h">6 ч</button>
+        <button type="button" data-range="24h">24 ч</button>
+        <button type="button" data-range="3d">3 дня</button>
+        <button type="button" data-range="7d">7 дней</button>
+        <button type="button" data-range="batch" hidden>Партия</button>
+      </div>
+    </div>
+    <div class="chart-label"><span class="sw" style="background:var(--amber)"></span>Плотность, °P
+      <label class="smooth"><input type="checkbox" id="smooth" checked>сглаживать</label></div>
+    <div class="chart-box"><canvas id="chart-g"></canvas></div>
+    <div class="chart-label"><span class="sw" style="background:var(--teal)"></span>Температура</div>
+    <div class="chart-box"><canvas id="chart-t"></canvas></div>
+  </section>
+</main>
+
+<dialog id="settings">
+  <form method="dialog" id="settings-form">
+    <h2>Настройки</h2>
+    <label>Адрес воркера
+      <input name="api" type="url" placeholder="https://ispindel.имя.workers.dev" autocomplete="off">
+    </label>
+    <label>Ключ чтения
+      <input name="key" type="password" autocomplete="off">
+      <small>Нужен, только если на воркере задан READ_TOKEN.</small>
+    </label>
+    <div class="row">
+      <label>Начало партии
+        <input name="batchStart" type="datetime-local">
+      </label>
+      <button class="secondary" type="button" id="batch-now">Сейчас</button>
+    </div>
+    <label>Своя формула плотности
+      <input name="formula" type="text" placeholder="-0.0322987*tilt^2+2.643882645*tilt-38.64180015" autocomplete="off" spellcheck="false">
+      <small>Пусто — берётся плотность, посчитанная самим iSpindel. Если заполнить, плотность пересчитается по наклону для всей истории.</small>
+    </label>
+    <div class="dialog-actions">
+      <button class="secondary" value="cancel" formnovalidate>Отмена</button>
+      <button class="primary" value="save">Сохранить</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------- Настройки ----------
+  const STORE = "ispindel.cfg";
+  const RANGES = { "6h": 6 * 3600e3, "24h": 24 * 3600e3, "3d": 3 * 86400e3, "7d": 7 * 86400e3 };
+  const defaults = Object.assign({ api: "", key: "", device: "", batchStart: null, formula: "", range: "24h", smooth: true },
+    window.ISPINDEL_DEFAULTS || {});
+  let cfg = load();
+
+  function load() {
+    try { return Object.assign({}, defaults, JSON.parse(localStorage.getItem(STORE) || "{}")); }
+    catch { return Object.assign({}, defaults); }
+  }
+  function save() {
+    try { localStorage.setItem(STORE, JSON.stringify(cfg)); } catch { /* приватный режим */ }
+  }
+
+  // ---------- Пиво: пересчёты ----------
+  const sgFromPlato = (p) => 1 + p / (258.6 - (p / 258.2) * 227.1);
+  const abv = (ogP, fgP) => (sgFromPlato(ogP) - sgFromPlato(fgP)) * 131.25;
+  const BATTERY = [[4.2, 100], [4.1, 90], [4.0, 80], [3.9, 65], [3.8, 50], [3.7, 35], [3.6, 20], [3.5, 8], [3.4, 0]];
+  function batteryPct(v) {
+    if (v == null) return null;
+    if (v >= BATTERY[0][0]) return 100;
+    for (let i = 1; i < BATTERY.length; i++) {
+      const [v1, p1] = BATTERY[i - 1], [v2, p2] = BATTERY[i];
+      if (v >= v2) return Math.round(p2 + (p1 - p2) * (v - v2) / (v1 - v2));
+    }
+    return 0;
+  }
+  function rssiText(r) {
+    if (r == null) return "–";
+    if (r >= -60) return "отличный";
+    if (r >= -70) return "хороший";
+    if (r >= -80) return "слабый";
+    return "очень слабый";
+  }
+
+  // Формула: только числа, tilt, + - * / ^ ( )
+  function compileFormula(src) {
+    if (!src || !src.trim()) return null;
+    const s = src.replace(/tilt/gi, "t").replace(/\s+/g, "");
+    if (!/^[0-9t.+\-*/^()eE]+$/.test(s)) throw new Error("В формуле допустимы только числа, tilt и + − * / ^ ( )");
+    const fn = new Function("t", '"use strict"; return (' + s.replace(/\^/g, "**") + ");");
+    const probe = fn(25);
+    if (typeof probe !== "number" || !Number.isFinite(probe)) throw new Error("Формула не считается при tilt = 25");
+    return fn;
+  }
+
+  // Плотность вне этого диапазона — датчик лежит или стоит, а не плавает
+  const plausible = (g) => g != null && Number.isFinite(g) && g > -2 && g < 35;
+
+  function median(arr) {
+    const a = arr.filter((x) => x != null).sort((x, y) => x - y);
+    if (!a.length) return null;
+    const m = a.length >> 1;
+    return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
+  }
+  function smoothSeries(points, w = 5) {
+    return points.map((p, i) => {
+      const win = points.slice(Math.max(0, i - (w >> 1)), i + (w >> 1) + 1).map((q) => q.y);
+      return { x: p.x, y: median(win) };
+    });
+  }
+
+  // ---------- Формат ----------
+  const fmt = (n, d = 1) => n == null ? "–" : n.toLocaleString("ru-RU", { minimumFractionDigits: d, maximumFractionDigits: d });
+  function ago(ts) {
+    const s = Math.round((Date.now() - ts) / 1000);
+    if (s < 60) return "только что";
+    const m = Math.round(s / 60);
+    if (m < 60) return `${m} мин назад`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h} ч ${m % 60} мин назад`;
+    return new Date(ts).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  }
+  const dayTime = (ts) => new Date(ts).toLocaleString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  // ---------- API ----------
+  // Время, когда сохранены данные, если ответ пришёл из кэша service worker'а (нет сети).
+  let cachedAt = null;
+
+  async function api(path, params = {}) {
+    const url = new URL(cfg.api.replace(/\/+$/, "") + path);
+    Object.entries(params).forEach(([k, v]) => v != null && v !== "" && url.searchParams.set(k, v));
+    const headers = cfg.key ? { "X-Read-Token": cfg.key } : {};
+    const res = await fetch(url, { headers });
+    if (res.status === 401) throw new Error("Воркер просит ключ чтения — укажи его в настройках.");
+    if (!res.ok) throw new Error(`Воркер ответил ${res.status}.`);
+    const fromCache = res.headers.get("X-From-Cache");
+    if (fromCache) cachedAt = Math.min(cachedAt ?? Infinity, Number(fromCache) || Date.now());
+    return res.json();
+  }
+
+  // ---------- Отрисовка ----------
+  const $ = (id) => document.getElementById(id);
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  let charts = {};
+
+  function notice(html, kind = "") {
+    $("notice").innerHTML = html ? `<div class="notice ${kind}">${html}</div>` : "";
+  }
+
+  function drawStem(current, og) {
+    // Шкала как у настоящего ареометра: меньшие значения сверху.
+    const top = 30, bottom = 330, maxP = Math.max(20, Math.ceil(((og ?? current ?? 0) + 2) / 2) * 2);
+    const y = (p) => top + (Math.min(Math.max(p, 0), maxP) / maxP) * (bottom - top);
+    const amber = css("--amber"), ink = css("--ink"), muted = css("--muted"), glass = css("--glass"), rule = css("--rule");
+    let ticks = "";
+    for (let p = 0; p <= maxP; p++) {
+      const yy = y(p), major = p % 2 === 0;
+      ticks += `<line x1="60" x2="${major ? 74 : 68}" y1="${yy}" y2="${yy}" stroke="${ink}" stroke-width="${major ? 1.2 : .7}"/>`;
+      if (major) ticks += `<text x="78" y="${yy + 4}" font-family="Barlow Condensed, sans-serif" font-size="12" fill="${muted}">${p}</text>`;
+    }
+    const level = current != null ? y(current) : bottom + 40;
+    const ogMark = og != null
+      ? `<g><line x1="44" x2="58" y1="${y(og)}" y2="${y(og)}" stroke="${muted}" stroke-width="1.5" stroke-dasharray="2 2"/>
+         <text x="40" y="${y(og) + 4}" text-anchor="end" font-family="Barlow Condensed, sans-serif" font-size="12" fill="${muted}">НП</text></g>`
+      : "";
+    $("stem").innerHTML = `
+      <defs>
+        <clipPath id="below"><rect x="0" y="${level}" width="120" height="${400 - level}"/></clipPath>
+      </defs>
+      <rect id="liquid" x="0" y="${level}" width="120" height="${400 - level}" fill="${css("--amber-soft")}"/>
+      <rect x="46" y="10" width="28" height="340" rx="14" fill="${glass}" stroke="${rule}"/>
+      <ellipse cx="60" cy="372" rx="26" ry="24" fill="${glass}" stroke="${rule}"/>
+      <g clip-path="url(#below)">
+        <rect x="46" y="10" width="28" height="340" rx="14" fill="${amber}" opacity=".18"/>
+        <ellipse cx="60" cy="372" rx="26" ry="24" fill="${amber}" opacity=".18"/>
+      </g>
+      ${ticks}
+      ${ogMark}
+      <line id="surface" x1="0" x2="120" y1="${level}" y2="${level}" stroke="${amber}" stroke-width="2.5"/>`;
+  }
+
+  function renderChart(id, points, raw, color, unit, decimals) {
+    const grid = css("--rule"), muted = css("--muted");
+    const ds = [];
+    if (raw) ds.push({ data: raw, borderColor: color, backgroundColor: color, borderWidth: 0, pointRadius: 1.5, pointHoverRadius: 3, showLine: false, label: "сырые" });
+    ds.push({ data: points, borderColor: color, borderWidth: 2.2, pointRadius: 0, pointHoverRadius: 4, tension: .25, spanGaps: false, label: unit });
+    const xMin = points[0]?.x ?? raw?.[0]?.x, xMax = points.at(-1)?.x ?? raw?.at(-1)?.x;
+    const opts = {
+      responsive: true, maintainAspectRatio: false, animation: false, parsing: false, normalized: true,
+      interaction: { mode: "nearest", axis: "x", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          filter: (item) => item.datasetIndex === ds.length - 1,
+          callbacks: {
+            title: (items) => dayTime(items[0].parsed.x),
+            label: (item) => `${fmt(item.parsed.y, decimals)} ${unit}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          type: "linear", min: xMin, max: xMax,
+          grid: { color: grid }, border: { display: false },
+          ticks: {
+            color: muted, maxTicksLimit: 6, maxRotation: 0,
+            callback: (v) => {
+              const d = new Date(v), span = (xMax - xMin) || 1;
+              return span > 36 * 3600e3
+                ? d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" })
+                : d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+            },
+          },
+        },
+        y: { grid: { color: grid }, border: { display: false }, ticks: { color: muted, callback: (v) => fmt(v, decimals) } },
+      },
+    };
+    if (charts[id]) { charts[id].data.datasets = ds; charts[id].options = opts; charts[id].update(); return; }
+    charts[id] = new Chart($(id), { type: "line", data: { datasets: ds }, options: opts });
+  }
+
+  // ---------- Основной цикл ----------
+  let devices = [];
+  let busy = false;
+
+  async function refresh() {
+    if (busy) return;
+    if (!cfg.api) {
+      ["hero", "device", "charts"].forEach((id) => $(id).hidden = true);
+      $("seen").textContent = "Не подключено";
+      notice("Укажи адрес воркера в <b>настройках</b>, чтобы увидеть показания.");
+      return;
+    }
+    busy = true;
+    cachedAt = null;
+    try {
+      const msgs = [];
+      let formula = null;
+      try { formula = compileFormula(cfg.formula); }
+      catch (e) { msgs.push(e.message + " Пока используется плотность из iSpindel."); }
+
+      devices = (await api("/api/devices")).devices || [];
+      if (!devices.length) {
+        ["hero", "device", "charts"].forEach((id) => $(id).hidden = true);
+        $("seen").textContent = "Данных пока нет";
+        notice("Воркер работает, но iSpindel ещё ничего не прислал. Проверь сервис и токен в портале iSpindel.");
+        return;
+      }
+      if (!devices.some((d) => d.device === cfg.device)) cfg.device = devices[0].device;
+      renderTitle();
+
+      const now = Date.now();
+      const hasBatch = !!cfg.batchStart && cfg.batchStart < now;
+      $("ranges").querySelector('[data-range="batch"]').hidden = !hasBatch;
+      if (cfg.range === "batch" && !hasBatch) { cfg.range = "24h"; syncRanges(); }
+      const rangeFrom = cfg.range === "batch" ? cfg.batchStart : now - RANGES[cfg.range];
+      // Для начальной плотности и динамики за сутки берём данные с начала партии или хотя бы за 26 ч
+      const from = Math.min(rangeFrom, hasBatch ? cfg.batchStart : rangeFrom, now - 26 * 3600e3);
+      const { readings } = await api("/api/readings", { device: cfg.device, from, to: now });
+
+      const rows = readings.map((r) => ({
+        ...r,
+        g: formula && r.angle != null ? formula(r.angle) : r.gravity,
+      }));
+      const valid = rows.filter((r) => plausible(r.g));
+      const last = devices.find((d) => d.device === cfg.device);
+
+      renderHero(rows, valid, last, hasBatch);
+      renderDevice(last);
+      renderCharts(rows.filter((r) => r.ts >= rangeFrom), last);
+      if (!valid.some((r) => r.ts >= rangeFrom)) {
+        msgs.push("За этот период нет правдоподобной плотности: похоже, iSpindel лежит или стоит, а не плавает в жидкости.");
+      }
+      if (cachedAt != null) {
+        msgs.unshift(`Нет связи — показаны данные, сохранённые ${ago(cachedAt)}.`);
+      }
+      notice(msgs.map(escapeHtml).join("<br>"), msgs.length && cfg.formula && !formula ? "error" : "");
+    } catch (e) {
+      notice(`Не удалось получить данные: ${e.message}`, "error");
+      $("seen").textContent = "Нет связи с воркером";
+    } finally {
+      busy = false;
+    }
+  }
+
+  function renderTitle() {
+    const title = $("title");
+    if (devices.length > 1) {
+      title.innerHTML = `<select id="device-select" aria-label="Устройство">${devices.map((d) =>
+        `<option ${d.device === cfg.device ? "selected" : ""}>${escapeHtml(d.device)}</option>`).join("")}</select>`;
+      $("device-select").onchange = (e) => { cfg.device = e.target.value; save(); refresh(); };
+    } else {
+      title.textContent = cfg.device;
+    }
+  }
+
+  function renderHero(rows, valid, last, hasBatch) {
+    $("hero").hidden = false;
+    const recent = valid.slice(-5).map((r) => r.g);
+    const current = median(recent);
+
+    let og = null;
+    if (hasBatch) {
+      const first = valid.filter((r) => r.ts >= cfg.batchStart).slice(0, 6).map((r) => r.g);
+      og = median(first);
+    }
+
+    $("g-value").textContent = current == null ? "–" : fmt(current, 1);
+    $("g-sg").textContent = current == null ? "Нет правдоподобной плотности" : `SG ${sgFromPlato(current).toFixed(3)}`;
+
+    // Динамика за сутки
+    const dayAgo = Date.now() - 24 * 3600e3;
+    const around = valid.filter((r) => Math.abs(r.ts - dayAgo) < 1.5 * 3600e3).map((r) => r.g);
+    const then = median(around);
+    const state = $("state");
+    state.className = "state";
+    if (current == null) {
+      state.innerHTML = "Опусти iSpindel в сусло — плотность появится, когда он будет плавать.";
+    } else if (then == null) {
+      state.innerHTML = "Данных меньше суток — скорость брожения появится позже.";
+    } else {
+      const delta = current - then;
+      if (delta <= -0.3) {
+        state.classList.add("ok");
+        state.innerHTML = `<b>Брожение идёт.</b> За сутки плотность упала на ${fmt(-delta, 1)} °P.`;
+      } else {
+        state.classList.add("idle");
+        state.innerHTML = `<b>Брожение затихло.</b> За сутки изменение ${fmt(delta, 1)} °P. Если так держится 2–3 дня, пиво, скорее всего, добродило.`;
+      }
+    }
+
+    const batch = $("batch");
+    if (og != null && current != null) {
+      const att = og > 0 ? ((og - current) / og) * 100 : null;
+      const days = (Date.now() - cfg.batchStart) / 86400e3;
+      batch.innerHTML = `
+        <div><dt>Начальная</dt><dd>${fmt(og, 1)} °P</dd></div>
+        <div><dt>Сброжено</dt><dd>${att == null ? "–" : fmt(Math.max(att, 0), 0) + "%"}</dd></div>
+        <div><dt>Алкоголь</dt><dd>${fmt(Math.max(abv(og, current), 0), 1)}%</dd></div>
+        <div class="hint">Партия идёт ${fmt(days, 1)} дн. с ${dayTime(cfg.batchStart)}. Алкоголь — оценка по ареометру.</div>`;
+    } else if (hasBatch) {
+      batch.innerHTML = `<div class="hint">Партия с ${dayTime(cfg.batchStart)}: начальная плотность появится после первых показаний в сусле.</div>`;
+    } else {
+      batch.innerHTML = `<div class="hint">Отметь начало партии, чтобы видеть начальную плотность, степень сбраживания и алкоголь. <button type="button" id="start-batch">Начать партию сейчас</button></div>`;
+      $("start-batch").onclick = () => { cfg.batchStart = Date.now(); cfg.range = "batch"; save(); syncRanges(); refresh(); };
+    }
+    drawStem(current, og);
+  }
+
+  function renderDevice(last) {
+    const el = $("device");
+    el.hidden = false;
+    const pct = batteryPct(last.battery);
+    const t = last.temperature;
+    const unit = last.temp_units === "F" ? "°F" : last.temp_units === "K" ? "K" : "°C";
+    el.innerHTML = `
+      <div><dt>Температура</dt><dd>${fmt(t, 1)}<small>${unit}</small></dd></div>
+      <div><dt>Батарея</dt><dd class="${pct != null && pct <= 20 ? "warn" : ""}">${pct == null ? "–" : pct + "%"}<small>${fmt(last.battery, 2)} В</small></dd></div>
+      <div><dt>Наклон</dt><dd>${fmt(last.angle, 1)}°</dd></div>
+      <div><dt>Wi-Fi</dt><dd>${rssiText(last.rssi)}<small>${last.rssi ?? "–"} dBm</small></dd></div>
+      <div><dt>Интервал</dt><dd>${last.interval_s ? Math.round(last.interval_s / 60 * 10) / 10 + " мин" : "–"}</dd></div>`;
+
+    const seen = $("seen");
+    const expected = (last.interval_s || 900) * 1000;
+    const stale = Date.now() - last.ts > expected * 3 + 120e3;
+    seen.textContent = `Последнее показание ${ago(last.ts)}` + (stale ? " — датчик молчит дольше обычного" : "");
+    seen.classList.toggle("stale", stale);
+  }
+
+  function renderCharts(rows, last) {
+    $("charts").hidden = false;
+    const gRaw = rows.filter((r) => plausible(r.g)).map((r) => ({ x: r.ts, y: r.g }));
+    const tPts = rows.filter((r) => r.temperature != null).map((r) => ({ x: r.ts, y: r.temperature }));
+    const unit = last.temp_units === "F" ? "°F" : "°C";
+    const g = cfg.smooth ? smoothSeries(gRaw) : gRaw;
+    renderChart("chart-g", g, cfg.smooth ? gRaw : null, css("--amber"), "°P", 2);
+    renderChart("chart-t", tPts, null, css("--teal"), unit, 1);
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  // ---------- Управление ----------
+  function syncRanges() {
+    $("ranges").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.range === cfg.range)));
+  }
+  $("ranges").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-range]");
+    if (!b) return;
+    cfg.range = b.dataset.range; save(); syncRanges(); refresh();
+  });
+  $("smooth").checked = cfg.smooth;
+  $("smooth").onchange = (e) => { cfg.smooth = e.target.checked; save(); refresh(); };
+  $("refresh").onclick = refresh;
+
+  const dlg = $("settings"), form = $("settings-form");
+  const toLocalInput = (ms) => {
+    if (!ms) return "";
+    const d = new Date(ms);
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  };
+  $("open-settings").onclick = () => {
+    form.elements.api.value = cfg.api;
+    form.elements.key.value = cfg.key;
+    form.elements.batchStart.value = toLocalInput(cfg.batchStart);
+    form.elements.formula.value = cfg.formula;
+    dlg.showModal();
+  };
+  $("batch-now").onclick = () => { form.elements.batchStart.value = toLocalInput(Date.now()); };
+  dlg.addEventListener("close", () => {
+    if (dlg.returnValue !== "save") return;
+    cfg.api = form.elements.api.value.trim();
+    cfg.key = form.elements.key.value.trim();
+    cfg.batchStart = form.elements.batchStart.value ? new Date(form.elements.batchStart.value).getTime() : null;
+    cfg.formula = form.elements.formula.value.trim();
+    save(); syncRanges(); refresh();
+  });
+
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    Object.values(charts).forEach((c) => c.destroy()); charts = {}; refresh();
+  });
+
+  // Приложение с главного экрана часто висит в фоне: обновляем при возврате и при появлении сети.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+  addEventListener("online", refresh);
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker не зарегистрирован", e));
+  }
+
+  syncRanges();
+  refresh();
+  setInterval(() => { if (!document.hidden) refresh(); }, 60e3);
+  if (!cfg.api) $("open-settings").click();
+})();
+</script>
+</body>
+</html>

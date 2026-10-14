@@ -1,0 +1,12 @@
+name = "ispindel"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Откуда разрешено читать данные (GitHub Pages). Несколько — через запятую.
+ALLOWED_ORIGIN = "https://vladcherry.github.io"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ispindel"
+database_id = "ВСТАВЬ_ID_ИЗ_wrangler_d1_create"
