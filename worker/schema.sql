@@ -17,11 +17,20 @@ CREATE TABLE IF NOT EXISTS readings (
 CREATE INDEX IF NOT EXISTS idx_readings_device_ts ON readings (device, ts);
 -- Индекс по owner создаёт сам воркер: в старых базах колонки owner ещё нет, пока воркер её не добавит.
 
--- Токены, заведённые в приложении. Сам токен не храним, только SHA-256.
+-- Стики: токены, заведённые в приложении. Сам токен не храним, только SHA-256.
 CREATE TABLE IF NOT EXISTS tokens (
   hash      TEXT PRIMARY KEY,
+  id        TEXT,                  -- публичный id стика
   created   INTEGER NOT NULL,
   last_seen INTEGER
+);
+
+-- Ключи доступа на чтение: выдаются при регистрации (owner) и по «Поделиться» (share).
+CREATE TABLE IF NOT EXISTS access_keys (
+  hash       TEXT PRIMARY KEY,     -- SHA-256 ключа
+  token_hash TEXT NOT NULL,        -- стик
+  kind       TEXT NOT NULL,
+  created    INTEGER NOT NULL
 );
 
 -- Последние попытки отправки (для диагностики), хранится ~50 строк.

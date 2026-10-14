@@ -3,7 +3,7 @@ name: Worker
 # Deploys the worker to Cloudflare. Repository secrets:
 #   CLOUDFLARE_API_TOKEN   required; "Edit Cloudflare Workers" template + D1: Edit
 #   CLOUDFLARE_ACCOUNT_ID  only if the token has access to several accounts
-#   INGEST_TOKEN           optional; a token that always works, even without registering it in the app
+#   INGEST_TOKEN           optional; an iSpindel that exists from the start, claimed once in the app
 # Creates the ispindel D1 database if it doesn't exist and applies schema.sql.
 # Without CLOUDFLARE_API_TOKEN the job is skipped.
 

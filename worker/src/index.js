@@ -1,16 +1,17 @@
 // iSpindel → Cloudflare D1.
 //   POST /ingest            — сюда шлёт iSpindel (HTTP или HTTPS Post), JSON с полем token
-//   POST /api/register      — {token}: завести токен (или убедиться, что он есть)
-//   GET  /api/devices       — устройства этого токена с последним показанием
+//   POST /api/register      — {token}: зарегистрировать токен стика, в ответ — ключ доступа
+//   POST /api/share         — новый ключ доступа к тому же стику (для ссылки «Поделиться»)
+//   GET  /api/devices       — устройства стика с последним показанием
 //   GET  /api/readings      — история: ?device=&from=&to= (ms UTC)
 //   GET  /api/health        — проверка
 //
-// Токен — это «пространство»: iSpindel шлёт с ним показания, приложение с ним же читает,
-// и видно только то, что пришло с этим токеном. В базе хранится только SHA-256 токена.
-// Чтение — с заголовком X-Token.
+// Токен стика знают iSpindel и тот, кто его зарегистрировал; зарегистрировать токен можно
+// только один раз. Читают данные по ключу доступа (заголовок X-Access): его выдаёт сервер
+// при регистрации и при «Поделиться». В базе хранятся только SHA-256 токенов и ключей.
 //
 // Секреты/переменные:
-//   INGEST_TOKEN   (secret, необязательно) — токен, который работает всегда, даже без регистрации
+//   INGEST_TOKEN   (secret, необязательно) — старый общий токен; его стик можно один раз забрать регистрацией
 //   ALLOWED_ORIGIN (var)                   — откуда разрешено читать, напр. https://vladcherry.github.io
 
 const MAX_ROWS = 20000;
@@ -32,6 +33,11 @@ export default {
       if (request.method === "POST" && url.pathname === "/api/register") {
         return await register(request, env, cors);
       }
+      if (request.method === "POST" && url.pathname === "/api/share") {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"));
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        return json({ access: await issueAccess(env, stick.hash, "share") }, 200, cors);
+      }
       if (request.method === "POST") {
         const raw = await request.text();
         // iSpindel иногда шлёт на "/" — принимаем и туда.
@@ -45,10 +51,10 @@ export default {
         return json({ ok: true, time: Date.now() }, 200, cors);
       }
       if (request.method === "GET" && url.pathname.startsWith("/api/")) {
-        const owner = await ownerOf(env, request.headers.get("X-Token") ?? url.searchParams.get("token"));
-        if (!owner) return json({ error: "unknown token" }, 401, cors);
-        if (url.pathname === "/api/devices") return await devices(env, owner, cors);
-        if (url.pathname === "/api/readings") return await readings(env, owner, url, cors);
+        const stick = await stickByAccess(env, request.headers.get("X-Access") ?? url.searchParams.get("access"));
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        if (url.pathname === "/api/devices") return await devices(env, stick, cors);
+        if (url.pathname === "/api/readings") return await readings(env, stick.hash, url, cors);
       }
       return json({ error: "Not found" }, 404, cors);
     } catch (err) {
@@ -74,15 +80,34 @@ function tokenProblem(token) {
   return null;
 }
 
-// Хеш токена, если токен известен серверу; иначе null.
-async function ownerOf(env, token) {
-  if (!token) return null;
-  const hash = await sha256(token);
-  if (env.INGEST_TOKEN && token === env.INGEST_TOKEN) return hash;
-  const row = await env.DB.prepare("SELECT hash FROM tokens WHERE hash = ?1").bind(hash).first();
-  return row ? hash : null;
+function randomKey() {
+  const bytes = crypto.getRandomValues(new Uint8Array(24));
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
+// Стик по токену (для приёма показаний).
+async function stickByToken(env, token) {
+  if (!token) return null;
+  return await env.DB.prepare("SELECT hash, id FROM tokens WHERE hash = ?1").bind(await sha256(token)).first();
+}
+
+// Стик по ключу доступа (для чтения).
+async function stickByAccess(env, key) {
+  if (!key) return null;
+  return await env.DB.prepare(
+    "SELECT t.hash, t.id FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1"
+  ).bind(await sha256(key)).first();
+}
+
+async function issueAccess(env, tokenHash, kind) {
+  const key = randomKey();
+  await env.DB.prepare("INSERT INTO access_keys (hash, token_hash, kind, created) VALUES (?1, ?2, ?3, ?4)")
+    .bind(await sha256(key), tokenHash, kind, Date.now()).run();
+  return key;
+}
+
+// Регистрация: новый токен — заводим стик. Уже зарегистрированный — отказ.
+// Стик, заведённый до появления ключей доступа (без единого ключа), можно забрать один раз.
 async function register(request, env, cors) {
   let body;
   try { body = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
@@ -90,30 +115,56 @@ async function register(request, env, cors) {
   const problem = tokenProblem(token);
   if (problem) return json({ error: problem }, 400, cors);
   const hash = await sha256(token);
-  const res = await env.DB.prepare("INSERT OR IGNORE INTO tokens (hash, created) VALUES (?1, ?2)")
-    .bind(hash, Date.now()).run();
-  return json({ ok: true, created: res.meta.changes > 0 }, 200, cors);
+
+  let stick = await env.DB.prepare("SELECT hash, id FROM tokens WHERE hash = ?1").bind(hash).first();
+  if (stick) {
+    const taken = await env.DB.prepare("SELECT 1 FROM access_keys WHERE token_hash = ?1 LIMIT 1").bind(hash).first();
+    if (taken) return json({ error: "token already registered", code: "taken" }, 409, cors);
+  } else {
+    const id = randomKey().slice(0, 12);
+    const res = await env.DB.prepare("INSERT OR IGNORE INTO tokens (hash, id, created) VALUES (?1, ?2, ?3)")
+      .bind(hash, id, Date.now()).run();
+    // Кто-то зарегистрировал тот же токен параллельно.
+    if (!res.meta.changes) return json({ error: "token already registered", code: "taken" }, 409, cors);
+    stick = { hash, id };
+  }
+  const access = await issueAccess(env, hash, "owner");
+  return json({ stick: stick.id, access }, 201, cors);
 }
 
 // ---------- Схема ----------
-// schema.sql создаёт таблицы с нуля; здесь — догоняем базы, созданные до появления токенов.
+// schema.sql создаёт таблицы с нуля; здесь — догоняем базы, созданные раньше.
 
 let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
-  const { results } = await env.DB.prepare("PRAGMA table_info(readings)").all();
-  if (results.length && !results.some((c) => c.name === "owner")) {
+  const cols = async (table) => (await env.DB.prepare(`PRAGMA table_info(${table})`).all()).results.map((c) => c.name);
+  const readingCols = await cols("readings");
+  if (readingCols.length && !readingCols.includes("owner")) {
     await env.DB.prepare("ALTER TABLE readings ADD COLUMN owner TEXT").run();
   }
   await env.DB.batch([
     env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_readings_owner_device_ts ON readings (owner, device, ts)"),
-    env.DB.prepare("CREATE TABLE IF NOT EXISTS tokens (hash TEXT PRIMARY KEY, created INTEGER NOT NULL, last_seen INTEGER)"),
+    env.DB.prepare("CREATE TABLE IF NOT EXISTS tokens (hash TEXT PRIMARY KEY, id TEXT, created INTEGER NOT NULL, last_seen INTEGER)"),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS access_keys (
+      hash TEXT PRIMARY KEY, token_hash TEXT NOT NULL, kind TEXT NOT NULL, created INTEGER NOT NULL)`),
   ]);
-  // Показания, пришедшие до появления токенов, принадлежат INGEST_TOKEN.
-  if (env.INGEST_TOKEN) {
-    await env.DB.prepare("UPDATE readings SET owner = ?1 WHERE owner IS NULL")
-      .bind(await sha256(env.INGEST_TOKEN)).run();
+  if (!(await cols("tokens")).includes("id")) {
+    await env.DB.prepare("ALTER TABLE tokens ADD COLUMN id TEXT").run();
   }
+  const fixes = [
+    env.DB.prepare("UPDATE tokens SET id = lower(hex(randomblob(6))) WHERE id IS NULL"),
+    env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_id ON tokens (id)"),
+  ];
+  // Старый общий токен — обычный стик; показания, пришедшие до токенов, — его.
+  if (env.INGEST_TOKEN) {
+    const h = await sha256(env.INGEST_TOKEN);
+    fixes.unshift(
+      env.DB.prepare("INSERT OR IGNORE INTO tokens (hash, created) VALUES (?1, ?2)").bind(h, Date.now()),
+      env.DB.prepare("UPDATE readings SET owner = ?1 WHERE owner IS NULL").bind(h),
+    );
+  }
+  await env.DB.batch(fixes);
   schemaReady = true;
 }
 
@@ -129,8 +180,9 @@ async function ingest(raw, env, url) {
 
   const token = body.token ?? url.searchParams.get("token");
   if (!token) return text("Unauthorized", 401, "no token in request");
-  const owner = await ownerOf(env, String(token));
-  if (!owner) return text("Unauthorized", 401, "unknown token — register it in the app first");
+  const stick = await stickByToken(env, String(token));
+  if (!stick) return text("Unauthorized", 401, "unknown token — add it in the app first");
+  const owner = stick.hash;
 
   const device = String(body.name ?? "iSpindel").slice(0, 64);
   const row = {
@@ -161,7 +213,8 @@ async function ingest(raw, env, url) {
 
 // ---------- Чтение ----------
 
-async function devices(env, owner, cors) {
+async function devices(env, stick, cors) {
+  const owner = stick.hash;
   const { results } = await env.DB.prepare(
     `SELECT r.ts, r.device, r.chip_id, r.angle, r.temperature, r.temp_units, r.battery, r.gravity, r.interval_s, r.rssi
      FROM readings r
@@ -170,7 +223,7 @@ async function devices(env, owner, cors) {
      WHERE r.owner = ?1
      ORDER BY r.device`
   ).bind(owner).all();
-  return json({ devices: results }, 200, cors);
+  return json({ stick: stick.id, devices: results }, 200, cors);
 }
 
 async function readings(env, owner, url, cors) {
@@ -200,7 +253,7 @@ function corsHeaders(request, env) {
   return {
     "Access-Control-Allow-Origin": value,
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, X-Token",
+    "Access-Control-Allow-Headers": "Content-Type, X-Access",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };

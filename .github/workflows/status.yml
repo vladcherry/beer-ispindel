@@ -48,7 +48,7 @@ jobs:
             echo "### Tokens"
             echo '```'
             npx wrangler d1 execute ispindel --remote --json --command \
-              "SELECT COUNT(*) AS tokens, datetime(MAX(last_seen)/1000,'unixepoch') AS last_seen_utc FROM tokens" \
+              "SELECT (SELECT COUNT(*) FROM tokens) AS sticks, (SELECT COUNT(*) FROM access_keys) AS access_keys, (SELECT datetime(MAX(last_seen)/1000,'unixepoch') FROM tokens) AS last_seen_utc" \
               | jq -c 'if type == "array" then .[0].results[] else . end' || true
             echo '```'
             echo "### Last ingest attempts (UTC)"

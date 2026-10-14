@@ -34,14 +34,14 @@ npm run deploy                         # prints the URL, e.g. https://ispindel.<
 
 Check: open `https://ispindel.<name>.workers.dev/api/health` — it should return `{"ok":true,...}`.
 
-Optional: `npx wrangler secret put INGEST_TOKEN` — a token that always works, even without registering it in the app.
+Optional: `npx wrangler secret put INGEST_TOKEN` — an iSpindel that exists from the start; claim it once by adding this token in the app.
 
 ### Or: set up and deploy the worker from GitHub Actions (no local tools)
 
 1. Cloudflare → My Profile → API Tokens → Create Token → **Edit Cloudflare Workers** template, add **Account → D1 → Edit**.
 2. GitHub → Settings → Secrets and variables → Actions → New repository secret:
    - `CLOUDFLARE_API_TOKEN` — the token from step 1;
-   - `INGEST_TOKEN` (optional) — a token that always works, even without registering it in the app;
+   - `INGEST_TOKEN` (optional) — an iSpindel that exists from the start; claim it once by adding this token in the app;
    - `CLOUDFLARE_ACCOUNT_ID` (only if the token can access several accounts).
 3. Actions → **Worker** → Run workflow.
 
@@ -49,11 +49,15 @@ The workflow creates the `ispindel` D1 database if needed, applies `schema.sql`,
 
 If the account has never used Workers, open Workers & Pages in the Cloudflare dashboard once so it gets a `*.workers.dev` subdomain.
 
-## Device tokens
+## iSpindels, tokens and sharing
 
-A token is a private space. You pick it in the app (Settings → Device token, or press Generate), the app registers it on the worker, and you enter the same token in the iSpindel. The iSpindel sends readings with it, the app reads with it, and each token sees only its own devices. The worker stores only the SHA-256 of a token.
-
-Rules: 8–64 characters, no spaces, quotes or backslashes. Registration is open: anyone who can reach the worker can create a token, but only sees data sent with that token.
+- **Add an iSpindel** (Settings): think up a token or press Generate, then press Add. The worker registers the token and returns an access key, which the app keeps in localStorage. Enter the same token in the iSpindel's Token field.
+- **A token can be registered only once.** Registering an existing token is refused ("already registered") — knowing someone's token gives no access to their data.
+- **Reading uses the access key**, not the token. The worker stores only SHA-256 hashes of tokens and keys.
+- **Share**: creates a new access key and a link `…/#join=<key>`. Opening the link adds the iSpindel to that browser (read-only: the token is not shared).
+- **Several iSpindels**: each one is listed in Settings; switch between them in the header on the main page. Batch start and custom formula are per iSpindel.
+- Tokens: 8–64 characters, no spaces, quotes or backslashes.
+- Migration: an iSpindel registered before access keys existed (including the old shared `INGEST_TOKEN`) can be claimed once by adding its token.
 
 Settings also contain a step-by-step **How to set up the iSpindel** guide with the server URL and token ready to copy.
 

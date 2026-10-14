@@ -60,6 +60,7 @@
   }
 }
 *, *::before, *::after { box-sizing: inherit; }
+[hidden] { display: none !important; }
 html { scroll-padding-top: env(safe-area-inset-top, 0px); }
 body {
   margin: 0;
@@ -166,6 +167,20 @@ label small { font-size: 13px; }
 .guide code { font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 6px; overflow-wrap: anywhere; }
 .copy { font-size: 12px; padding: 2px 8px; border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; cursor: pointer; flex: none; }
 .guide .note { color: var(--muted); font-size: 13px; }
+.lang { min-width: 44px; font-weight: 600; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.sticks h3 { font: 600 18px/1.2 var(--display); margin: 0 0 8px; }
+.sticks ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.sticks li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--bg); }
+.sticks li.current { border-color: var(--amber); box-shadow: inset 3px 0 0 var(--amber); }
+.sticks .pick { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink); }
+.sticks .pick b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sticks .pick small { color: var(--muted); font-size: 12px; }
+.sticks li .copy { font-size: 13px; padding: 4px 10px; }
+.muted { color: var(--muted); font-size: 14px; margin: 0; }
+.share-box { margin-top: 8px; display: grid; gap: 6px; }
+.share-box code { flex: 1; min-width: 0; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 4px 6px; overflow-wrap: anywhere; }
+#stick-switch { font: 600 28px/1.1 var(--display); border: 0; background: transparent; padding: 0; cursor: pointer; max-width: 100%; }
+#device-switch { margin-top: 4px; font-size: 15px; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); padding: 2px 6px; }
 .guide dd code { flex: 1 1 auto; min-width: 0; }
 @media (max-width: 480px) {
   .guide { padding: 10px 12px; }
@@ -198,7 +213,7 @@ label small { font-size: 13px; }
     <div class="top-actions">
       <button class="icon-btn" id="refresh" type="button" data-i18n="ui.refresh" data-i18n-title="ui.refresh"></button>
       <button class="icon-btn" id="open-settings" type="button" data-i18n="ui.settings"></button>
-      <select class="icon-btn" id="lang" data-i18n-label="ui.language"></select>
+      <button class="icon-btn lang" id="lang" type="button"></button>
     </div>
   </header>
 
@@ -242,11 +257,24 @@ label small { font-size: 13px; }
 <dialog id="settings">
   <form method="dialog" id="settings-form">
     <h2 data-i18n="settings.title"></h2>
-    <label><span data-i18n="settings.token"></span>
+
+    <section class="sticks">
+      <h3 data-i18n="sticks.title"></h3>
+      <ul id="stick-list"></ul>
+      <p class="muted" id="stick-empty" data-i18n="sticks.empty"></p>
+      <div class="share-box" id="share-box" hidden>
+        <small data-i18n="sticks.shareHint"></small>
+        <div class="field-row"><code id="share-link"></code><button class="copy" type="button" data-copy="share-link" data-i18n="ui.copy"></button></div>
+      </div>
+      <small class="field-error" id="stick-error"></small>
+    </section>
+
+    <label><span data-i18n="sticks.add"></span>
       <span class="field-row">
-        <input name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64">
+        <input name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64" data-i18n-placeholder="settings.token">
         <button class="secondary" type="button" id="token-show" data-i18n="settings.show"></button>
         <button class="secondary" type="button" id="token-gen" data-i18n="settings.generate"></button>
+        <button class="primary" type="button" id="token-add" data-i18n="sticks.addBtn"></button>
       </span>
       <small data-i18n="settings.tokenHint"></small>
       <small class="field-error" id="token-error"></small>
@@ -321,17 +349,22 @@ label small { font-size: 13px; }
   const RANGES = { "6h": 6 * 3600e3, "24h": 24 * 3600e3, "3d": 3 * 86400e3, "7d": 7 * 86400e3 };
   // Адрес воркера по умолчанию — из config.js; cfg.api хранит только свой адрес, если он задан.
   const DEFAULT_API = ((window.ISPINDEL_DEFAULTS || {}).api || "").replace(/\/+$/, "");
-  const defaults = { api: "", token: "", device: "", batchStart: null, formula: "", range: "24h", smooth: true };
+  // sticks: [{ id, access, token, name, batchStart, formula }] — token есть только у того, кто стик зарегистрировал.
+  const defaults = { api: "", sticks: [], current: "", device: "", range: "24h", smooth: true };
   let cfg = load();
   const apiBase = () => (cfg.api || DEFAULT_API).replace(/\/+$/, "");
+  const cur = () => cfg.sticks.find((x) => x.id === cfg.current) || cfg.sticks[0] || null;
+  const stickName = (x) => x.name || `${t("sticks.unnamed")} · ${String(x.id).slice(0, 4)}`;
 
   function load() {
     let c;
     try { c = Object.assign({}, defaults, JSON.parse(localStorage.getItem(STORE) || "{}")); }
     catch { c = Object.assign({}, defaults); }
-    // Раньше сохранялся и адрес по умолчанию, и ключ чтения — приводим к новому виду.
+    // Старые версии: адрес по умолчанию, ключ чтения, один токен и общие партия/формула.
     if (c.api && c.api.replace(/\/+$/, "") === DEFAULT_API) c.api = "";
-    delete c.key;
+    if (!Array.isArray(c.sticks)) c.sticks = [];
+    if (c.token && !c.sticks.length) c.legacy = { token: c.token, batchStart: c.batchStart ?? null, formula: c.formula || "" };
+    delete c.key; delete c.token; delete c.batchStart; delete c.formula;
     return c;
   }
   function save() {
@@ -403,10 +436,10 @@ label small { font-size: 13px; }
   // Время, когда сохранены данные, если ответ пришёл из кэша service worker'а (нет сети).
   let cachedAt = null;
 
-  async function api(path, params = {}) {
+  async function api(path, params = {}, access = cur() && cur().access) {
     const url = new URL(apiBase() + path);
     Object.entries(params).forEach(([k, v]) => v != null && v !== "" && url.searchParams.set(k, v));
-    const res = await fetch(url, { headers: { "X-Token": cfg.token } });
+    const res = await fetch(url, { headers: { "X-Access": access } });
     if (res.status === 401) throw new Error(t("err.unknownToken"));
     if (!res.ok) throw new Error(t("err.workerStatus", { status: res.status }));
     const fromCache = res.headers.get("X-From-Cache");
@@ -501,7 +534,9 @@ label small { font-size: 13px; }
 
   async function refresh() {
     if (busy) return;
-    if (!apiBase() || !cfg.token) {
+    const st = cur();
+    if (!apiBase() || !st) {
+      devices = []; renderTitle();
       ["hero", "device", "charts"].forEach((id) => $(id).hidden = true);
       $("seen").textContent = t("status.notConnected");
       notice(t(apiBase() ? "notice.setToken" : "notice.setApi"));
@@ -512,26 +547,27 @@ label small { font-size: 13px; }
     try {
       const msgs = [];
       let formula = null;
-      try { formula = compileFormula(cfg.formula); }
+      try { formula = compileFormula(st.formula); }
       catch (e) { msgs.push(e.message + t("err.formulaFallback")); }
 
       devices = (await api("/api/devices")).devices || [];
+      if (devices.length && st.name !== devices[0].device) { st.name = devices[0].device; save(); }
+      renderTitle();
       if (!devices.length) {
         ["hero", "device", "charts"].forEach((id) => $(id).hidden = true);
         $("seen").textContent = t("status.noData");
         notice(t("notice.noReadings"));
         return;
       }
-      if (!devices.some((d) => d.device === cfg.device)) cfg.device = devices[0].device;
-      renderTitle();
+      if (!devices.some((d) => d.device === cfg.device)) { cfg.device = devices[0].device; renderTitle(); }
 
       const now = Date.now();
-      const hasBatch = !!cfg.batchStart && cfg.batchStart < now;
+      const hasBatch = !!st.batchStart && st.batchStart < now;
       $("ranges").querySelector('[data-range="batch"]').hidden = !hasBatch;
       if (cfg.range === "batch" && !hasBatch) { cfg.range = "24h"; syncRanges(); }
-      const rangeFrom = cfg.range === "batch" ? cfg.batchStart : now - RANGES[cfg.range];
+      const rangeFrom = cfg.range === "batch" ? st.batchStart : now - RANGES[cfg.range];
       // Для начальной плотности и динамики за сутки берём данные с начала партии или хотя бы за 26 ч
-      const from = Math.min(rangeFrom, hasBatch ? cfg.batchStart : rangeFrom, now - 26 * 3600e3);
+      const from = Math.min(rangeFrom, hasBatch ? st.batchStart : rangeFrom, now - 26 * 3600e3);
       const { readings } = await api("/api/readings", { device: cfg.device, from, to: now });
 
       const rows = readings.map((r) => ({
@@ -550,7 +586,8 @@ label small { font-size: 13px; }
       if (cachedAt != null) {
         msgs.unshift(t("notice.offline", { ago: ago(cachedAt) }));
       }
-      notice(msgs.map(escapeHtml).join("<br>"), msgs.length && cfg.formula && !formula ? "error" : "");
+      if (joined) { msgs.unshift(t("sticks.joined", { name: stickName(st) })); joined = false; }
+      notice(msgs.map(escapeHtml).join("<br>"), msgs.length && st.formula && !formula ? "error" : "");
     } catch (e) {
       notice(escapeHtml(t("err.fetch", { message: e.message })), "error");
       $("seen").textContent = t("status.noConnection");
@@ -559,15 +596,31 @@ label small { font-size: 13px; }
     }
   }
 
+  // Заголовок: переключатель стиков (если их несколько) и устройств внутри стика.
   function renderTitle() {
-    const title = $("title");
-    if (devices.length > 1) {
-      title.innerHTML = `<select id="device-select" aria-label="${escapeHtml(t("ui.device"))}">${devices.map((d) =>
-        `<option ${d.device === cfg.device ? "selected" : ""}>${escapeHtml(d.device)}</option>`).join("")}</select>`;
-      $("device-select").onchange = (e) => { cfg.device = e.target.value; save(); refresh(); };
+    const title = $("title"), st = cur();
+    let html = "";
+    if (cfg.sticks.length > 1) {
+      html = `<select id="stick-switch" aria-label="${escapeHtml(t("ui.device"))}">${cfg.sticks.map((x) =>
+        `<option value="${escapeHtml(x.id)}" ${x === st ? "selected" : ""}>${escapeHtml(stickName(x))}</option>`).join("")}</select>`;
     } else {
-      title.textContent = cfg.device || t("app.name");
+      html = escapeHtml(st ? stickName(st) : t("app.name"));
     }
+    if (devices.length > 1) {
+      html += `<br><select id="device-switch" aria-label="${escapeHtml(t("ui.device"))}">${devices.map((d) =>
+        `<option ${d.device === cfg.device ? "selected" : ""}>${escapeHtml(d.device)}</option>`).join("")}</select>`;
+    }
+    title.innerHTML = html;
+    if ($("stick-switch")) $("stick-switch").onchange = (e) => switchStick(e.target.value);
+    if ($("device-switch")) $("device-switch").onchange = (e) => { cfg.device = e.target.value; save(); refresh(); };
+  }
+
+  function switchStick(id) {
+    cfg.current = id; cfg.device = ""; devices = [];
+    if (cfg.range === "batch") cfg.range = "24h";
+    save(); syncRanges();
+    Object.values(charts).forEach((c) => c.destroy()); charts = {};
+    refresh();
   }
 
   function renderHero(rows, valid, last, hasBatch) {
@@ -577,7 +630,7 @@ label small { font-size: 13px; }
 
     let og = null;
     if (hasBatch) {
-      const first = valid.filter((r) => r.ts >= cfg.batchStart).slice(0, 6).map((r) => r.g);
+      const first = valid.filter((r) => r.ts >= cur().batchStart).slice(0, 6).map((r) => r.g);
       og = median(first);
     }
 
@@ -608,17 +661,17 @@ label small { font-size: 13px; }
     const batch = $("batch");
     if (og != null && current != null) {
       const att = og > 0 ? ((og - current) / og) * 100 : null;
-      const days = (Date.now() - cfg.batchStart) / 86400e3;
+      const days = (Date.now() - cur().batchStart) / 86400e3;
       batch.innerHTML = `
         <div><dt>${escapeHtml(t("batch.og"))}</dt><dd>${fmt(og, 1)} °P</dd></div>
         <div><dt>${escapeHtml(t("batch.attenuation"))}</dt><dd>${att == null ? "–" : fmt(Math.max(att, 0), 0) + "%"}</dd></div>
         <div><dt>${escapeHtml(t("batch.abv"))}</dt><dd>${fmt(Math.max(abv(og, current), 0), 1)}%</dd></div>
-        <div class="hint">${escapeHtml(t("batch.running", { days: fmt(days, 1), date: dayTime(cfg.batchStart) }))}</div>`;
+        <div class="hint">${escapeHtml(t("batch.running", { days: fmt(days, 1), date: dayTime(cur().batchStart) }))}</div>`;
     } else if (hasBatch) {
-      batch.innerHTML = `<div class="hint">${escapeHtml(t("batch.waiting", { date: dayTime(cfg.batchStart) }))}</div>`;
+      batch.innerHTML = `<div class="hint">${escapeHtml(t("batch.waiting", { date: dayTime(cur().batchStart) }))}</div>`;
     } else {
       batch.innerHTML = `<div class="hint">${escapeHtml(t("batch.none"))} <button type="button" id="start-batch">${escapeHtml(t("batch.startNow"))}</button></div>`;
-      $("start-batch").onclick = () => { cfg.batchStart = Date.now(); cfg.range = "batch"; save(); syncRanges(); refresh(); };
+      $("start-batch").onclick = () => { cur().batchStart = Date.now(); cfg.range = "batch"; save(); syncRanges(); refresh(); };
     }
     drawStem(current, og);
   }
@@ -678,7 +731,7 @@ label small { font-size: 13px; }
     return d.toISOString().slice(0, 16);
   };
 
-  // Токен: те же правила, что и на воркере (iSpindel хранит его в JSON-конфиге).
+  // Токен стика: те же правила, что и на воркере (iSpindel хранит его в JSON-конфиге).
   const TOKEN_MIN = 8, TOKEN_MAX = 64;
   function tokenProblem(tok) {
     if (tok.length < TOKEN_MIN) return t("err.tokenShort", { n: TOKEN_MIN });
@@ -691,54 +744,155 @@ label small { font-size: 13px; }
     const bytes = crypto.getRandomValues(new Uint8Array(20));
     return Array.from(bytes, (b) => abc[b % abc.length]).join("");
   }
-  async function registerToken(base, tok) {
-    const res = await fetch(base + "/api/register", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: tok }),
-    });
-    if (!res.ok) {
-      let msg = String(res.status);
-      try { msg = (await res.json()).error || msg; } catch { /* не JSON */ }
-      throw new Error(msg);
+  async function post(path, body, access) {
+    const headers = { "Content-Type": "application/json" };
+    if (access) headers["X-Access"] = access;
+    const res = await fetch(apiBase() + path, { method: "POST", headers, body: JSON.stringify(body || {}) });
+    let data = {};
+    try { data = await res.json(); } catch { /* не JSON */ }
+    if (!res.ok) { const e = new Error(data.error || String(res.status)); e.code = data.code; e.status = res.status; throw e; }
+    return data;
+  }
+
+  // Регистрация токена: сервер заводит стик и выдаёт ключ доступа. Токен, который уже занят, не отдаётся.
+  async function addStick(tok, extra = {}) {
+    const { stick, access } = await post("/api/register", { token: tok });
+    const existing = cfg.sticks.find((x) => x.id === stick);
+    const entry = Object.assign(existing || { id: stick, name: "", batchStart: null, formula: "" }, extra, { access, token: tok });
+    if (!existing) cfg.sticks.push(entry);
+    cfg.current = stick; cfg.device = "";
+    save();
+    return entry;
+  }
+
+  // Ссылка «Поделиться»: #join=<ключ доступа>. Открыл — стик добавился.
+  let joined = false;
+  async function handleJoin() {
+    const m = /[#&]join=([A-Za-z0-9_-]{16,})/.exec(location.hash);
+    if (!m) return;
+    history.replaceState(null, "", location.pathname + location.search);
+    const access = m[1];
+    try {
+      const data = await api("/api/devices", {}, access);
+      let entry = cfg.sticks.find((x) => x.id === data.stick);
+      if (!entry) {
+        entry = { id: data.stick, access, token: null, name: (data.devices[0] || {}).device || "", batchStart: null, formula: "" };
+        cfg.sticks.push(entry);
+      }
+      cfg.current = entry.id; cfg.device = "";
+      save();
+      joined = true;
+    } catch (e) {
+      notice(escapeHtml(t("err.joinFailed", { message: e.message })), "error");
     }
   }
+
+  // Переход со старой версии, где был один токен: забираем его стик.
+  async function migrateLegacy() {
+    if (!cfg.legacy) return;
+    const { token, batchStart, formula } = cfg.legacy;
+    try {
+      await addStick(token, { batchStart, formula });
+      delete cfg.legacy; save();
+    } catch (e) {
+      if (e.code === "taken" || e.status === 400) { delete cfg.legacy; save(); }
+    }
+  }
+
+  // ---------- Окно настроек ----------
+  function renderSticks() {
+    const list = $("stick-list"), st = cur();
+    list.innerHTML = cfg.sticks.map((x) => `
+      <li class="${x === st ? "current" : ""}" data-id="${escapeHtml(x.id)}">
+        <button class="pick" type="button" data-act="pick"><b>${escapeHtml(stickName(x))}</b>
+          <small>${escapeHtml(t(x.token ? "sticks.mine" : "sticks.shared"))}</small></button>
+        <button class="copy" type="button" data-act="share">${escapeHtml(t("sticks.share"))}</button>
+        <button class="copy" type="button" data-act="remove" aria-label="${escapeHtml(t("sticks.remove"))}">✕</button>
+      </li>`).join("");
+    $("stick-empty").hidden = cfg.sticks.length > 0;
+  }
+
+  $("stick-list").addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-act]");
+    if (!btn) return;
+    const id = btn.closest("li").dataset.id;
+    const x = cfg.sticks.find((s) => s.id === id);
+    $("stick-error").textContent = "";
+    if (btn.dataset.act === "pick") {
+      if (cfg.current !== id) switchStick(id);
+      renderSticks(); syncForm();
+    } else if (btn.dataset.act === "share") {
+      btn.disabled = true;
+      try {
+        const { access } = await post("/api/share", {}, x.access);
+        const link = location.origin + location.pathname + "#join=" + access;
+        $("share-link").textContent = link;
+        $("share-box").hidden = false;
+        if (navigator.share) {
+          try { await navigator.share({ title: t("app.name"), text: stickName(x), url: link }); } catch { /* закрыли */ }
+        } else {
+          try { await navigator.clipboard.writeText(link); } catch { /* скопируют кнопкой */ }
+        }
+      } catch (err) {
+        $("stick-error").textContent = t("sticks.shareFail", { message: err.message });
+      } finally { btn.disabled = false; }
+    } else if (btn.dataset.act === "remove") {
+      if (!confirm(t("sticks.removeConfirm", { name: stickName(x) }))) return;
+      cfg.sticks = cfg.sticks.filter((s) => s !== x);
+      $("share-box").hidden = true;
+      if (cfg.current === id) switchStick(cfg.sticks[0] ? cfg.sticks[0].id : "");
+      else save();
+      renderSticks(); syncForm();
+    }
+  });
 
   // Сервер: по умолчанию скрыт, свой адрес — по кнопке.
   let serverCustom = false;
   function syncServer() {
-    const custom = serverCustom;
-    $("server-field").hidden = !custom;
-    $("server-edit").hidden = custom;
-    $("server-default").hidden = custom;
-    const shown = custom ? (form.elements.api.value.trim() || "–") : DEFAULT_API;
+    $("server-field").hidden = !serverCustom;
+    $("server-edit").hidden = serverCustom;
+    $("server-default").hidden = serverCustom;
+    const shown = serverCustom ? (form.elements.api.value.trim() || "–") : DEFAULT_API;
     $("server-name").textContent = shown.replace(/^https?:\/\//, "");
     syncGuide();
   }
   function formBase() {
     return (serverCustom ? form.elements.api.value.trim() : DEFAULT_API).replace(/\/+$/, "");
   }
+  // Инструкция показывает либо вводимый новый токен, либо токен выбранного стика.
   function syncGuide() {
     const base = formBase();
-    const tok = form.elements.token.value.trim();
+    const typed = form.elements.token.value.trim();
+    const st = cur();
+    const tok = typed || (st && st.token) || "";
     $("guide-url").textContent = base ? base + "/ingest" : "–";
-    $("guide-token").textContent = tok || t("guide.tokenUnset");
+    $("guide-token").textContent = tok || t(st && !typed ? "guide.tokenOwnerOnly" : "guide.tokenUnset");
     $("guide-token").nextElementSibling.hidden = !tok;
     let host = "–";
     try { host = new URL(base).hostname; } catch { /* ещё не адрес */ }
     $("guide-fallback").textContent = t("guide.fallback", { host });
   }
+  // Партия и формула — у каждого стика свои.
+  function syncForm() {
+    const st = cur();
+    form.elements.batchStart.value = toLocalInput(st && st.batchStart);
+    form.elements.formula.value = st ? st.formula : "";
+    form.elements.batchStart.disabled = form.elements.formula.disabled = $("batch-now").disabled = !st;
+    syncGuide();
+  }
 
   $("open-settings").onclick = () => {
-    form.elements.token.value = cfg.token;
+    form.elements.token.value = "";
     form.elements.token.type = "password";
     $("token-show").textContent = t("settings.show");
     form.elements.api.value = cfg.api;
     serverCustom = !!cfg.api;
-    form.elements.batchStart.value = toLocalInput(cfg.batchStart);
-    form.elements.formula.value = cfg.formula;
     $("token-error").textContent = "";
+    $("stick-error").textContent = "";
     $("api-error").textContent = "";
-    $("guide").open = !cfg.token;
-    syncServer();
+    $("share-box").hidden = true;
+    $("guide").open = !cfg.sticks.length;
+    renderSticks(); syncForm(); syncServer();
     dlg.showModal();
   };
   $("batch-now").onclick = () => { form.elements.batchStart.value = toLocalInput(Date.now()); };
@@ -752,8 +906,29 @@ label small { font-size: 13px; }
     form.elements.token.type = "text";
     $("token-show").textContent = t("settings.hide");
     $("token-error").textContent = "";
+    $("guide").open = true;
     syncGuide();
   };
+  async function onAdd() {
+    const tok = form.elements.token.value.trim();
+    const problem = tokenProblem(tok);
+    if (problem) { $("token-error").textContent = problem; form.elements.token.focus(); return; }
+    // Свой сервер — сначала применяем адрес, токен регистрируется на нём.
+    if (serverCustom) cfg.api = form.elements.api.value.trim().replace(/\/+$/, "") === DEFAULT_API ? "" : form.elements.api.value.trim().replace(/\/+$/, "");
+    const btn = $("token-add"); btn.disabled = true;
+    try {
+      await addStick(tok);
+      $("token-error").textContent = "";
+      form.elements.token.value = "";
+      renderSticks(); syncForm();
+      $("guide").open = true;
+      devices = []; refresh();
+    } catch (err) {
+      $("token-error").textContent = err.code === "taken" ? t("err.tokenTaken") : t("err.register", { message: err.message });
+    } finally { btn.disabled = false; }
+  }
+  $("token-add").onclick = onAdd;
+  form.elements.token.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); onAdd(); } });
   form.elements.token.addEventListener("input", () => { $("token-error").textContent = ""; syncGuide(); });
   form.elements.api.addEventListener("input", () => { $("api-error").textContent = ""; syncServer(); });
   $("server-edit").onclick = () => {
@@ -783,28 +958,19 @@ label small { font-size: 13px; }
     setTimeout(() => { b.textContent = t("ui.copy"); }, 1500);
   });
 
-  // Сохранение: сначала заводим токен на сервере, и только потом закрываем окно.
-  form.addEventListener("submit", async (e) => {
+  // Сохранить: адрес сервера, партия и формула выбранного стика. Стики добавляются и удаляются сразу.
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
     if (e.submitter && e.submitter.value === "cancel") { dlg.close(); return; }
-    const tok = form.elements.token.value.trim();
     let api = serverCustom ? form.elements.api.value.trim().replace(/\/+$/, "") : "";
     if (api === DEFAULT_API) api = "";
     if (serverCustom && api && !/^https?:\/\/[^/\s]+/.test(api)) { $("api-error").textContent = t("err.badUrl"); return; }
-    const problem = tokenProblem(tok);
-    if (problem) { $("token-error").textContent = problem; form.elements.token.focus(); return; }
-    const base = (api || DEFAULT_API).replace(/\/+$/, "");
-    if (tok !== cfg.token || api !== cfg.api) {
-      const btn = e.submitter; if (btn) btn.disabled = true;
-      try { await registerToken(base, tok); }
-      catch (err) { $("token-error").textContent = t("err.register", { message: err.message }); return; }
-      finally { if (btn) btn.disabled = false; }
-      cfg.device = "";
-    }
-    cfg.token = tok;
     cfg.api = api;
-    cfg.batchStart = form.elements.batchStart.value ? new Date(form.elements.batchStart.value).getTime() : null;
-    cfg.formula = form.elements.formula.value.trim();
+    const st = cur();
+    if (st) {
+      st.batchStart = form.elements.batchStart.value ? new Date(form.elements.batchStart.value).getTime() : null;
+      st.formula = form.elements.formula.value.trim();
+    }
     save(); syncRanges(); dlg.close(); refresh();
   });
 
@@ -820,25 +986,38 @@ label small { font-size: 13px; }
     navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker not registered", e));
   }
 
-  const langSel = $("lang");
-  langSel.innerHTML = I18N.languages.map((code) =>
-    `<option value="${code}">${escapeHtml(I18N.name(code))}</option>`).join("");
-  langSel.value = I18N.use(I18N.detect());
-  langSel.onchange = (e) => {
-    I18N.use(e.target.value, true);
-    applyStatic();
-    if (dlg.open) syncServer();
+  // Язык — маленькая кнопка: каждый клик переключает на следующий по кругу.
+  const LANG_CYCLE = ["en", "uk", "ru", "es"];
+  const LANG_CODE = { en: "EN", uk: "UA", ru: "RU", es: "ES" };
+  const langBtn = $("lang");
+  function syncLang() {
+    const code = I18N.lang();
+    langBtn.textContent = LANG_CODE[code] || code.toUpperCase();
+    langBtn.title = `${t("ui.language")}: ${I18N.name(code)}`;
+    langBtn.setAttribute("aria-label", langBtn.title);
+  }
+  I18N.use(I18N.detect());
+  langBtn.onclick = () => {
+    const next = LANG_CYCLE[(LANG_CYCLE.indexOf(I18N.lang()) + 1) % LANG_CYCLE.length];
+    I18N.use(next, true);
+    applyStatic(); syncLang();
+    if (dlg.open) { renderSticks(); syncServer(); }
     // Axis ticks and tooltips are baked into the chart options, so rebuild them.
     Object.values(charts).forEach((c) => c.destroy());
     charts = {};
     refresh();
   };
+  syncLang();
   applyStatic();
 
   syncRanges();
-  refresh();
+  (async () => {
+    await handleJoin();
+    await migrateLegacy();
+    refresh();
+    if (!cfg.sticks.length) $("open-settings").click();
+  })();
   setInterval(() => { if (!document.hidden) refresh(); }, 60e3);
-  if (!cfg.token) $("open-settings").click();
 })();
 </script>
 </body>
