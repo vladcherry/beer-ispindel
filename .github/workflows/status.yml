@@ -38,10 +38,10 @@ jobs:
             echo '```'
             npx wrangler d1 execute ispindel --remote --json --command \
               "SELECT COUNT(*) AS total, datetime(MIN(ts)/1000,'unixepoch') AS first_utc, datetime(MAX(ts)/1000,'unixepoch') AS last_utc FROM readings" \
-              | jq -r '.[0].results[] | to_entries | map("\(.key): \(.value)") | join("  ")'
+              | jq -c 'if type == "array" then .[0].results[] else . end'
             echo
             npx wrangler d1 execute ispindel --remote --json --command \
               "SELECT datetime(ts/1000,'unixepoch') AS utc, device, angle, temperature, gravity, battery, rssi, interval_s FROM readings ORDER BY ts DESC LIMIT 10" \
-              | jq -r '.[0].results[] | [.utc, .device, "angle=\(.angle)", "t=\(.temperature)", "g=\(.gravity)", "bat=\(.battery)", "rssi=\(.rssi)", "int=\(.interval_s)"] | join("  ")'
+              | jq -c 'if type == "array" then .[0].results[] else . end'
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
