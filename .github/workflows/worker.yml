@@ -79,4 +79,11 @@ jobs:
           fi
           url=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' deploy.log | head -1)
           echo "### Worker URL: ${url:-see deploy log}" >> "$GITHUB_STEP_SUMMARY"
-          [ -z "$url" ] || curl -fsS "$url/api/health"
+          # A new workers.dev URL can take a few minutes to start answering.
+          if [ -n "$url" ]; then
+            for i in $(seq 12); do
+              curl -fsS "$url/api/health" && exit 0
+              sleep 15
+            done
+            echo "::warning::$url/api/health is not answering yet — check again in a few minutes."
+          fi
