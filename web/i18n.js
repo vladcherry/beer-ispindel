@@ -297,6 +297,12 @@ const I18N = (() => {
     'members.pending': 'Share links not opened yet: {n}',
     'members.hint': 'Activity is updated at most every 5 minutes.',
     'members.now': 'in the app now',
+    'members.revoke': 'Disconnect',
+    'members.revokeLink': 'Revoke',
+    'members.link': 'Share link from {date}',
+    'members.notOpened': 'not opened yet',
+    'members.confirm': 'Disconnect? This access will stop working right away; to come back the person needs a new share link.',
+    'members.revokeFail': 'Could not disconnect: {message}',
     'settings.cancel': 'Cancel',
     'settings.save': 'Save'
   };
@@ -594,6 +600,12 @@ const I18N = (() => {
     'members.pending': 'Ссылок ещё не открыли: {n}',
     'members.hint': 'Активность обновляется не чаще раза в 5 минут.',
     'members.now': 'сейчас в приложении',
+    'members.revoke': 'Отключить',
+    'members.revokeLink': 'Отозвать',
+    'members.link': 'Ссылка от {date}',
+    'members.notOpened': 'ещё не открыта',
+    'members.confirm': 'Отключить? Этот доступ сразу перестанет работать; чтобы вернуться, понадобится новая ссылка «Поделиться».',
+    'members.revokeFail': 'Не удалось отключить: {message}',
     'settings.cancel': 'Отмена',
     'settings.save': 'Сохранить'
   };
@@ -891,6 +903,12 @@ const I18N = (() => {
     'members.pending': 'Посилань ще не відкрили: {n}',
     'members.hint': 'Активність оновлюється не частіше ніж раз на 5 хвилин.',
     'members.now': 'зараз у застосунку',
+    'members.revoke': 'Відключити',
+    'members.revokeLink': 'Відкликати',
+    'members.link': 'Посилання від {date}',
+    'members.notOpened': 'ще не відкрите',
+    'members.confirm': 'Відключити? Цей доступ одразу перестане працювати; щоб повернутися, знадобиться нове посилання «Поділитися».',
+    'members.revokeFail': 'Не вдалося відключити: {message}',
     'settings.cancel': 'Скасувати',
     'settings.save': 'Зберегти'
   };
@@ -1187,6 +1205,12 @@ const I18N = (() => {
     'members.pending': 'Enlaces aún sin abrir: {n}',
     'members.hint': 'La actividad se actualiza como mucho cada 5 minutos.',
     'members.now': 'ahora en la app',
+    'members.revoke': 'Desconectar',
+    'members.revokeLink': 'Revocar',
+    'members.link': 'Enlace del {date}',
+    'members.notOpened': 'aún sin abrir',
+    'members.confirm': '¿Desconectar? Este acceso dejará de funcionar de inmediato; para volver hará falta un nuevo enlace para compartir.',
+    'members.revokeFail': 'No se ha podido desconectar: {message}',
     'settings.cancel': 'Cancelar',
     'settings.save': 'Guardar'
   };

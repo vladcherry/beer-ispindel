@@ -47,7 +47,9 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(shell(req));
   } else if (STATIC_HOSTS.includes(url.hostname)) {
     event.respondWith(cacheFirst(req));
-  } else if (url.pathname.startsWith("/api/") && url.pathname !== "/api/health") {
+  } else if (url.pathname.startsWith("/api/") && url.pathname !== "/api/health" && url.pathname !== "/api/members"
+             && !url.searchParams.has("after")) {
+    // Догрузка новых строк (?after=) и список участников идут мимо кэша: иначе офлайн-копия истории затрётся.
     event.respondWith(data(req, url));
   }
 });

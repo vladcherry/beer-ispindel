@@ -51,3 +51,13 @@ CREATE TABLE IF NOT EXISTS ingest_log (
   user_agent   TEXT,
   body         TEXT                 -- начало тела запроса, токен замазан
 );
+
+-- Последнее показание каждого iSpindel (обновляется при приёме) — дешёвый список устройств.
+CREATE TABLE IF NOT EXISTS latest (
+  owner TEXT NOT NULL, device TEXT NOT NULL, ts INTEGER NOT NULL, chip_id TEXT, angle REAL, temperature REAL,
+  temp_units TEXT, battery REAL, gravity REAL, interval_s INTEGER, rssi INTEGER,
+  PRIMARY KEY (owner, device)
+);
+
+-- Служебное: версия схемы, чтобы миграции в воркере выполнялись один раз.
+CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);

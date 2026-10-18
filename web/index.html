@@ -231,11 +231,13 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .members h4 { margin: 0 0 6px; font: 600 16px/1.2 var(--display); }
 .sticks .members ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .sticks .members li {
-  display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 0 8px; font-size: 14px;
+  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 0 8px; font-size: 14px;
   padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
 }
 .members li svg { width: 20px; height: 20px; color: var(--muted); margin-top: 1px; }
-.members li small { grid-column: 2; color: var(--muted); font-size: 12px; }
+.members li small { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
+.members .revoke { font-size: 12px; padding: 2px 8px; border: 1px solid var(--alert); color: var(--alert); background: transparent; border-radius: 6px; cursor: pointer; }
+.members .revoke:hover { background: color-mix(in srgb, var(--alert) 10%, transparent); }
 .members .you { color: var(--ok); font-weight: 600; }
 .members .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
 
@@ -705,7 +707,13 @@ body.has-install main { padding-bottom: 220px; }
     Object.entries(params).forEach(([k, v]) => v != null && v !== "" && url.searchParams.set(k, v));
     const res = await fetch(url, { headers: { "X-Access": access } });
     if (res.status === 401) throw new Error(t("err.unknownToken"));
-    if (!res.ok) throw new Error(t("err.workerStatus", { status: res.status }));
+    if (!res.ok) {
+      // Показываем, что именно ответил воркер, а не только код.
+      let detail = "";
+      try { const body = await res.clone().json(); detail = body && body.error ? String(body.error) : ""; }
+      catch { try { detail = (await res.text()).slice(0, 200); } catch { /* пусто */ } }
+      throw new Error(t("err.workerStatus", { status: res.status }) + (detail ? " " + detail : ""));
+    }
     const fromCache = res.headers.get("X-From-Cache");
     if (fromCache) cachedAt = Math.min(cachedAt ?? Infinity, Number(fromCache) || Date.now());
     return res.json();
@@ -822,6 +830,36 @@ body.has-install main { padding-bottom: 220px; }
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
   }
 
+  // История с экономией чтений из базы: полностью загружаем при открытии, смене стика, устройства,
+  // периода или партии (и раз в 6 часов), а дальше раз в минуту догружаем только новые строки.
+  let hist = null;
+  async function loadHistory(st, from, now) {
+    const key = [st.id, cfg.device, cfg.range, st.batchStart || 0].join("|");
+    if (hist && hist.key === key && now - hist.loadedAt < 6 * 3600e3 && hist.from <= from) {
+      const lastTs = hist.rows.length ? hist.rows.at(-1).ts : from;
+      const { readings } = await api("/api/readings", { device: cfg.device, after: lastTs, to: now });
+      hist.rows = hist.rows.concat(readings).filter((r) => r.ts >= from);
+      return hist.rows;
+    }
+    const { readings } = await api("/api/readings", { device: cfg.device, from, to: now });
+    hist = { key, from, loadedAt: now, rows: readings };
+    return readings;
+  }
+
+  // Напряжение по часам для прогноза батареи — не чаще раза в 3 часа на стик и устройство.
+  async function loadBattery(st) {
+    const key = `ispindel.batt.${st.id}.${cfg.device}`;
+    try {
+      const c = JSON.parse(localStorage.getItem(key) || "null");
+      if (c && Date.now() - c.at < 3 * 3600e3) return c.hours;
+    } catch { /* нет кэша */ }
+    try {
+      const hours = (await api("/api/battery", { device: cfg.device, days: 7 })).hours;
+      try { localStorage.setItem(key, JSON.stringify({ at: Date.now(), hours })); } catch { /* приватный режим */ }
+      return hours;
+    } catch { return null; }
+  }
+
   async function refresh() {
     if (busy) return;
     const st = cur();
@@ -876,7 +914,7 @@ body.has-install main { padding-bottom: 220px; }
       const rangeFrom = cfg.range === "batch" ? st.batchStart : now - RANGES[cfg.range];
       // Для начальной плотности и динамики за сутки берём данные с начала партии или хотя бы за 26 ч
       const from = Math.min(rangeFrom, hasBatch ? st.batchStart : rangeFrom, now - 26 * 3600e3);
-      const { readings } = await api("/api/readings", { device: cfg.device, from, to: now });
+      const readings = await loadHistory(st, from, now);
 
       const rows = readings.map((r) => ({
         ...r,
@@ -890,9 +928,7 @@ body.has-install main { padding-bottom: 220px; }
       const valid = rows.filter((r) => plausible(r.g));
       const last = devices.find((d) => d.device === cfg.device);
 
-      let batt = null;
-      try { batt = (await api("/api/battery", { device: cfg.device, days: 14 })).hours; }
-      catch { /* воркер без /api/battery — прогноза не будет */ }
+      const batt = await loadBattery(st);
       renderMain(rows, valid, last, hasBatch, batt, now);
       renderCharts(rows.filter((r) => r.ts >= rangeFrom), last);
       if (!valid.some((r) => r.ts >= rangeFrom)) {
@@ -1513,26 +1549,49 @@ body.has-install main { padding-bottom: 220px; }
     desktop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="1.5"/><path d="M9 20h6M12 16v4"/></svg>`,
     link: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>`,
   };
+  // Список видит и правит только тот, кто зарегистрировал стик (у остальных воркер отвечает 403).
   async function renderMembers() {
     const box = $("members"), st = cur();
-    if (!st) { box.hidden = true; return; }
+    if (!st || !st.token) { box.hidden = true; return; }
     let list;
     try { list = (await api("/api/members", {}, st.access)).members || []; }
     catch { box.hidden = true; return; }
     if (cur() !== st) return;
     const used = list.filter((m) => m.last_used != null);
-    const pending = list.length - used.length;
+    const pending = list.filter((m) => m.last_used == null);
+    const revokeBtn = (m, key) => m.kind === "owner" || m.you ? ""
+      : `<button type="button" class="revoke" data-revoke="${escapeHtml(m.id)}">${escapeHtml(t(key))}</button>`;
     box.innerHTML = `<h4>${escapeHtml(t("members.title", { name: stickName(st), n: used.length }))}</h4>
       <ul>${used.map((m) => {
         const p = parseUA(m.user_agent);
         const icon = p && p.mobile ? DEVICE_ICONS.phone : DEVICE_ICONS.desktop;
-        return `<li>${icon}<span>${escapeHtml(p ? p.label : t("members.unknown"))}${m.you ? ` <span class="you">· ${escapeHtml(t("members.you"))}</span>` : ""}</span>
+        return `<li>${icon}<span class="who">${escapeHtml(p ? p.label : t("members.unknown"))}${m.you ? ` <span class="you">· ${escapeHtml(t("members.you"))}</span>` : ""}</span>
+          ${revokeBtn(m, "members.revoke")}
           <small>${escapeHtml(t(m.kind === "owner" ? "members.owner" : "members.shared"))} · ${escapeHtml(Date.now() - m.last_used < 5 * 60e3 ? t("members.now") : t("members.active", { ago: ago(m.last_used) }))}</small></li>`;
-      }).join("")}</ul>
-      ${pending ? `<p class="note">${DEVICE_ICONS.link.replace('aria-hidden="true"', 'aria-hidden="true" style="width:14px;height:14px;vertical-align:-2px"')} ${escapeHtml(t("members.pending", { n: pending }))}</p>` : ""}
-      <p class="note">${escapeHtml(t("members.hint"))}</p>`;
+      }).join("")}
+      ${pending.map((m) => `<li>${DEVICE_ICONS.link}<span class="who">${escapeHtml(t("members.link", { date: dayTime(m.created) }))}</span>
+          ${revokeBtn(m, "members.revokeLink")}<small>${escapeHtml(t("members.notOpened"))}</small></li>`).join("")}</ul>
+      <p class="note">${escapeHtml(t("members.hint"))}</p>
+      <small class="field-error" id="members-error"></small>`;
     box.hidden = false;
   }
+  $("members").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-revoke]");
+    if (!b) return;
+    const st = cur();
+    if (!confirm(t("members.confirm"))) return;
+    b.disabled = true;
+    try {
+      const res = await fetch(apiBase() + "/api/members/revoke", {
+        method: "POST", headers: { "Content-Type": "application/json", "X-Access": st.access }, body: JSON.stringify({ id: b.dataset.revoke }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+      renderMembers();
+    } catch (err) {
+      b.disabled = false;
+      $("members-error").textContent = t("members.revokeFail", { message: err.message });
+    }
+  });
 
   $("stick-list").addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-act]");

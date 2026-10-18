@@ -62,6 +62,7 @@ If the account has never used Workers, open Workers & Pages in the Cloudflare da
 - **Rate limit**: the worker accepts at most one reading per minute from each iSpindel (429 otherwise, logged in `ingest_log`).
 - **Gravity units** (Auto / °P / SG) are shared per iSpindel. SG from the iSpindel or from the formula is converted to °P before every calculation; Auto decides from the readings at the start of the batch (SG ≈ 1.03–1.12 vs 7–28 °P).
 - **The gravity formula (polynomial from tilt) is shared** per iSpindel too, stored on the worker. Changing it asks for confirmation because it recalculates gravity, original gravity, attenuation and alcohol for everyone. A formula set locally in an older version is uploaded once if the iSpindel has none yet.
+- **Who is connected** (Settings, owner only): every access key in use with its browser, OS and last activity; the owner can disconnect a shared key or revoke an unopened share link.
 - Tokens: 8–64 characters, no spaces, quotes or backslashes.
 - Migration: an iSpindel registered before access keys existed (including the old shared `INGEST_TOKEN`) can be claimed once by adding its token.
 
@@ -115,3 +116,5 @@ Settings are stored in the browser (localStorage), separately on each device. Th
 ## Limits
 
 Free Workers and D1 easily cover one sensor: at a 15-minute interval that's ~100 requests and ~100 rows per day.
+
+D1's free tier allows **5 million rows read per day** (reset at 00:00 UTC); above that every query fails and the app shows the worker's error. To stay far below it the worker keeps the latest reading per device in a `latest` table, the app loads full history once and then only new rows (`?after=`), long ranges are averaged down to at most 4000 points, and battery history is cached for 3 hours. Use an iSpindel interval of 900 s once testing is done.

@@ -8,7 +8,8 @@
 //   GET  /api/devices       — устройства стика с последним показанием
 //   GET  /api/readings      — история: ?device=&from=&to= (ms UTC)
 //   GET  /api/battery       — среднее напряжение по часам для прогноза батареи: ?device=&days=14
-//   GET  /api/members       — кто подключён к стику: ключи доступа, браузер, когда были активны
+//   GET  /api/members       — кто подключён к стику (только владельцу): браузер, когда были активны
+//   POST /api/members/revoke — {id}: владелец отключает пользователя или неоткрытую ссылку
 //   GET  /api/health        — проверка
 //
 // Токен стика знают iSpindel и тот, кто его зарегистрировал; зарегистрировать токен можно
@@ -47,6 +48,11 @@ export default {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return json({ access: await issueAccess(env, stick.hash, "share") }, 200, cors);
+      }
+      if (request.method === "POST" && url.pathname === "/api/members/revoke") {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        return await revokeMember(request, env, stick, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/batch") {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
@@ -130,7 +136,7 @@ async function stickByAccess(env, key, request) {
   if (!key) return null;
   const keyHash = await sha256(key);
   const stick = await env.DB.prepare(
-    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, a.last_used, a.user_agent
+    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, a.last_used, a.user_agent, a.kind AS key_kind
      FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1`
   ).bind(keyHash).first();
   if (stick && request) {
@@ -144,15 +150,31 @@ async function stickByAccess(env, key, request) {
   return stick;
 }
 
-// Кто подключён к стику. Хеши ключей не отдаём; свой ключ помечаем как you.
+// Кто подключён к стику — видит только владелец. Хеши ключей не отдаём: id — их начало,
+// его хватает, чтобы отключить ключ; свой ключ помечаем как you.
 async function members(env, stick, cors) {
+  if (stick.key_kind !== "owner") return json({ error: "only the owner can see who is connected" }, 403, cors);
   const { results } = await env.DB.prepare(
     `SELECT hash, kind, created, last_used, user_agent FROM access_keys WHERE token_hash = ?1
      ORDER BY last_used IS NULL, last_used DESC, created DESC`
   ).bind(stick.hash).all();
-  const list = results.map((r) => ({ kind: r.kind, created: r.created, last_used: r.last_used ?? null,
+  const list = results.map((r) => ({ id: r.hash.slice(0, 16), kind: r.kind, created: r.created, last_used: r.last_used ?? null,
     user_agent: r.user_agent ?? null, you: r.hash === stick.keyHash }));
   return json({ members: list }, 200, cors);
+}
+
+// Отключить: удаляем ключ доступа. Ключ владельца так не удалить.
+async function revokeMember(request, env, stick, cors) {
+  if (stick.key_kind !== "owner") return json({ error: "only the owner can disconnect people" }, 403, cors);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
+  const id = body && body.id;
+  if (typeof id !== "string" || !/^[0-9a-f]{16}$/.test(id)) return json({ error: "bad id" }, 400, cors);
+  const res = await env.DB.prepare(
+    "DELETE FROM access_keys WHERE token_hash = ?1 AND substr(hash, 1, 16) = ?2 AND kind != 'owner'"
+  ).bind(stick.hash, id).run();
+  if (!res.meta.changes) return json({ error: "not found" }, 404, cors);
+  return json({ ok: true }, 200, cors);
 }
 
 // ua — браузер того, кто сразу начнёт пользоваться ключом (владелец при регистрации).
@@ -194,9 +216,15 @@ async function register(request, env, cors) {
 // ---------- Схема ----------
 // schema.sql создаёт таблицы с нуля; здесь — догоняем базы, созданные раньше.
 
+// Миграции выполняются один раз: номер версии схемы лежит в таблице meta, и дальше
+// каждый новый экземпляр воркера тратит на проверку одно чтение, а не обход таблиц.
+const SCHEMA_VERSION = 8;
 let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT)").run();
+  const ver = await env.DB.prepare("SELECT v FROM meta WHERE k = 'schema'").first();
+  if (ver && Number(ver.v) >= SCHEMA_VERSION) { schemaReady = true; return; }
   const cols = async (table) => (await env.DB.prepare(`PRAGMA table_info(${table})`).all()).results.map((c) => c.name);
   const readingCols = await cols("readings");
   if (readingCols.length && !readingCols.includes("owner")) {
@@ -230,6 +258,17 @@ async function ensureSchema(env) {
       env.DB.prepare("UPDATE readings SET owner = ?1 WHERE owner IS NULL").bind(h),
     );
   }
+  // Последнее показание каждого iSpindel — чтобы список устройств и проверка частоты
+  // читали одну строку, а не всю историю. Заполняем один раз из readings.
+  fixes.push(
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS latest (
+      owner TEXT NOT NULL, device TEXT NOT NULL, ts INTEGER NOT NULL, chip_id TEXT, angle REAL, temperature REAL,
+      temp_units TEXT, battery REAL, gravity REAL, interval_s INTEGER, rssi INTEGER, PRIMARY KEY (owner, device))`),
+    env.DB.prepare(`INSERT OR REPLACE INTO latest (owner, device, ts, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi)
+      SELECT owner, device, ts, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi
+      FROM readings WHERE owner IS NOT NULL ORDER BY ts`),
+    env.DB.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('schema', ?1)").bind(String(SCHEMA_VERSION)),
+  );
   await env.DB.batch(fixes);
   schemaReady = true;
 }
@@ -251,8 +290,7 @@ async function ingest(raw, env, url) {
   const owner = stick.hash;
 
   const device = String(body.name ?? "iSpindel").slice(0, 64);
-  const last = await env.DB.prepare("SELECT MAX(ts) AS ts FROM readings WHERE owner = ?1 AND device = ?2")
-    .bind(owner, device).first();
+  const last = await env.DB.prepare("SELECT ts FROM latest WHERE owner = ?1 AND device = ?2").bind(owner, device).first();
   const gap = last && last.ts ? Date.now() - last.ts : Infinity;
   if (gap < MIN_GAP_MS - GAP_TOLERANCE_MS) {
     return text("Too Many Requests", 429, `too frequent: ${Math.round(gap / 1000)} s since the last reading, minimum 60 s`);
@@ -276,6 +314,11 @@ async function ingest(raw, env, url) {
       `INSERT INTO readings (ts, owner, device, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi)
        VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`
     ).bind(row.ts, row.owner, row.device, row.chip_id, row.angle, row.temperature, row.temp_units,
+           row.battery, row.gravity, row.interval_s, row.rssi),
+    env.DB.prepare(
+      `INSERT OR REPLACE INTO latest (owner, device, ts, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`
+    ).bind(row.owner, row.device, row.ts, row.chip_id, row.angle, row.temperature, row.temp_units,
            row.battery, row.gravity, row.interval_s, row.rssi),
     env.DB.prepare("UPDATE tokens SET last_seen = ?1 WHERE hash = ?2").bind(row.ts, owner),
   ]);
@@ -333,44 +376,46 @@ async function setFormula(request, env, stick, cors) {
 async function devices(env, stick, cors) {
   const owner = stick.hash;
   const { results } = await env.DB.prepare(
-    `SELECT r.ts, r.device, r.chip_id, r.angle, r.temperature, r.temp_units, r.battery, r.gravity, r.interval_s, r.rssi
-     FROM readings r
-     JOIN (SELECT device, MAX(ts) AS ts FROM readings WHERE owner = ?1 GROUP BY device) last
-       ON last.device = r.device AND last.ts = r.ts
-     WHERE r.owner = ?1
-     ORDER BY r.device`
+    `SELECT ts, device, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi
+     FROM latest WHERE owner = ?1 ORDER BY device`
   ).bind(owner).all();
   return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", units: stick.units || "auto",
     style: stick.style ?? null, fg: stick.fg_target ?? null, devices: results }, 200, cors);
 }
 
+// История. ?after=ts — только новые строки после ts (приложение так догружает раз в минуту).
+// Полная загрузка: если строк за период больше MAX_POINTS, усредняем по корзинам. Сколько строк,
+// оцениваем по интервалу iSpindel, а не COUNT(*) — тот читает всю историю и съедает лимит D1.
 async function readings(env, owner, url, cors) {
   const device = url.searchParams.get("device");
   const now = Date.now();
-  const from = int(url.searchParams.get("from")) ?? now - 24 * 3600 * 1000;
+  const after = int(url.searchParams.get("after"));
+  const from = after ?? int(url.searchParams.get("from")) ?? now - 24 * 3600 * 1000;
   const to = int(url.searchParams.get("to")) ?? now;
 
-  let where = `owner = ?1 AND ts BETWEEN ?2 AND ?3`;
+  let where = after != null ? `r.owner = ?1 AND r.ts > ?2 AND r.ts <= ?3` : `r.owner = ?1 AND r.ts BETWEEN ?2 AND ?3`;
   const params = [owner, from, to];
   if (device) {
-    where += ` AND device = ?4`;
+    where += ` AND r.device = ?4`;
     params.push(device);
   }
-  // Длинную историю (интервал 60 с — это 1440 строк в сутки) усредняем по корзинам,
-  // чтобы отдать не больше MAX_POINTS точек и не обрезать самые свежие.
-  const { n } = await env.DB.prepare(`SELECT COUNT(*) AS n FROM readings WHERE ${where}`).bind(...params).first();
-  let sql;
-  if (n > MAX_POINTS) {
-    const bucket = Math.ceil((to - from) / MAX_POINTS);
-    sql = `SELECT MAX(ts) AS ts, device, AVG(angle) AS angle, AVG(temperature) AS temperature, MAX(temp_units) AS temp_units,
-                  AVG(battery) AS battery, AVG(gravity) AS gravity, MAX(interval_s) AS interval_s, ROUND(AVG(rssi)) AS rssi
-           FROM readings WHERE ${where} GROUP BY device, ts / ${bucket} ORDER BY ts ASC`;
-  } else {
-    sql = `SELECT ts, device, angle, temperature, temp_units, battery, gravity, interval_s, rssi
-           FROM readings WHERE ${where} ORDER BY ts ASC LIMIT ${MAX_ROWS}`;
+  const cols = `r.ts, r.device, r.angle, r.temperature, r.temp_units, r.battery, r.gravity, r.interval_s, r.rssi`;
+  let bucket = 0;
+  if (after == null && device) {
+    const first = await env.DB.prepare(`SELECT MIN(r.ts) AS t FROM readings r WHERE ${where}`).bind(...params).first();
+    const last = await env.DB.prepare("SELECT interval_s FROM latest WHERE owner = ?1 AND device = ?2").bind(owner, device).first();
+    const start = first && first.t != null ? first.t : to;
+    const interval = Math.max(60, (last && last.interval_s) || 60);
+    if ((to - start) / (interval * 1000) > MAX_POINTS) bucket = Math.ceil((to - start) / MAX_POINTS);
   }
+  const sql = bucket
+    ? `SELECT MAX(r.ts) AS ts, r.device AS device, AVG(r.angle) AS angle, AVG(r.temperature) AS temperature,
+              MAX(r.temp_units) AS temp_units, AVG(r.battery) AS battery, AVG(r.gravity) AS gravity,
+              MAX(r.interval_s) AS interval_s, ROUND(AVG(r.rssi)) AS rssi
+       FROM readings r WHERE ${where} GROUP BY r.device, r.ts / ${bucket} ORDER BY MAX(r.ts) ASC`
+    : `SELECT ${cols} FROM readings r WHERE ${where} ORDER BY r.ts ASC LIMIT ${MAX_ROWS}`;
   const { results } = await env.DB.prepare(sql).bind(...params).all();
-  return json({ from, to, count: results.length, total: n, readings: results }, 200, cors);
+  return json({ from, to, count: results.length, bucket, readings: results }, 200, cors);
 }
 
 async function battery(env, owner, url, cors) {
