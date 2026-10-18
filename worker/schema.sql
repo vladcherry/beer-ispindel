@@ -35,7 +35,9 @@ CREATE TABLE IF NOT EXISTS access_keys (
   hash       TEXT PRIMARY KEY,     -- SHA-256 ключа
   token_hash TEXT NOT NULL,        -- стик
   kind       TEXT NOT NULL,
-  created    INTEGER NOT NULL
+  created    INTEGER NOT NULL,
+  last_used  INTEGER,             -- когда ключом пользовались последний раз (с точностью до 5 мин)
+  user_agent TEXT                 -- браузер, с которого пользовались
 );
 
 -- Последние попытки отправки (для диагностики), хранится ~50 строк.

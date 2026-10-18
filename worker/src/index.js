@@ -8,6 +8,7 @@
 //   GET  /api/devices       — устройства стика с последним показанием
 //   GET  /api/readings      — история: ?device=&from=&to= (ms UTC)
 //   GET  /api/battery       — среднее напряжение по часам для прогноза батареи: ?device=&days=14
+//   GET  /api/members       — кто подключён к стику: ключи доступа, браузер, когда были активны
 //   GET  /api/health        — проверка
 //
 // Токен стика знают iSpindel и тот, кто его зарегистрировал; зарегистрировать токен можно
@@ -43,22 +44,22 @@ export default {
         return await register(request, env, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/share") {
-        const stick = await stickByAccess(env, request.headers.get("X-Access"));
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return json({ access: await issueAccess(env, stick.hash, "share") }, 200, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/batch") {
-        const stick = await stickByAccess(env, request.headers.get("X-Access"));
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await setBatch(request, env, stick, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/formula") {
-        const stick = await stickByAccess(env, request.headers.get("X-Access"));
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await setFormula(request, env, stick, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/units") {
-        const stick = await stickByAccess(env, request.headers.get("X-Access"));
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         let body;
         try { body = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
@@ -80,9 +81,10 @@ export default {
         return json({ ok: true, time: Date.now() }, 200, cors);
       }
       if (request.method === "GET" && url.pathname.startsWith("/api/")) {
-        const stick = await stickByAccess(env, request.headers.get("X-Access") ?? url.searchParams.get("access"));
+        const stick = await stickByAccess(env, request.headers.get("X-Access") ?? url.searchParams.get("access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         if (url.pathname === "/api/devices") return await devices(env, stick, cors);
+        if (url.pathname === "/api/members") return await members(env, stick, cors);
         if (url.pathname === "/api/readings") return await readings(env, stick.hash, url, cors);
         if (url.pathname === "/api/battery") return await battery(env, stick.hash, url, cors);
       }
@@ -121,18 +123,45 @@ async function stickByToken(env, token) {
   return await env.DB.prepare("SELECT hash, id FROM tokens WHERE hash = ?1").bind(await sha256(token)).first();
 }
 
-// Стик по ключу доступа (для чтения).
-async function stickByAccess(env, key) {
+// Стик по ключу доступа (для чтения). Заодно отмечаем, когда и с какого браузера ключом пользовались —
+// не чаще раза в 5 минут, чтобы не писать в базу на каждый запрос.
+const SEEN_EVERY_MS = 5 * 60 * 1000;
+async function stickByAccess(env, key, request) {
   if (!key) return null;
-  return await env.DB.prepare(
-    "SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1"
-  ).bind(await sha256(key)).first();
+  const keyHash = await sha256(key);
+  const stick = await env.DB.prepare(
+    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, a.last_used, a.user_agent
+     FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1`
+  ).bind(keyHash).first();
+  if (stick && request) {
+    const ua = (request.headers.get("User-Agent") || "").slice(0, 300) || null;
+    const now = Date.now();
+    if (!stick.last_used || now - stick.last_used > SEEN_EVERY_MS || ua !== stick.user_agent) {
+      await env.DB.prepare("UPDATE access_keys SET last_used = ?1, user_agent = ?2 WHERE hash = ?3").bind(now, ua, keyHash).run();
+    }
+  }
+  if (stick) stick.keyHash = keyHash;
+  return stick;
 }
 
-async function issueAccess(env, tokenHash, kind) {
+// Кто подключён к стику. Хеши ключей не отдаём; свой ключ помечаем как you.
+async function members(env, stick, cors) {
+  const { results } = await env.DB.prepare(
+    `SELECT hash, kind, created, last_used, user_agent FROM access_keys WHERE token_hash = ?1
+     ORDER BY last_used IS NULL, last_used DESC, created DESC`
+  ).bind(stick.hash).all();
+  const list = results.map((r) => ({ kind: r.kind, created: r.created, last_used: r.last_used ?? null,
+    user_agent: r.user_agent ?? null, you: r.hash === stick.keyHash }));
+  return json({ members: list }, 200, cors);
+}
+
+// ua — браузер того, кто сразу начнёт пользоваться ключом (владелец при регистрации).
+// У ключа для ссылки «Поделиться» браузер появится, когда ссылку откроют.
+async function issueAccess(env, tokenHash, kind, ua = null) {
   const key = randomKey();
-  await env.DB.prepare("INSERT INTO access_keys (hash, token_hash, kind, created) VALUES (?1, ?2, ?3, ?4)")
-    .bind(await sha256(key), tokenHash, kind, Date.now()).run();
+  const now = Date.now();
+  await env.DB.prepare("INSERT INTO access_keys (hash, token_hash, kind, created, last_used, user_agent) VALUES (?1, ?2, ?3, ?4, ?5, ?6)")
+    .bind(await sha256(key), tokenHash, kind, now, ua ? now : null, ua ? ua.slice(0, 300) : null).run();
   return key;
 }
 
@@ -158,7 +187,7 @@ async function register(request, env, cors) {
     if (!res.meta.changes) return json({ error: "token already registered", code: "taken" }, 409, cors);
     stick = { hash, id };
   }
-  const access = await issueAccess(env, hash, "owner");
+  const access = await issueAccess(env, hash, "owner", request.headers.get("User-Agent"));
   return json({ stick: stick.id, access }, 201, cors);
 }
 
@@ -179,6 +208,9 @@ async function ensureSchema(env) {
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS access_keys (
       hash TEXT PRIMARY KEY, token_hash TEXT NOT NULL, kind TEXT NOT NULL, created INTEGER NOT NULL)`),
   ]);
+  const keyCols = await cols("access_keys");
+  if (!keyCols.includes("last_used")) await env.DB.prepare("ALTER TABLE access_keys ADD COLUMN last_used INTEGER").run();
+  if (!keyCols.includes("user_agent")) await env.DB.prepare("ALTER TABLE access_keys ADD COLUMN user_agent TEXT").run();
   const tokenCols = await cols("tokens");
   if (!tokenCols.includes("id")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN id TEXT").run();
   if (!tokenCols.includes("batch_start")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN batch_start INTEGER").run();

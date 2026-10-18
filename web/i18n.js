@@ -288,6 +288,15 @@ const I18N = (() => {
     'catalog.cat.belgian': 'Belgian',
     'catalog.cat.dark': 'Dark',
     'catalog.cat.other': 'Other',
+    'members.title': 'Connected to “{name}”: {n}',
+    'members.you': 'you',
+    'members.owner': 'registered the iSpindel',
+    'members.shared': 'via a share link',
+    'members.active': 'active {ago}',
+    'members.unknown': 'Unknown browser',
+    'members.pending': 'Share links not opened yet: {n}',
+    'members.hint': 'Activity is updated at most every 5 minutes.',
+    'members.now': 'in the app now',
     'settings.cancel': 'Cancel',
     'settings.save': 'Save'
   };
@@ -576,6 +585,15 @@ const I18N = (() => {
     'catalog.cat.belgian': 'Бельгийские',
     'catalog.cat.dark': 'Тёмные',
     'catalog.cat.other': 'Другие',
+    'members.title': 'Подключены к «{name}»: {n}',
+    'members.you': 'это вы',
+    'members.owner': 'зарегистрировал iSpindel',
+    'members.shared': 'по ссылке «Поделиться»',
+    'members.active': 'был активен {ago}',
+    'members.unknown': 'Неизвестный браузер',
+    'members.pending': 'Ссылок ещё не открыли: {n}',
+    'members.hint': 'Активность обновляется не чаще раза в 5 минут.',
+    'members.now': 'сейчас в приложении',
     'settings.cancel': 'Отмена',
     'settings.save': 'Сохранить'
   };
@@ -864,6 +882,15 @@ const I18N = (() => {
     'catalog.cat.belgian': 'Бельгійські',
     'catalog.cat.dark': 'Темні',
     'catalog.cat.other': 'Інші',
+    'members.title': 'Підключені до «{name}»: {n}',
+    'members.you': 'це ви',
+    'members.owner': 'зареєстрував iSpindel',
+    'members.shared': 'за посиланням «Поділитися»',
+    'members.active': 'був активний {ago}',
+    'members.unknown': 'Невідомий браузер',
+    'members.pending': 'Посилань ще не відкрили: {n}',
+    'members.hint': 'Активність оновлюється не частіше ніж раз на 5 хвилин.',
+    'members.now': 'зараз у застосунку',
     'settings.cancel': 'Скасувати',
     'settings.save': 'Зберегти'
   };
@@ -1151,6 +1178,15 @@ const I18N = (() => {
     'catalog.cat.belgian': 'Belgas',
     'catalog.cat.dark': 'Oscuras',
     'catalog.cat.other': 'Otras',
+    'members.title': 'Conectados a «{name}»: {n}',
+    'members.you': 'tú',
+    'members.owner': 'registró el iSpindel',
+    'members.shared': 'con un enlace para compartir',
+    'members.active': 'activo {ago}',
+    'members.unknown': 'Navegador desconocido',
+    'members.pending': 'Enlaces aún sin abrir: {n}',
+    'members.hint': 'La actividad se actualiza como mucho cada 5 minutos.',
+    'members.now': 'ahora en la app',
     'settings.cancel': 'Cancelar',
     'settings.save': 'Guardar'
   };
