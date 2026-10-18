@@ -74,7 +74,7 @@ button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
 /* Шапка */
-.top { display: grid; gap: 2px; }
+.top { display: grid; grid-template-columns: minmax(0, 1fr); gap: 2px; }
 .title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .top h1 { font: 600 28px/1.1 var(--display); margin: 0; letter-spacing: .01em; min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .top h1 select { max-width: 100%; }
@@ -94,7 +94,7 @@ button, input, select { font: inherit; color: inherit; }
 .top-actions select.icon-btn { padding: 6px 8px; }
 .seen { color: var(--muted); font-size: 15px; }
 .seen.stale { color: var(--alert); }
-.top-actions { display: flex; gap: 8px; align-items: center; }
+.top-actions { display: flex; gap: 8px; align-items: center; flex: none; }
 .icon-btn {
   border: 1px solid var(--rule); background: var(--surface); border-radius: 8px;
   padding: 6px 12px; cursor: pointer; font-size: 15px;
@@ -116,12 +116,19 @@ button, input, select { font: inherit; color: inherit; }
 .state.ok b { color: var(--ok); }
 .state.idle b { color: var(--amber-deep); }
 
-.batch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 26px; border-top: 1px solid var(--rule); }
-.batch div { padding: 12px 12px 0 0; }
+/* Показатели партии: каждая ячейка своей ширины, при нехватке места переносится на новую строку */
+.batch { display: flex; flex-wrap: wrap; gap: 0 20px; margin-top: 26px; border-top: 1px solid var(--rule); }
+.batch div { padding-top: 12px; }
+.batch dt { white-space: nowrap; }
+.batch dd { white-space: nowrap; }
 .batch dt { color: var(--muted); font-size: 14px; }
 .batch dd { margin: 0; font: 500 30px/1.1 var(--display); font-variant-numeric: tabular-nums; }
-.batch .hint { grid-column: 1 / -1; color: var(--muted); font-size: 14px; padding-top: 10px; }
-.batch .hint button { background: none; border: 0; padding: 0; color: var(--amber-deep); text-decoration: underline; cursor: pointer; font-size: 14px; }
+.batch .hint { flex-basis: 100%; color: var(--muted); font-size: 14px; padding-top: 10px; }
+.batch .hint button {
+  display: block; margin-top: 10px; padding: 8px 14px; border: 1px solid var(--amber); border-radius: 8px;
+  background: transparent; color: var(--amber-deep); font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.batch .hint button:hover { background: var(--amber-soft); }
 
 .device {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px 24px;
