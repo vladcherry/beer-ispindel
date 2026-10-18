@@ -57,6 +57,7 @@ If the account has never used Workers, open Workers & Pages in the Cloudflare da
 - **Share**: creates a new access key and a link `…/#join=<key>`. Opening the link adds the iSpindel to that browser (read-only: the token is not shared).
 - **Several iSpindels**: each one is listed in Settings; switch between them in the header on the main page.
 - **Batch start is shared** by everyone connected to an iSpindel and stored on the worker. Restarting or clearing a running batch asks for confirmation, because it resets original gravity, attenuation, alcohol and the batch history for all users. While a batch runs, the charts show it from its start.
+- **Gravity units** (Auto / °P / SG) are shared per iSpindel. SG from the iSpindel or from the formula is converted to °P before every calculation; Auto decides from the readings at the start of the batch (SG ≈ 1.03–1.12 vs 7–28 °P).
 - **The gravity formula (polynomial from tilt) is shared** per iSpindel too, stored on the worker. Changing it asks for confirmation because it recalculates gravity, original gravity, attenuation and alcohol for everyone. A formula set locally in an older version is uploaded once if the iSpindel has none yet.
 - Tokens: 8–64 characters, no spaces, quotes or backslashes.
 - Migration: an iSpindel registered before access keys existed (including the old shared `INGEST_TOKEN`) can be claimed once by adding its token.

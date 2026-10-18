@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS tokens (
   id        TEXT,                  -- публичный id стика
   batch_start INTEGER,             -- начало текущей партии (ms UTC), общее для всех с доступом
   formula   TEXT,                  -- полином плотности по наклону, общий для всех с доступом
+  units     TEXT,                  -- P / SG — в чём приходит плотность; NULL = определять автоматически
   created   INTEGER NOT NULL,
   last_seen INTEGER
 );

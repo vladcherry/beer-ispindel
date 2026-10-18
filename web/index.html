@@ -170,6 +170,7 @@ dialog form { padding: 22px; display: grid; grid-template-columns: minmax(0, 1fr
 @media (max-width: 480px) { dialog form { padding: 18px 16px; } }
 dialog h2 { font: 600 24px/1.1 var(--display); margin: 0; }
 label { display: grid; gap: 4px; font-size: 14px; color: var(--muted); }
+label select { border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 15px; color: var(--ink); width: 100%; }
 label input { border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 15px; color: var(--ink); min-width: 0; width: 100%; }
 label small { font-size: 13px; }
 .row { display: flex; gap: 8px; align-items: end; }
@@ -369,6 +370,16 @@ body.has-install main { padding-bottom: 220px; }
       </label>
       <button class="secondary" type="button" id="batch-now" data-i18n="settings.now"></button>
     </div>
+    <label><span data-i18n="settings.units"></span>
+      <select name="units">
+        <option value="auto" data-i18n="units.auto"></option>
+        <option value="P" data-i18n="units.P"></option>
+        <option value="SG" data-i18n="units.SG"></option>
+      </select>
+      <small id="units-detected"></small>
+      <small data-i18n="settings.unitsHint"></small>
+      <small class="field-error" id="units-error"></small>
+    </label>
     <label><span data-i18n="settings.formula"></span>
       <input name="formula" type="text" placeholder="-0.0322987*tilt^2+2.643882645*tilt-38.64180015" autocomplete="off" spellcheck="false">
       <small data-i18n="settings.formulaHint"></small>
@@ -440,6 +451,14 @@ body.has-install main { padding-bottom: 220px; }
 
   // ---------- Пиво: пересчёты ----------
   const sgFromPlato = (p) => 1 + p / (258.6 - (p / 258.2) * 227.1);
+  const platoFromSG = (sg) => -616.868 + 1111.14 * sg - 630.272 * sg ** 2 + 135.997 * sg ** 3;
+  // В режиме «Авто» единицы определяем по медиане: SG почти всегда 0,98–1,15, а °P такой бывает
+  // только у почти выбродившего пива. Поэтому смотрим на начало партии (там SG ≈ 1,03–1,12 против 7–28 °P).
+  function detectUnits(values) {
+    const m = median(values.filter((v) => v != null && Number.isFinite(v)));
+    if (m == null) return null;
+    return m > 0.95 && m < 1.25 ? "SG" : "P";
+  }
   const abv = (ogP, fgP) => (sgFromPlato(ogP) - sgFromPlato(fgP)) * 131.25;
   const BATTERY = [[4.2, 100], [4.1, 90], [4.0, 80], [3.9, 65], [3.8, 50], [3.7, 35], [3.6, 20], [3.5, 8], [3.4, 0]];
   function batteryPct(v) {
@@ -617,6 +636,7 @@ body.has-install main { padding-bottom: 220px; }
   let busy = false;
 
   let rangePicked = false;
+  let detectedUnits = null;
 
   // Партия общая для всех, у кого есть доступ к стику: перезапуск идущей партии — только после подтверждения.
   async function setBatch(start) {
@@ -678,6 +698,7 @@ body.has-install main { padding-bottom: 220px; }
         }
         st.formulaSynced = true; save();
       }
+      if ("units" in data && st.units !== data.units) { st.units = data.units; save(); }
       let formula = null;
       try { formula = compileFormula(st.formula); }
       catch (e) { msgs.push(e.message + t("err.formulaFallback")); }
@@ -706,6 +727,11 @@ body.has-install main { padding-bottom: 220px; }
         ...r,
         g: formula && r.angle != null ? formula(r.angle) : r.gravity,
       }));
+      // Плотность в SG (у iSpindel или у формулы) переводим в °P до всех расчётов.
+      const sample = hasBatch ? rows.filter((r) => r.ts >= st.batchStart).slice(0, 12) : rows;
+      detectedUnits = detectUnits((sample.length ? sample : rows).map((r) => r.g));
+      const units = st.units === "SG" || st.units === "P" ? st.units : detectedUnits;
+      if (units === "SG") rows.forEach((r) => { if (r.g != null) r.g = platoFromSG(r.g); });
       const valid = rows.filter((r) => plausible(r.g));
       const last = devices.find((d) => d.device === cfg.device);
 
@@ -1096,6 +1122,10 @@ body.has-install main { padding-bottom: 220px; }
     const st = cur();
     form.elements.batchStart.value = toLocalInput(st && st.batchStart);
     form.elements.formula.value = st ? st.formula : "";
+    form.elements.units.value = (st && st.units) || "auto";
+    form.elements.units.disabled = !st;
+    $("units-detected").textContent = detectedUnits ? t("units.detected", { units: t("units." + detectedUnits) }) : "";
+    $("units-error").textContent = "";
     form.elements.batchStart.disabled = form.elements.formula.disabled = $("batch-now").disabled = !st;
     syncGuide();
   }
@@ -1189,6 +1219,19 @@ body.has-install main { padding-bottom: 220px; }
     const st = cur();
     if (st) {
       // Полином общий для всех, кто подключён к стику: проверяем, предупреждаем и сохраняем на сервере.
+      // Единицы тоже общие: предупреждаем и сохраняем на сервере.
+      const units = form.elements.units.value;
+      if (units !== (st.units || "auto")) {
+        if (!confirm(t("units.confirm"))) return;
+        try {
+          const res = await fetch(apiBase() + "/api/units", {
+            method: "POST", headers: { "Content-Type": "application/json", "X-Access": st.access }, body: JSON.stringify({ units }),
+          });
+          if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+        } catch (err) { $("units-error").textContent = t("err.unitsSave", { message: err.message }); return; }
+        st.units = units;
+        save();
+      }
       const formula = form.elements.formula.value.trim();
       if (formula !== (st.formula || "")) {
         try { compileFormula(formula); }

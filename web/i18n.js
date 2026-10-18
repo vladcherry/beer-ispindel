@@ -157,6 +157,14 @@ const I18N = (() => {
     'settings.formulaShared': 'Shared by everyone connected to this iSpindel.',
     'formula.confirm': 'The gravity formula is shared by everyone connected to this iSpindel.\n\nChanging it recalculates gravity, original gravity, attenuation and alcohol for all users.\n\nSave the new formula for everyone?',
     'err.formulaSave': 'Could not save the formula: {message}',
+    'settings.units': 'Gravity units sent by the iSpindel',
+    'units.auto': 'Auto',
+    'units.P': '°P (Plato)',
+    'units.SG': 'SG (1.050)',
+    'units.detected': 'Detected now: {units}',
+    'settings.unitsHint': 'Applies to the iSpindel gravity and to the custom formula. The app always shows °P. Shared by everyone connected to this iSpindel.',
+    'units.confirm': 'Gravity units are shared by everyone connected to this iSpindel.\n\nChanging them recalculates gravity, original gravity, attenuation and alcohol for all users.\n\nSave for everyone?',
+    'err.unitsSave': 'Could not save the units: {message}',
     'settings.cancel': 'Cancel',
     'settings.save': 'Save'
   };
@@ -314,6 +322,14 @@ const I18N = (() => {
     'settings.formulaShared': 'Общая для всех, кто подключён к этому iSpindel.',
     'formula.confirm': 'Формула плотности общая для всех, кто подключён к этому iSpindel.\n\nЕё изменение пересчитает плотность, начальную плотность, степень сбраживания и алкоголь у всех пользователей.\n\nСохранить новую формулу для всех?',
     'err.formulaSave': 'Не удалось сохранить формулу: {message}',
+    'settings.units': 'В чём iSpindel присылает плотность',
+    'units.auto': 'Авто',
+    'units.P': '°P (Плато)',
+    'units.SG': 'SG (1,050)',
+    'units.detected': 'Сейчас определено: {units}',
+    'settings.unitsHint': 'Относится и к плотности из iSpindel, и к своей формуле. Приложение всегда показывает °P. Общее для всех, кто подключён к этому iSpindel.',
+    'units.confirm': 'Единицы плотности общие для всех, кто подключён к этому iSpindel.\n\nИх изменение пересчитает плотность, начальную плотность, степень сбраживания и алкоголь у всех пользователей.\n\nСохранить для всех?',
+    'err.unitsSave': 'Не удалось сохранить единицы: {message}',
     'settings.cancel': 'Отмена',
     'settings.save': 'Сохранить'
   };
@@ -471,6 +487,14 @@ const I18N = (() => {
     'settings.formulaShared': 'Спільна для всіх, хто підключений до цього iSpindel.',
     'formula.confirm': 'Формула густини спільна для всіх, хто підключений до цього iSpindel.\n\nЇї зміна перерахує густину, початкову густину, ступінь зброджування та алкоголь у всіх користувачів.\n\nЗберегти нову формулу для всіх?',
     'err.formulaSave': 'Не вдалося зберегти формулу: {message}',
+    'settings.units': 'У чому iSpindel надсилає густину',
+    'units.auto': 'Авто',
+    'units.P': '°P (Плато)',
+    'units.SG': 'SG (1,050)',
+    'units.detected': 'Зараз визначено: {units}',
+    'settings.unitsHint': 'Стосується і густини з iSpindel, і власної формули. Застосунок завжди показує °P. Спільне для всіх, хто підключений до цього iSpindel.',
+    'units.confirm': 'Одиниці густини спільні для всіх, хто підключений до цього iSpindel.\n\nЇх зміна перерахує густину, початкову густину, ступінь зброджування та алкоголь у всіх користувачів.\n\nЗберегти для всіх?',
+    'err.unitsSave': 'Не вдалося зберегти одиниці: {message}',
     'settings.cancel': 'Скасувати',
     'settings.save': 'Зберегти'
   };
@@ -627,6 +651,14 @@ const I18N = (() => {
     'settings.formulaShared': 'Común para todos los conectados a este iSpindel.',
     'formula.confirm': 'La fórmula de densidad es común para todos los conectados a este iSpindel.\n\nCambiarla recalcula la densidad, la densidad inicial, la atenuación y el alcohol para todos los usuarios.\n\n¿Guardar la nueva fórmula para todos?',
     'err.formulaSave': 'No se ha podido guardar la fórmula: {message}',
+    'settings.units': 'Unidades de densidad que envía el iSpindel',
+    'units.auto': 'Automático',
+    'units.P': '°P (Plato)',
+    'units.SG': 'SG (1,050)',
+    'units.detected': 'Detectado ahora: {units}',
+    'settings.unitsHint': 'Se aplica a la densidad del iSpindel y a la fórmula propia. La app siempre muestra °P. Común para todos los conectados a este iSpindel.',
+    'units.confirm': 'Las unidades de densidad son comunes para todos los conectados a este iSpindel.\n\nCambiarlas recalcula la densidad, la densidad inicial, la atenuación y el alcohol para todos los usuarios.\n\n¿Guardar para todos?',
+    'err.unitsSave': 'No se han podido guardar las unidades: {message}',
     'settings.cancel': 'Cancelar',
     'settings.save': 'Guardar'
   };
