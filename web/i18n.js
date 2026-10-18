@@ -303,6 +303,10 @@ const I18N = (() => {
     'members.notOpened': 'not opened yet',
     'members.confirm': 'Disconnect? This access will stop working right away; to come back the person needs a new share link.',
     'members.revokeFail': 'Could not disconnect: {message}',
+    'history.clear': 'Clear history of “{name}”',
+    'history.confirm': 'Delete all readings of “{name}” except the last one? Charts, original gravity and the battery forecast start over for everyone connected to this iSpindel. This cannot be undone.',
+    'history.done': 'History cleared: {n} readings deleted.',
+    'history.fail': 'Could not clear the history: {message}',
     'settings.cancel': 'Cancel',
     'settings.save': 'Save'
   };
@@ -606,6 +610,10 @@ const I18N = (() => {
     'members.notOpened': 'ещё не открыта',
     'members.confirm': 'Отключить? Этот доступ сразу перестанет работать; чтобы вернуться, понадобится новая ссылка «Поделиться».',
     'members.revokeFail': 'Не удалось отключить: {message}',
+    'history.clear': 'Очистить историю «{name}»',
+    'history.confirm': 'Удалить все показания «{name}», кроме последнего? Графики, начальная плотность и прогноз батареи начнутся заново у всех, кто подключён к этому стику. Отменить нельзя.',
+    'history.done': 'История очищена, удалено показаний: {n}.',
+    'history.fail': 'Не удалось очистить историю: {message}',
     'settings.cancel': 'Отмена',
     'settings.save': 'Сохранить'
   };
@@ -909,6 +917,10 @@ const I18N = (() => {
     'members.notOpened': 'ще не відкрите',
     'members.confirm': 'Відключити? Цей доступ одразу перестане працювати; щоб повернутися, знадобиться нове посилання «Поділитися».',
     'members.revokeFail': 'Не вдалося відключити: {message}',
+    'history.clear': 'Очистити історію «{name}»',
+    'history.confirm': 'Видалити всі показники «{name}», крім останнього? Графіки, початкова густина і прогноз батареї почнуться заново в усіх, хто підключений до цього стіка. Скасувати не можна.',
+    'history.done': 'Історію очищено, видалено показників: {n}.',
+    'history.fail': 'Не вдалося очистити історію: {message}',
     'settings.cancel': 'Скасувати',
     'settings.save': 'Зберегти'
   };
@@ -1211,6 +1223,10 @@ const I18N = (() => {
     'members.notOpened': 'aún sin abrir',
     'members.confirm': '¿Desconectar? Este acceso dejará de funcionar de inmediato; para volver hará falta un nuevo enlace para compartir.',
     'members.revokeFail': 'No se ha podido desconectar: {message}',
+    'history.clear': 'Borrar el historial de «{name}»',
+    'history.confirm': '¿Borrar todas las lecturas de «{name}» salvo la última? Las gráficas, la densidad inicial y el pronóstico de batería empiezan de cero para todos los conectados a este iSpindel. No se puede deshacer.',
+    'history.done': 'Historial borrado: {n} lecturas eliminadas.',
+    'history.fail': 'No se ha podido borrar el historial: {message}',
     'settings.cancel': 'Cancelar',
     'settings.save': 'Guardar'
   };

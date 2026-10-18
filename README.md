@@ -63,6 +63,7 @@ If the account has never used Workers, open Workers & Pages in the Cloudflare da
 - **Gravity units** (Auto / °P / SG) are shared per iSpindel. SG from the iSpindel or from the formula is converted to °P before every calculation; Auto decides from the readings at the start of the batch (SG ≈ 1.03–1.12 vs 7–28 °P).
 - **The gravity formula (polynomial from tilt) is shared** per iSpindel too, stored on the worker. Changing it asks for confirmation because it recalculates gravity, original gravity, attenuation and alcohol for everyone. A formula set locally in an older version is uploaded once if the iSpindel has none yet.
 - **Who is connected** (Settings, owner only): every access key in use with its browser, OS and last activity; the owner can disconnect a shared key or revoke an unopened share link.
+- **Clear history** (Settings, owner only): deletes all readings of the selected iSpindel except the latest one, for everyone connected to it. Other iSpindels are not touched.
 - Tokens: 8–64 characters, no spaces, quotes or backslashes.
 - Migration: an iSpindel registered before access keys existed (including the old shared `INGEST_TOKEN`) can be claimed once by adding its token.
 

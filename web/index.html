@@ -237,6 +237,7 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .members li svg { width: 20px; height: 20px; color: var(--muted); margin-top: 1px; }
 .members li small { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
 .members .revoke { font-size: 12px; padding: 2px 8px; border: 1px solid var(--alert); color: var(--alert); background: transparent; border-radius: 6px; cursor: pointer; }
+.members .clear-history { display: block; margin-top: 10px; font-size: 13px; padding: 6px 10px; }
 .members .revoke:hover { background: color-mix(in srgb, var(--alert) 10%, transparent); }
 .members .you { color: var(--ok); font-weight: 600; }
 .members .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
@@ -1572,10 +1573,14 @@ body.has-install main { padding-bottom: 220px; }
       ${pending.map((m) => `<li>${DEVICE_ICONS.link}<span class="who">${escapeHtml(t("members.link", { date: dayTime(m.created) }))}</span>
           ${revokeBtn(m, "members.revokeLink")}<small>${escapeHtml(t("members.notOpened"))}</small></li>`).join("")}</ul>
       <p class="note">${escapeHtml(t("members.hint"))}</p>
-      <small class="field-error" id="members-error"></small>`;
+      <small class="field-error" id="members-error"></small>
+      <button type="button" class="revoke clear-history" id="history-clear">${escapeHtml(t("history.clear", { name: stickName(st) }))}</button>
+      <small class="note" id="history-msg"></small>`;
     box.hidden = false;
   }
   $("members").addEventListener("click", async (e) => {
+    const c = e.target.closest("#history-clear");
+    if (c) return clearHistory(c);
     const b = e.target.closest("[data-revoke]");
     if (!b) return;
     const st = cur();
@@ -1592,6 +1597,23 @@ body.has-install main { padding-bottom: 220px; }
       $("members-error").textContent = t("members.revokeFail", { message: err.message });
     }
   });
+
+  // Очистить историю выбранного стика (только владелец): на сервере остаётся последнее показание.
+  async function clearHistory(btn) {
+    const st = cur();
+    if (!st || !st.token || !confirm(t("history.confirm", { name: stickName(st) }))) return;
+    btn.disabled = true;
+    try {
+      const { deleted } = await post("/api/history/clear", {}, st.access);
+      hist = null;
+      for (const k of Object.keys(localStorage)) if (k.startsWith(`ispindel.batt.${st.id}.`)) localStorage.removeItem(k);
+      $("history-msg").textContent = t("history.done", { n: deleted });
+      refresh();
+    } catch (err) {
+      $("history-msg").textContent = t("history.fail", { message: err.message });
+    }
+    btn.disabled = false;
+  }
 
   $("stick-list").addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-act]");

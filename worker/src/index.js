@@ -10,6 +10,7 @@
 //   GET  /api/battery       — среднее напряжение по часам для прогноза батареи: ?device=&days=14
 //   GET  /api/members       — кто подключён к стику (только владельцу): браузер, когда были активны
 //   POST /api/members/revoke — {id}: владелец отключает пользователя или неоткрытую ссылку
+//   POST /api/history/clear — владелец удаляет все показания стика, кроме последнего
 //   GET  /api/health        — проверка
 //
 // Токен стика знают iSpindel и тот, кто его зарегистрировал; зарегистрировать токен можно
@@ -53,6 +54,11 @@ export default {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await revokeMember(request, env, stick, cors);
+      }
+      if (request.method === "POST" && url.pathname === "/api/history/clear") {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        return await clearHistory(env, stick, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/batch") {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
@@ -161,6 +167,22 @@ async function members(env, stick, cors) {
   const list = results.map((r) => ({ id: r.hash.slice(0, 16), kind: r.kind, created: r.created, last_used: r.last_used ?? null,
     user_agent: r.user_agent ?? null, you: r.hash === stick.keyHash }));
   return json({ members: list }, 200, cors);
+}
+
+// Очистить историю: остаётся одно последнее показание стика, чтобы на главной были текущие
+// значения. Устройства без показаний (старые имена iSpindel) убираем и из latest.
+async function clearHistory(env, stick, cors) {
+  if (stick.key_kind !== "owner") return json({ error: "only the owner can clear the history" }, 403, cors);
+  const [del] = await env.DB.batch([
+    env.DB.prepare(
+      `DELETE FROM readings WHERE owner = ?1
+         AND id <> (SELECT id FROM readings WHERE owner = ?1 ORDER BY ts DESC LIMIT 1)`
+    ).bind(stick.hash),
+    env.DB.prepare(
+      "DELETE FROM latest WHERE owner = ?1 AND device NOT IN (SELECT device FROM readings WHERE owner = ?1)"
+    ).bind(stick.hash),
+  ]);
+  return json({ deleted: del.meta.changes }, 200, cors);
 }
 
 // Отключить: удаляем ключ доступа. Ключ владельца так не удалить.
