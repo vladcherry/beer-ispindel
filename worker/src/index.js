@@ -19,6 +19,11 @@
 //   ALLOWED_ORIGIN (var)                   — откуда разрешено читать, напр. https://vladcherry.github.io
 
 const MAX_ROWS = 20000;
+const MAX_POINTS = 4000;
+// Не чаще одного показания в минуту от одного iSpindel. Пара секунд допуска: iSpindel с интервалом
+// 60 с просыпается с небольшим разбросом, и показание, пришедшее через 59 с, отбрасывать не нужно.
+const MIN_GAP_MS = 60 * 1000;
+const GAP_TOLERANCE_MS = 2 * 1000;
 const TOKEN_MIN = 8;
 const TOKEN_MAX = 64;
 
@@ -120,7 +125,7 @@ async function stickByToken(env, token) {
 async function stickByAccess(env, key) {
   if (!key) return null;
   return await env.DB.prepare(
-    "SELECT t.hash, t.id, t.batch_start, t.formula, t.units FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1"
+    "SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1"
   ).bind(await sha256(key)).first();
 }
 
@@ -179,6 +184,8 @@ async function ensureSchema(env) {
   if (!tokenCols.includes("batch_start")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN batch_start INTEGER").run();
   if (!tokenCols.includes("formula")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN formula TEXT").run();
   if (!tokenCols.includes("units")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN units TEXT").run();
+  if (!tokenCols.includes("style")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN style TEXT").run();
+  if (!tokenCols.includes("fg_target")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN fg_target REAL").run();
   const fixes = [
     env.DB.prepare("UPDATE tokens SET id = lower(hex(randomblob(6))) WHERE id IS NULL"),
     env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_id ON tokens (id)"),
@@ -212,6 +219,12 @@ async function ingest(raw, env, url) {
   const owner = stick.hash;
 
   const device = String(body.name ?? "iSpindel").slice(0, 64);
+  const last = await env.DB.prepare("SELECT MAX(ts) AS ts FROM readings WHERE owner = ?1 AND device = ?2")
+    .bind(owner, device).first();
+  const gap = last && last.ts ? Date.now() - last.ts : Infinity;
+  if (gap < MIN_GAP_MS - GAP_TOLERANCE_MS) {
+    return text("Too Many Requests", 429, `too frequent: ${Math.round(gap / 1000)} s since the last reading, minimum 60 s`);
+  }
   const row = {
     ts: Date.now(),
     owner,
@@ -239,16 +252,35 @@ async function ingest(raw, env, url) {
 }
 
 // Начало партии одно на стик: перезапуск партии виден всем, у кого есть доступ.
+// Партия одна на стик: начало, стиль пива и ожидаемая конечная плотность (°P) видны всем, у кого есть доступ.
+// Передаются только изменяемые поля: {start?, style?, fg?}.
 async function setBatch(request, env, stick, cors) {
   let body;
   try { body = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
-  const start = body ? body.start : undefined;
+  if (!body || typeof body !== "object") return json({ error: "bad json" }, 400, cors);
   const now = Date.now();
-  if (start !== null && !(Number.isInteger(start) && start > 1577836800000 && start < now + 86400000)) {
-    return json({ error: "bad start" }, 400, cors);
+  const sets = [], params = [];
+  if ("start" in body) {
+    const start = body.start;
+    if (start !== null && !(Number.isInteger(start) && start > 1577836800000 && start < now + 86400000)) {
+      return json({ error: "bad start" }, 400, cors);
+    }
+    sets.push("batch_start"); params.push(start);
   }
-  await env.DB.prepare("UPDATE tokens SET batch_start = ?1 WHERE hash = ?2").bind(start, stick.hash).run();
-  return json({ batch_start: start }, 200, cors);
+  if ("style" in body) {
+    const style = body.style;
+    if (style !== null && !(typeof style === "string" && /^[a-z0-9-]{1,40}$/.test(style))) return json({ error: "bad style" }, 400, cors);
+    sets.push("style"); params.push(style);
+  }
+  if ("fg" in body) {
+    const fg = body.fg;
+    if (fg !== null && !(typeof fg === "number" && Number.isFinite(fg) && fg > -5 && fg < 30)) return json({ error: "bad fg" }, 400, cors);
+    sets.push("fg_target"); params.push(fg);
+  }
+  if (!sets.length) return json({ error: "nothing to update" }, 400, cors);
+  const sql = `UPDATE tokens SET ${sets.map((c, i) => `${c} = ?${i + 1}`).join(", ")} WHERE hash = ?${sets.length + 1}`;
+  await env.DB.prepare(sql).bind(...params, stick.hash).run();
+  return json({ ok: true }, 200, cors);
 }
 
 // Полином плотности по наклону — один на стик. Те же правила, что и в приложении:
@@ -276,7 +308,8 @@ async function devices(env, stick, cors) {
      WHERE r.owner = ?1
      ORDER BY r.device`
   ).bind(owner).all();
-  return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", units: stick.units || "auto", devices: results }, 200, cors);
+  return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", units: stick.units || "auto",
+    style: stick.style ?? null, fg: stick.fg_target ?? null, devices: results }, 200, cors);
 }
 
 async function readings(env, owner, url, cors) {
@@ -285,17 +318,27 @@ async function readings(env, owner, url, cors) {
   const from = int(url.searchParams.get("from")) ?? now - 24 * 3600 * 1000;
   const to = int(url.searchParams.get("to")) ?? now;
 
-  let sql = `SELECT ts, device, angle, temperature, temp_units, battery, gravity, interval_s, rssi
-             FROM readings WHERE owner = ?1 AND ts BETWEEN ?2 AND ?3`;
+  let where = `owner = ?1 AND ts BETWEEN ?2 AND ?3`;
   const params = [owner, from, to];
   if (device) {
-    sql += ` AND device = ?4`;
+    where += ` AND device = ?4`;
     params.push(device);
   }
-  sql += ` ORDER BY ts ASC LIMIT ${MAX_ROWS}`;
-
+  // Длинную историю (интервал 60 с — это 1440 строк в сутки) усредняем по корзинам,
+  // чтобы отдать не больше MAX_POINTS точек и не обрезать самые свежие.
+  const { n } = await env.DB.prepare(`SELECT COUNT(*) AS n FROM readings WHERE ${where}`).bind(...params).first();
+  let sql;
+  if (n > MAX_POINTS) {
+    const bucket = Math.ceil((to - from) / MAX_POINTS);
+    sql = `SELECT MAX(ts) AS ts, device, AVG(angle) AS angle, AVG(temperature) AS temperature, MAX(temp_units) AS temp_units,
+                  AVG(battery) AS battery, AVG(gravity) AS gravity, MAX(interval_s) AS interval_s, ROUND(AVG(rssi)) AS rssi
+           FROM readings WHERE ${where} GROUP BY device, ts / ${bucket} ORDER BY ts ASC`;
+  } else {
+    sql = `SELECT ts, device, angle, temperature, temp_units, battery, gravity, interval_s, rssi
+           FROM readings WHERE ${where} ORDER BY ts ASC LIMIT ${MAX_ROWS}`;
+  }
   const { results } = await env.DB.prepare(sql).bind(...params).all();
-  return json({ from, to, count: results.length, readings: results }, 200, cors);
+  return json({ from, to, count: results.length, total: n, readings: results }, 200, cors);
 }
 
 async function battery(env, owner, url, cors) {

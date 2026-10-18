@@ -57,6 +57,9 @@ If the account has never used Workers, open Workers & Pages in the Cloudflare da
 - **Share**: creates a new access key and a link `…/#join=<key>`. Opening the link adds the iSpindel to that browser (read-only: the token is not shared).
 - **Several iSpindels**: each one is listed in Settings; switch between them in the header on the main page.
 - **Batch start is shared** by everyone connected to an iSpindel and stored on the worker. Restarting or clearing a running batch asks for confirmation, because it resets original gravity, attenuation, alcohol and the batch history for all users. While a batch runs, the charts show it from its start.
+- **Beer style and target final gravity** are chosen when a batch starts (≈ 37 styles with fermentation temperature, OG, FG and ABV ranges in `web/analysis.js`) and shared per iSpindel.
+- **Analysis**: fermentation status and speed, peak, progress towards the final gravity, time left and ready date; temperature average, swing, sudden jumps and the style range; expected alcohol against the style. Problems turn the matching button red; tapping it explains the problem and what to do. A recommendations panel sums it up.
+- **Rate limit**: the worker accepts at most one reading per minute from each iSpindel (429 otherwise, logged in `ingest_log`).
 - **Gravity units** (Auto / °P / SG) are shared per iSpindel. SG from the iSpindel or from the formula is converted to °P before every calculation; Auto decides from the readings at the start of the batch (SG ≈ 1.03–1.12 vs 7–28 °P).
 - **The gravity formula (polynomial from tilt) is shared** per iSpindel too, stored on the worker. Changing it asks for confirmation because it recalculates gravity, original gravity, attenuation and alcohol for everyone. A formula set locally in an older version is uploaded once if the iSpindel has none yet.
 - Tokens: 8–64 characters, no spaces, quotes or backslashes.

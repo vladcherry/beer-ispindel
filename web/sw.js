@@ -14,6 +14,7 @@ const SHELL_FILES = [
   "./index.html",
   "./config.js",
   "./i18n.js",
+  "./analysis.js",
   "./vendor/chart-4.4.1.umd.min.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
