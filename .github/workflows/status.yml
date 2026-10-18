@@ -30,6 +30,16 @@ jobs:
           url=https://ispindel.vladcherry.workers.dev
           scripts/resolve-db.sh
           {
+            site=https://vladcherry.github.io/beer-ispindel
+            echo "### Site"
+            echo '```'
+            curl -sS -o /dev/null -w "index: %{http_code}\n" "$site/" || true
+            curl -sSI "$site/" | grep -iE '^(last-modified|cache-control|age):' || true
+            curl -sS "$site/sw.js" | grep -m1 '^const VERSION' || true
+            echo "install banner in index: $(curl -sS "$site/" | grep -c 'id="install"')"
+            echo "language button in index: $(curl -sS "$site/" | grep -c 'class="icon-btn lang"')"
+            echo "config: $(curl -sS "$site/config.js" | grep -o 'api: *"[^"]*"')"
+            echo '```'
             echo "### Health"
             echo '```'
             curl -sS "$url/api/health" || true
