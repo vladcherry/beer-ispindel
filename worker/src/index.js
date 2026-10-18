@@ -3,6 +3,7 @@
 //   POST /api/register      — {token}: зарегистрировать токен стика, в ответ — ключ доступа
 //   POST /api/share         — новый ключ доступа к тому же стику (для ссылки «Поделиться»)
 //   POST /api/batch         — {start: ms | null}: начало партии, общее для всех, у кого есть доступ
+//   POST /api/formula       — {formula: "…" | ""}: полином плотности по наклону, тоже общий для стика
 //   GET  /api/devices       — устройства стика с последним показанием
 //   GET  /api/readings      — история: ?device=&from=&to= (ms UTC)
 //   GET  /api/battery       — среднее напряжение по часам для прогноза батареи: ?device=&days=14
@@ -44,6 +45,11 @@ export default {
         const stick = await stickByAccess(env, request.headers.get("X-Access"));
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await setBatch(request, env, stick, cors);
+      }
+      if (request.method === "POST" && url.pathname === "/api/formula") {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"));
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        return await setFormula(request, env, stick, cors);
       }
       if (request.method === "POST") {
         const raw = await request.text();
@@ -103,7 +109,7 @@ async function stickByToken(env, token) {
 async function stickByAccess(env, key) {
   if (!key) return null;
   return await env.DB.prepare(
-    "SELECT t.hash, t.id, t.batch_start FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1"
+    "SELECT t.hash, t.id, t.batch_start, t.formula FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1"
   ).bind(await sha256(key)).first();
 }
 
@@ -160,6 +166,7 @@ async function ensureSchema(env) {
   const tokenCols = await cols("tokens");
   if (!tokenCols.includes("id")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN id TEXT").run();
   if (!tokenCols.includes("batch_start")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN batch_start INTEGER").run();
+  if (!tokenCols.includes("formula")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN formula TEXT").run();
   const fixes = [
     env.DB.prepare("UPDATE tokens SET id = lower(hex(randomblob(6))) WHERE id IS NULL"),
     env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_id ON tokens (id)"),
@@ -232,6 +239,19 @@ async function setBatch(request, env, stick, cors) {
   return json({ batch_start: start }, 200, cors);
 }
 
+// Полином плотности по наклону — один на стик. Те же правила, что и в приложении:
+// только числа, tilt и + - * / ^ ( ). Пустая строка — брать плотность, посчитанную iSpindel.
+async function setFormula(request, env, stick, cors) {
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
+  const raw = body && typeof body.formula === "string" ? body.formula.trim() : null;
+  if (raw === null) return json({ error: "bad formula" }, 400, cors);
+  if (raw.length > 300 || !/^[0-9tilTIL.+\-*/^()eE\s]*$/.test(raw)) return json({ error: "bad formula" }, 400, cors);
+  const formula = raw || null;
+  await env.DB.prepare("UPDATE tokens SET formula = ?1 WHERE hash = ?2").bind(formula, stick.hash).run();
+  return json({ formula: formula ?? "" }, 200, cors);
+}
+
 // ---------- Чтение ----------
 
 async function devices(env, stick, cors) {
@@ -244,7 +264,7 @@ async function devices(env, stick, cors) {
      WHERE r.owner = ?1
      ORDER BY r.device`
   ).bind(owner).all();
-  return json({ stick: stick.id, batch_start: stick.batch_start ?? null, devices: results }, 200, cors);
+  return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", devices: results }, 200, cors);
 }
 
 async function readings(env, owner, url, cors) {

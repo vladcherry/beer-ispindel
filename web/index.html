@@ -372,6 +372,8 @@ body.has-install main { padding-bottom: 220px; }
     <label><span data-i18n="settings.formula"></span>
       <input name="formula" type="text" placeholder="-0.0322987*tilt^2+2.643882645*tilt-38.64180015" autocomplete="off" spellcheck="false">
       <small data-i18n="settings.formulaHint"></small>
+      <small data-i18n="settings.formulaShared"></small>
+      <small class="field-error" id="formula-error"></small>
     </label>
     <div class="server">
       <div><span data-i18n="settings.server"></span>: <b id="server-name"></b> <span id="server-default" data-i18n="settings.serverDefault"></span></div>
@@ -638,6 +640,14 @@ body.has-install main { padding-bottom: 220px; }
     return true;
   }
 
+  async function postFormula(st, formula) {
+    const res = await fetch(apiBase() + "/api/formula", {
+      method: "POST", headers: { "Content-Type": "application/json", "X-Access": st.access },
+      body: JSON.stringify({ formula }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+  }
+
   async function refresh() {
     if (busy) return;
     const st = cur();
@@ -653,14 +663,24 @@ body.has-install main { padding-bottom: 220px; }
     cachedAt = null;
     try {
       const msgs = [];
-      let formula = null;
-      try { formula = compileFormula(st.formula); }
-      catch (e) { msgs.push(e.message + t("err.formulaFallback")); }
 
       const data = await api("/api/devices");
       devices = data.devices || [];
       // Начало партии хранится на сервере и общее для всех, у кого есть доступ к стику.
       if ("batch_start" in data && st.batchStart !== data.batch_start) { st.batchStart = data.batch_start; save(); }
+      // Полином тоже общий. При первой встрече с сервером, где полинома ещё нет, отдаём ему свой локальный.
+      if ("formula" in data) {
+        const remote = data.formula || "";
+        if (!st.formulaSynced && !remote && st.formula) {
+          await postFormula(st, st.formula).catch(() => {});
+        } else if (st.formula !== remote) {
+          st.formula = remote;
+        }
+        st.formulaSynced = true; save();
+      }
+      let formula = null;
+      try { formula = compileFormula(st.formula); }
+      catch (e) { msgs.push(e.message + t("err.formulaFallback")); }
       if (devices.length && st.name !== devices[0].device) { st.name = devices[0].device; save(); }
       renderTitle();
       if (!devices.length) {
@@ -1089,6 +1109,7 @@ body.has-install main { padding-bottom: 220px; }
     $("token-error").textContent = "";
     $("stick-error").textContent = "";
     $("api-error").textContent = "";
+    $("formula-error").textContent = "";
     $("share-box").hidden = true;
     $("guide").open = !cfg.sticks.length;
     renderSticks(); syncForm(); syncServer();
@@ -1167,7 +1188,17 @@ body.has-install main { padding-bottom: 220px; }
     cfg.api = api;
     const st = cur();
     if (st) {
-      st.formula = form.elements.formula.value.trim();
+      // Полином общий для всех, кто подключён к стику: проверяем, предупреждаем и сохраняем на сервере.
+      const formula = form.elements.formula.value.trim();
+      if (formula !== (st.formula || "")) {
+        try { compileFormula(formula); }
+        catch (err) { $("formula-error").textContent = err.message; form.elements.formula.focus(); return; }
+        if (!confirm(t("formula.confirm"))) return;
+        try { await postFormula(st, formula); }
+        catch (err) { $("formula-error").textContent = t("err.formulaSave", { message: err.message }); return; }
+        st.formula = formula;
+        save();
+      }
       const v = form.elements.batchStart.value;
       const start = v ? new Date(v).getTime() : null;
       // datetime-local хранит минуты — сравниваем с точностью до минуты.

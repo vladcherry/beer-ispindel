@@ -56,7 +56,8 @@ If the account has never used Workers, open Workers & Pages in the Cloudflare da
 - **Reading uses the access key**, not the token. The worker stores only SHA-256 hashes of tokens and keys.
 - **Share**: creates a new access key and a link `…/#join=<key>`. Opening the link adds the iSpindel to that browser (read-only: the token is not shared).
 - **Several iSpindels**: each one is listed in Settings; switch between them in the header on the main page.
-- **Batch start is shared** by everyone connected to an iSpindel and stored on the worker. Restarting or clearing a running batch asks for confirmation, because it resets original gravity, attenuation, alcohol and the batch history for all users. While a batch runs, the charts show it from its start. The custom gravity formula stays per browser.
+- **Batch start is shared** by everyone connected to an iSpindel and stored on the worker. Restarting or clearing a running batch asks for confirmation, because it resets original gravity, attenuation, alcohol and the batch history for all users. While a batch runs, the charts show it from its start.
+- **The gravity formula (polynomial from tilt) is shared** per iSpindel too, stored on the worker. Changing it asks for confirmation because it recalculates gravity, original gravity, attenuation and alcohol for everyone. A formula set locally in an older version is uploaded once if the iSpindel has none yet.
 - Tokens: 8–64 characters, no spaces, quotes or backslashes.
 - Migration: an iSpindel registered before access keys existed (including the old shared `INGEST_TOKEN`) can be claimed once by adding its token.
 

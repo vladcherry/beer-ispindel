@@ -154,6 +154,9 @@ const I18N = (() => {
     'install.ios1': 'Tap Share in Safari',
     'install.ios2': 'Scroll down and choose “Add to Home Screen”.',
     'install.ios3': 'Tap “Add” — the app appears on your home screen.',
+    'settings.formulaShared': 'Shared by everyone connected to this iSpindel.',
+    'formula.confirm': 'The gravity formula is shared by everyone connected to this iSpindel.\n\nChanging it recalculates gravity, original gravity, attenuation and alcohol for all users.\n\nSave the new formula for everyone?',
+    'err.formulaSave': 'Could not save the formula: {message}',
     'settings.cancel': 'Cancel',
     'settings.save': 'Save'
   };
@@ -308,6 +311,9 @@ const I18N = (() => {
     'install.ios1': 'Нажми «Поделиться» в Safari',
     'install.ios2': 'Пролистай вниз и выбери «На экран „Домой“».',
     'install.ios3': 'Нажми «Добавить» — приложение появится на главном экране.',
+    'settings.formulaShared': 'Общая для всех, кто подключён к этому iSpindel.',
+    'formula.confirm': 'Формула плотности общая для всех, кто подключён к этому iSpindel.\n\nЕё изменение пересчитает плотность, начальную плотность, степень сбраживания и алкоголь у всех пользователей.\n\nСохранить новую формулу для всех?',
+    'err.formulaSave': 'Не удалось сохранить формулу: {message}',
     'settings.cancel': 'Отмена',
     'settings.save': 'Сохранить'
   };
@@ -462,6 +468,9 @@ const I18N = (() => {
     'install.ios1': 'Натисни «Поділитися» в Safari',
     'install.ios2': 'Прогорни вниз і вибери «На початковий екран».',
     'install.ios3': 'Натисни «Додати» — застосунок з’явиться на головному екрані.',
+    'settings.formulaShared': 'Спільна для всіх, хто підключений до цього iSpindel.',
+    'formula.confirm': 'Формула густини спільна для всіх, хто підключений до цього iSpindel.\n\nЇї зміна перерахує густину, початкову густину, ступінь зброджування та алкоголь у всіх користувачів.\n\nЗберегти нову формулу для всіх?',
+    'err.formulaSave': 'Не вдалося зберегти формулу: {message}',
     'settings.cancel': 'Скасувати',
     'settings.save': 'Зберегти'
   };
@@ -615,6 +624,9 @@ const I18N = (() => {
     'install.ios1': 'Toca Compartir en Safari',
     'install.ios2': 'Desplázate y elige «Añadir a pantalla de inicio».',
     'install.ios3': 'Toca «Añadir»: la app aparecerá en tu pantalla de inicio.',
+    'settings.formulaShared': 'Común para todos los conectados a este iSpindel.',
+    'formula.confirm': 'La fórmula de densidad es común para todos los conectados a este iSpindel.\n\nCambiarla recalcula la densidad, la densidad inicial, la atenuación y el alcohol para todos los usuarios.\n\n¿Guardar la nueva fórmula para todos?',
+    'err.formulaSave': 'No se ha podido guardar la fórmula: {message}',
     'settings.cancel': 'Cancelar',
     'settings.save': 'Guardar'
   };
