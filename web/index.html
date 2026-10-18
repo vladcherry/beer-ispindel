@@ -22,6 +22,7 @@
 <script src="config.js"></script>
 <script src="i18n.js"></script>
 <script src="analysis.js"></script>
+<script src="styles.js"></script>
 <style>
 :root {
   color-scheme: light;
@@ -167,6 +168,63 @@ button, input, select { font: inherit; color: inherit; }
   background: transparent; color: var(--amber-deep); font-size: 15px; font-weight: 600; cursor: pointer;
 }
 .batchp button.act:hover { background: var(--amber-soft); }
+
+/* Панель действий партии */
+.actbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 12px -12px -12px; border-top: 1px solid var(--rule); }
+.actbar button {
+  display: grid; justify-items: center; gap: 3px; padding: 9px 4px; border: 0; background: none; cursor: pointer;
+  font-size: 13px; color: var(--ink); line-height: 1.2;
+}
+.actbar button + button { border-left: 1px solid var(--rule); }
+.actbar button.main { color: var(--amber-deep); font-weight: 600; }
+.actbar button:hover { background: var(--amber-soft); }
+.actbar button:first-child { border-bottom-left-radius: 12px; } .actbar button:last-child { border-bottom-right-radius: 12px; }
+.actbar svg { width: 20px; height: 20px; }
+
+/* Карточка стиля и справочник — лист снизу */
+dialog.sheet {
+  margin: auto auto 0; width: min(560px, 100%); max-width: 100%; max-height: 88vh; overflow: auto;
+  border-radius: 18px 18px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+}
+dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--rule); margin: 0 auto 10px; }
+@media (prefers-reduced-motion: no-preference) {
+  dialog.sheet[open] { animation: sheet-in .28s cubic-bezier(.2, .7, .2, 1); }
+  @keyframes sheet-in { from { transform: translateY(40px); opacity: .4; } }
+}
+.sheet .top-line { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+.sheet .back, .sheet .x { border: 0; background: none; color: var(--amber-deep); font-size: 14px; cursor: pointer; padding: 4px 0; }
+.sheet .x { color: var(--muted); font-size: 22px; line-height: 1; margin-left: auto; }
+.sheet h2 { font: 600 26px/1.1 var(--display); margin: 0; }
+.sheet .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.sheet p { font-size: 15px; margin: 10px 0; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 8px 0; }
+.facts div { background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+.facts small { display: block; font-size: 12px; color: var(--muted); }
+.facts b { font: 600 19px/1.2 var(--display); }
+.cmp { font-size: 13px; color: var(--muted); margin: 8px 0; display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.cmp .okk { color: var(--ok); font-weight: 600; } .cmp .out { color: var(--alert); font-weight: 600; }
+.sheet h3 { font: 600 17px/1.2 var(--display); margin: 12px 0 4px; }
+.tips { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 4px; }
+.sheet .btns { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.sheet .btns a, .sheet .btns button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; font-size: 15px; font-weight: 600;
+  border: 1px solid var(--rule); background: transparent; color: var(--ink); text-decoration: none; cursor: pointer;
+}
+.sheet .btns .main { border-color: var(--amber); background: var(--amber); color: #fff; }
+.sheet .btns svg { width: 16px; height: 16px; }
+.current-mark { display: inline-block; font-size: 12px; color: var(--ok); font-weight: 600; margin-top: 4px; }
+.cat-search { width: 100%; border: 1px solid var(--rule); border-radius: 10px; padding: 9px 12px; background: var(--bg); color: var(--ink); font-size: 15px; margin: 10px 0 8px; }
+.cats { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.cats button { font-size: 13px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--rule); background: transparent; cursor: pointer; color: var(--ink); }
+.cats button[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); color: #fff; }
+.cat-list { list-style: none; margin: 0; padding: 0; }
+.cat-list button {
+  width: 100%; display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 10px 0;
+  border: 0; border-top: 1px solid var(--rule); background: none; cursor: pointer; text-align: left; color: var(--ink); font-size: 15px;
+}
+.cat-list small { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.cat-list .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+.cat-list .cur { color: var(--ok); font-weight: 600; }
 
 /* Рекомендации */
 .recs { margin-top: 18px; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 12px; }
@@ -368,6 +426,8 @@ body.has-install main { padding-bottom: 220px; }
   <section class="recs" id="recs" hidden></section>
   <div class="pop" id="pop" hidden role="dialog"></div>
 </main>
+
+<dialog id="sheet" class="sheet"><div id="sheet-body"></div></dialog>
 
 <dialog id="batch-dlg">
   <form method="dialog" id="batch-form">
@@ -1020,12 +1080,13 @@ body.has-install main { padding-bottom: 220px; }
       } else if (og == null) {
         html += `<p class="eta">${escapeHtml(t("batch.waiting", { date: dayTime(st.batchStart) }))}</p>`;
       }
-      html += `<button type="button" class="act" id="new-batch">${escapeHtml(t("batch.newBatch"))}</button>`;
-      bp.innerHTML = html;
+      bp.innerHTML = html + actionBar(t("act.newBatch"));
     } else {
-      bp.innerHTML = `<p class="hint">${escapeHtml(t("batch.none"))}</p><button type="button" class="act" id="new-batch">${escapeHtml(t("batch.startNow"))}</button>`;
+      bp.innerHTML = `<p class="hint">${escapeHtml(t("batch.none"))}</p>` + actionBar(t("batch.startNow"));
     }
-    $("new-batch").onclick = openBatchDialog;
+    $("new-batch").onclick = () => openBatchDialog();
+    $("about-style").onclick = () => style ? openStyle(style.id) : openCatalog();
+    $("open-catalog").onclick = () => openCatalog();
 
     // Рекомендации
     const section = (part, key) => {
@@ -1041,6 +1102,125 @@ body.has-install main { padding-bottom: 220px; }
     seenInfo = { ts: last.ts, expected: (last.interval_s || 900) * 1000 };
     updateSeen();
     if (!$("pop").hidden && popFor) showPop(popFor);
+  }
+
+  const ACT_ICONS = {
+    play: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor"/></svg>`,
+    book: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>`,
+    list: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>`,
+    ext: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>`,
+  };
+  const actionBar = (first) => `<div class="actbar">
+      <button type="button" class="main" id="new-batch">${ACT_ICONS.play}${escapeHtml(first)}</button>
+      <button type="button" id="about-style">${ACT_ICONS.book}${escapeHtml(t("act.style"))}</button>
+      <button type="button" id="open-catalog">${ACT_ICONS.list}${escapeHtml(t("act.catalog"))}</button>
+    </div>`;
+
+  // ---------- Справочник стилей и карточка стиля (лист снизу) ----------
+  const sheet = $("sheet");
+  let catState = { cat: "all", q: "" };
+  const COLOURS = { pale: "#e8c55c", amber: "#c4782a", dark: "#4a2c1d" };
+  const closeBtn = `<button class="x" type="button" data-close aria-label="${escapeHtml(t("sheet.close"))}">×</button>`;
+  function openSheet(html) {
+    $("sheet-body").innerHTML = html;
+    if (!sheet.open) sheet.showModal();
+    sheet.scrollTop = 0;
+  }
+  sheet.addEventListener("click", (e) => {
+    if (e.target === sheet || e.target.closest("[data-close]")) sheet.close();
+    const back = e.target.closest("[data-back]");
+    if (back) openCatalog();
+    const pick = e.target.closest("[data-style]");
+    if (pick) openStyle(pick.dataset.style, true);
+    const cat = e.target.closest("[data-cat]");
+    if (cat) { catState.cat = cat.dataset.cat; renderCatalog(); }
+    const choose = e.target.closest("[data-choose]");
+    if (choose) chooseStyle(choose.dataset.choose);
+  });
+
+  function openCatalog() { openSheet(catalogHtml()); bindSearch(); }
+  function renderCatalog() {
+    const keep = sheet.querySelector(".cat-search");
+    const pos = keep ? keep.selectionStart : null;
+    $("sheet-body").innerHTML = catalogHtml();
+    bindSearch(pos);
+  }
+  function bindSearch(pos) {
+    const inp = sheet.querySelector(".cat-search");
+    inp.oninput = (e) => { catState.q = e.target.value; renderCatalog(); };
+    if (pos != null) { inp.focus(); inp.setSelectionRange(pos, pos); }
+  }
+  function catalogHtml() {
+    const lang = I18N.lang(), cur0 = cur() && cur().style;
+    const q = catState.q.trim().toLowerCase();
+    const items = Brew.STYLES
+      .filter((x) => StyleGuide.inCategory(x, catState.cat))
+      .filter((x) => !q || (x.name[lang] || x.name.en).toLowerCase().includes(q) || x.name.en.toLowerCase().includes(q))
+      .sort((p, q2) => (p.name[lang] || p.name.en).localeCompare(q2.name[lang] || q2.name.en, I18N.locale()));
+    const cats = StyleGuide.CATEGORIES.map((c) =>
+      `<button type="button" data-cat="${c}" aria-pressed="${c === catState.cat}">${escapeHtml(t("catalog.cat." + c))}</button>`).join("");
+    const rows = items.map((x) => `<li><button type="button" data-style="${x.id}">
+        <span><span class="dot" style="background:${COLOURS[StyleGuide.colour(x.id)]}"></span>${escapeHtml(x.name[lang] || x.name.en)}${x.id === cur0 ? ` <span class="cur">✓</span>` : ""}</span>
+        <small>${rangeText(x.t)} °C · ${rangeText(x.abv)}%</small></button></li>`).join("");
+    return `<div class="top-line"><h2>${escapeHtml(t("catalog.title"))}</h2>${closeBtn}</div>
+      <input class="cat-search" type="search" value="${escapeHtml(catState.q)}" placeholder="${escapeHtml(t("catalog.search"))}" autocomplete="off">
+      <div class="cats">${cats}</div>
+      ${rows ? `<ul class="cat-list">${rows}</ul>` : `<p class="hint">${escapeHtml(t("catalog.empty"))}</p>`}`;
+  }
+
+  function openStyle(id, fromCatalog = false) {
+    const x = Brew.byId[id];
+    if (!x) return;
+    const lang = I18N.lang();
+    const name = x.name[lang] || x.name.en;
+    const st = cur();
+    const isCurrent = st && st.style === id;
+    // Сравнение с текущей партией — по её данным, если партия идёт
+    let cmp = "";
+    if (view && view.hasBatch) {
+      const a = view.a, parts = [];
+      const mark = (ok) => `<span class="${ok ? "okk" : "out"}">${escapeHtml(t(ok ? "sheet.inRange" : "sheet.out"))}</span>`;
+      if (view.og != null) parts.push(`${escapeHtml(t("sheet.ogNow", { og: fmt(view.og, 1) }))} ${mark(view.og >= x.og[0] - 0.5 && view.og <= x.og[1] + 0.5)}`);
+      const fg = st.fg ?? (x.fg[0] + x.fg[1]) / 2;
+      if (view.og != null) { const pa = Brew.abv(view.og, fg); parts.push(`${escapeHtml(t("sheet.abvProj", { abv: fmt(pa, 1) }))} ${mark(pa >= x.abv[0] - 0.3 && pa <= x.abv[1] + 0.3)}`); }
+      const tc = a.temp.stats && a.temp.stats.last;
+      if (tc != null) parts.push(`${escapeHtml(t("sheet.tempNow", { t: fmt(tc, 1) }))} ${mark(tc >= x.t[0] - 0.5 && tc <= x.t[1] + 0.5)}`);
+      if (parts.length) cmp = `<div class="cmp"><span>${escapeHtml(t("sheet.yourBatch"))}:</span>${parts.map((p) => `<span>${p}</span>`).join("")}</div>`;
+    }
+    let action = "";
+    if (st && view && view.hasBatch && !isCurrent) action = `<button type="button" class="main" data-choose="${id}">${escapeHtml(t("sheet.choose"))}</button>`;
+    else if (st && view && !view.hasBatch) action = `<button type="button" class="main" data-choose="${id}">${escapeHtml(t("sheet.startWith"))}</button>`;
+    openSheet(`<div class="top-line">${fromCatalog ? `<button class="back" type="button" data-back>← ${escapeHtml(t("act.catalog"))}</button>` : ""}${closeBtn}</div>
+      <h2>${escapeHtml(name)}</h2>
+      <div class="sub">${escapeHtml([x.name.en !== name ? x.name.en : null, t("sheet.yeast." + x.yeast), "BJCP " + StyleGuide.code(id)].filter(Boolean).join(" · "))}</div>
+      ${isCurrent ? `<span class="current-mark">✓ ${escapeHtml(t("sheet.current"))}</span>` : ""}
+      <p>${escapeHtml(StyleGuide.desc(id, lang))}</p>
+      <div class="facts">
+        <div><small>${escapeHtml(t("sheet.ferment"))}</small><b>${rangeText(x.t)} °C</b></div>
+        <div><small>${escapeHtml(t("sheet.abv"))}</small><b>${rangeText(x.abv)}%</b></div>
+        <div><small>${escapeHtml(t("sheet.og"))}</small><b>${rangeText(x.og)} °P</b></div>
+        <div><small>${escapeHtml(t("sheet.fg"))}</small><b>${rangeText(x.fg)} °P</b></div>
+      </div>
+      ${cmp}
+      <h3>${escapeHtml(t("sheet.tips"))}</h3>
+      <ul class="tips">${StyleGuide.tips(x.yeast, lang).map((tip) => `<li>${escapeHtml(tip)}</li>`).join("")}</ul>
+      <div class="btns">${action}
+        <a href="${StyleGuide.wikiUrl(name, lang)}" target="_blank" rel="noopener">${escapeHtml(t("sheet.wiki"))} ${ACT_ICONS.ext}</a>
+        <a href="${StyleGuide.bjcpUrl(x.name.en)}" target="_blank" rel="noopener">BJCP ${ACT_ICONS.ext}</a>
+      </div>`);
+  }
+
+  // Выбрать стиль: для идущей партии — сохранить сразу, без партии — открыть «Новая партия» с этим стилем.
+  async function chooseStyle(id) {
+    const st = cur();
+    if (!st) return;
+    if (view && view.hasBatch) {
+      try { await postBatch(st, { style: id }); }
+      catch (e) { notice(escapeHtml(t("err.batch", { message: e.message })), "error"); return; }
+      sheet.close(); refresh();
+    } else {
+      sheet.close(); openBatchDialog(id);
+    }
   }
 
   // ---------- Всплывающие подсказки ----------
@@ -1181,14 +1361,14 @@ body.has-install main { padding-bottom: 220px; }
   const parseFg = (v) => { const n = parseFloat(String(v).replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 10) / 10 : null; };
 
   const bdlg = $("batch-dlg"), bform = $("batch-form");
-  function openBatchDialog() {
+  function openBatchDialog(preStyle) {
     const st = cur();
     if (!st) return;
-    fillStyles(bform.elements.style, st.style);
+    fillStyles(bform.elements.style, preStyle || st.style);
     bform.elements.fg.value = st.fg ?? "";
-    bform.elements.fg.placeholder = fgPlaceholder(st.style);
+    bform.elements.fg.placeholder = fgPlaceholder(preStyle || st.style);
     bform.elements.start.value = toLocalInput(Date.now());
-    $("style-info").textContent = styleInfo(st.style);
+    $("style-info").textContent = styleInfo(preStyle || st.style);
     $("batchdlg-error").textContent = "";
     bdlg.showModal();
   }
