@@ -5,6 +5,7 @@
 //   POST /api/batch         — {start: ms | null}: начало партии, общее для всех, у кого есть доступ
 //   GET  /api/devices       — устройства стика с последним показанием
 //   GET  /api/readings      — история: ?device=&from=&to= (ms UTC)
+//   GET  /api/battery       — среднее напряжение по часам для прогноза батареи: ?device=&days=14
 //   GET  /api/health        — проверка
 //
 // Токен стика знают iSpindel и тот, кто его зарегистрировал; зарегистрировать токен можно
@@ -61,6 +62,7 @@ export default {
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         if (url.pathname === "/api/devices") return await devices(env, stick, cors);
         if (url.pathname === "/api/readings") return await readings(env, stick.hash, url, cors);
+        if (url.pathname === "/api/battery") return await battery(env, stick.hash, url, cors);
       }
       return json({ error: "Not found" }, 404, cors);
     } catch (err) {
@@ -262,6 +264,22 @@ async function readings(env, owner, url, cors) {
 
   const { results } = await env.DB.prepare(sql).bind(...params).all();
   return json({ from, to, count: results.length, readings: results }, 200, cors);
+}
+
+async function battery(env, owner, url, cors) {
+  const device = url.searchParams.get("device");
+  const days = Math.min(Math.max(int(url.searchParams.get("days")) ?? 14, 1), 60);
+  const from = Date.now() - days * 86400 * 1000;
+  let sql = `SELECT (ts / 3600000) * 3600000 AS hour, AVG(battery) AS v, COUNT(*) AS n
+             FROM readings WHERE owner = ?1 AND ts >= ?2 AND battery IS NOT NULL`;
+  const params = [owner, from];
+  if (device) {
+    sql += ` AND device = ?3`;
+    params.push(device);
+  }
+  sql += ` GROUP BY hour ORDER BY hour`;
+  const { results } = await env.DB.prepare(sql).bind(...params).all();
+  return json({ days, hours: results }, 200, cors);
 }
 
 function corsHeaders(request, env) {

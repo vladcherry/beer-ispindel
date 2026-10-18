@@ -74,8 +74,20 @@ button, input, select { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
 /* Шапка */
-.top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.top h1 { font: 600 28px/1.1 var(--display); margin: 0; letter-spacing: .01em; }
+.top { display: grid; gap: 2px; }
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.top h1 { font: 600 28px/1.1 var(--display); margin: 0; letter-spacing: .01em; min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top h1 select { max-width: 100%; }
+.seen-row { display: flex; align-items: center; gap: 4px; min-height: 32px; }
+.icon-btn.round {
+  display: inline-grid; place-items: center; width: 40px; height: 40px; padding: 0; flex: none;
+  border: 0; border-radius: 50%; background: transparent; color: var(--muted);
+}
+.icon-btn.round.small { width: 32px; height: 32px; }
+.icon-btn.round:hover { background: var(--surface); color: var(--ink); }
+.icon-btn.spin svg { animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .icon-btn.spin svg { animation: none; opacity: .5; } }
 .top h1 select {
   font: 600 28px/1.1 var(--display); border: 0; background: transparent; padding: 0; cursor: pointer;
 }
@@ -111,12 +123,18 @@ button, input, select { font: inherit; color: inherit; }
 .batch .hint { grid-column: 1 / -1; color: var(--muted); font-size: 14px; padding-top: 10px; }
 .batch .hint button { background: none; border: 0; padding: 0; color: var(--amber-deep); text-decoration: underline; cursor: pointer; font-size: 14px; }
 
-.device { display: flex; flex-wrap: wrap; gap: 8px 28px; margin-top: 28px; padding: 14px 16px; background: var(--surface); border-radius: 10px; }
-.device div { min-width: 110px; }
-.device dt { color: var(--muted); font-size: 13px; }
-.device dd { margin: 0; font: 500 22px/1.2 var(--display); font-variant-numeric: tabular-nums; }
-.device dd small { font: 400 14px var(--body); color: var(--muted); margin-left: 4px; }
-.device .warn { color: var(--alert); }
+.device {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px 24px;
+  margin-top: 28px; padding: 16px; background: var(--surface); border-radius: 10px;
+}
+.metric { display: grid; grid-template-columns: 28px 1fr; column-gap: 10px; align-items: start; }
+.metric svg { width: 28px; height: 28px; color: var(--muted); margin-top: 2px; }
+.metric dt { color: var(--muted); font-size: 13px; line-height: 1.2; }
+.metric dd { margin: 0; font: 500 22px/1.2 var(--display); font-variant-numeric: tabular-nums; }
+.metric dd small { font: 400 14px var(--body); color: var(--muted); margin-left: 4px; }
+.metric .note { grid-column: 2; font-size: 13px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
+.metric.battery { grid-column: 1 / -1; }
+.metric .warn { color: var(--alert); }
 
 /* Графики */
 .charts { margin-top: 36px; }
@@ -226,14 +244,16 @@ body.has-install main { padding-bottom: 220px; }
 <body>
 <main>
   <header class="top">
-    <div>
+    <div class="title-row">
       <h1 id="title" data-i18n="app.name"></h1>
-      <div class="seen" id="seen" data-i18n="status.loading"></div>
+      <div class="top-actions">
+        <button class="icon-btn lang" id="lang" type="button"></button>
+        <button class="icon-btn round" id="open-settings" type="button" data-i18n-label="ui.settings" data-i18n-title="ui.settings"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+      </div>
     </div>
-    <div class="top-actions">
-      <button class="icon-btn" id="refresh" type="button" data-i18n="ui.refresh" data-i18n-title="ui.refresh"></button>
-      <button class="icon-btn" id="open-settings" type="button" data-i18n="ui.settings"></button>
-      <button class="icon-btn lang" id="lang" type="button"></button>
+    <div class="seen-row">
+      <span class="seen" id="seen" data-i18n="status.loading"></span>
+      <button class="icon-btn round small" id="refresh" type="button" data-i18n-label="ui.refresh" data-i18n-title="ui.refresh"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 4v5h-5"/></svg></button>
     </div>
   </header>
 
@@ -459,14 +479,21 @@ body.has-install main { padding-bottom: 220px; }
 
   // ---------- Формат ----------
   const fmt = (n, d = 1) => n == null ? "–" : n.toLocaleString(I18N.locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
+  // Строка с числом в правильной форме: ключи base.one / .few / .many / .other
+  const pluralRules = {};
+  function tn(base, n, decimals = 0) {
+    const loc = I18N.locale();
+    const rules = pluralRules[loc] || (pluralRules[loc] = new Intl.PluralRules(loc));
+    let key = `${base}.${rules.select(n)}`;
+    if (t(key) === key) key = `${base}.other`;
+    return t(key).split("{n}").join(fmt(n, decimals));
+  }
   function ago(ts) {
-    const s = Math.round((Date.now() - ts) / 1000);
-    if (s < 60) return t("time.justNow");
-    const m = Math.round(s / 60);
-    if (m < 60) return t("time.minAgo", { m });
-    const h = Math.floor(m / 60);
-    if (h < 24) return t("time.hourMinAgo", { h, m: m % 60 });
-    return dayTime(ts);
+    const s = Math.max(0, Math.floor((Date.now() - ts) / 1000));
+    if (s < 60) return tn("ago.sec", s);
+    if (s < 3600) return tn("ago.min", Math.floor(s / 60));
+    if (s < 86400) return tn("ago.hour", Math.floor(s / 3600));
+    return tn("ago.day", Math.floor(s / 86400));
   }
   const dayTime = (ts) => new Date(ts).toLocaleString(I18N.locale(), { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
@@ -526,7 +553,7 @@ body.has-install main { padding-bottom: 220px; }
       <line id="surface" x1="0" x2="120" y1="${level}" y2="${level}" stroke="${amber}" stroke-width="2.5"/>`;
   }
 
-  function renderChart(id, points, raw, color, unit, decimals) {
+  function renderChart(id, points, raw, color, unit, decimals, minSpan = 0) {
     const grid = css("--rule"), muted = css("--muted");
     const ds = [];
     if (raw) ds.push({ data: raw, borderColor: color, backgroundColor: color, borderWidth: 0, pointRadius: 1.5, pointHoverRadius: 3, showLine: false, label: t("charts.raw") });
@@ -559,7 +586,17 @@ body.has-install main { padding-bottom: 220px; }
             },
           },
         },
-        y: { grid: { color: grid }, border: { display: false }, ticks: { color: muted, callback: (v) => fmt(v, decimals) } },
+        y: (() => {
+          // Минимальный размах оси, чтобы шум в сотых не выглядел как скачки
+          const ys = points.concat(raw || []).map((p) => p.y).filter((v) => v != null);
+          const lo = Math.min(...ys), hi = Math.max(...ys), mid = (lo + hi) / 2;
+          const half = Math.max((hi - lo) / 2, minSpan / 2);
+          return {
+            min: ys.length ? mid - half : undefined, max: ys.length ? mid + half : undefined,
+            grid: { color: grid }, border: { display: false },
+            ticks: { color: muted, callback: (v) => fmt(v, decimals) },
+          };
+        })(),
       },
     };
     if (charts[id]) { charts[id].data.datasets = ds; charts[id].options = opts; charts[id].update(); return; }
@@ -600,11 +637,12 @@ body.has-install main { padding-bottom: 220px; }
     if (!apiBase() || !st) {
       devices = []; renderTitle();
       ["hero", "device", "charts"].forEach((id) => $(id).hidden = true);
-      $("seen").textContent = t("status.notConnected");
+      seenInfo = null; $("seen").textContent = t("status.notConnected");
       notice(t(apiBase() ? "notice.setToken" : "notice.setApi"));
       return;
     }
     busy = true;
+    $("refresh").classList.add("spin");
     cachedAt = null;
     try {
       const msgs = [];
@@ -620,7 +658,7 @@ body.has-install main { padding-bottom: 220px; }
       renderTitle();
       if (!devices.length) {
         ["hero", "device", "charts"].forEach((id) => $(id).hidden = true);
-        $("seen").textContent = t("status.noData");
+        seenInfo = null; $("seen").textContent = t("status.noData");
         notice(t("notice.noReadings"));
         return;
       }
@@ -645,7 +683,10 @@ body.has-install main { padding-bottom: 220px; }
       const last = devices.find((d) => d.device === cfg.device);
 
       renderHero(rows, valid, last, hasBatch);
-      renderDevice(last);
+      let batt = null;
+      try { batt = (await api("/api/battery", { device: cfg.device, days: 14 })).hours; }
+      catch { /* воркер без /api/battery — прогноза не будет */ }
+      renderDevice(last, batt);
       renderCharts(rows.filter((r) => r.ts >= rangeFrom), last);
       if (!valid.some((r) => r.ts >= rangeFrom)) {
         msgs.push(t("notice.implausible"));
@@ -657,9 +698,10 @@ body.has-install main { padding-bottom: 220px; }
       notice(msgs.map(escapeHtml).join("<br>"), msgs.length && st.formula && !formula ? "error" : "");
     } catch (e) {
       notice(escapeHtml(t("err.fetch", { message: e.message })), "error");
-      $("seen").textContent = t("status.noConnection");
+      seenInfo = null; $("seen").textContent = t("status.noConnection");
     } finally {
       busy = false;
+      $("refresh").classList.remove("spin");
     }
   }
 
@@ -748,25 +790,98 @@ body.has-install main { padding-bottom: 220px; }
     drawStem(current, og);
   }
 
-  function renderDevice(last) {
+  // ---------- Иконки показателей ----------
+  const svgIcon = (inner, extra = "") => `<svg viewBox="0 0 28 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" ${extra}>${inner}</svg>`;
+  const icons = {
+    temp: () => svgIcon(`<path d="M16 15.5V6a2.5 2.5 0 0 0-5 0v9.5a5 5 0 1 0 5 0z"/><circle cx="13.5" cy="19.5" r="2" fill="currentColor"/><path d="M13.5 17.5V10"/><path d="M19 7h3M19 11h3M19 15h2"/>`),
+    battery: (pct) => {
+      const color = pct == null ? css("--muted") : pct > 50 ? css("--ok") : pct > 20 ? css("--amber") : css("--alert");
+      const w = pct == null ? 0 : Math.max(1.5, 15 * pct / 100);
+      return svgIcon(`<rect x="3" y="9" width="19" height="10" rx="2.5"/><path d="M24.5 12.5v3" stroke-width="2.4"/>` +
+        `<rect x="5" y="11" width="${w}" height="6" rx="1" fill="${color}" stroke="none"/>`, `style="color:${color}"`);
+    },
+    // Колба повёрнута на реальный наклон (0° — лежит, 90° — стоит)
+    tilt: (angle) => {
+      const a = angle == null ? 45 : Math.max(0, Math.min(90, angle));
+      return svgIcon(`<path d="M3 21h22" opacity=".5"/><g transform="rotate(${-a} 14 14)"><rect x="5" y="11.5" width="18" height="5" rx="2.5"/></g>`);
+    },
+    wifi: (rssi) => {
+      const level = rssi == null ? 0 : rssi >= -60 ? 3 : rssi >= -70 ? 2 : rssi >= -80 ? 1 : 0;
+      const arc = (r, i) => `<path d="M${14 - r} ${21 - r * .55}a${r} ${r} 0 0 1 ${2 * r} 0" opacity="${i < level ? 1 : .25}"/>`;
+      return svgIcon(`${arc(4, 0)}${arc(8, 1)}${arc(12, 2)}<circle cx="14" cy="21.5" r="1.4" fill="currentColor" stroke="none"/>`);
+    },
+    clock: () => svgIcon(`<circle cx="14" cy="14" r="10"/><path d="M14 8v6l4 2.5"/>`),
+  };
+
+  // ---------- Батарея: расход и прогноз ----------
+  // hours: [{hour, v}] — среднее напряжение по часам из /api/battery
+  function batteryForecast(hours) {
+    if (!hours || hours.length < 2) return { status: "nodata" };
+    // Текущий разряд начинается после последней зарядки (подъём напряжения > 0.08 В)
+    let start = 0, minSince = hours[0].v;
+    for (let i = 1; i < hours.length; i++) {
+      if (hours[i].v > minSince + 0.08) { start = i; minSince = hours[i].v; }
+      else minSince = Math.min(minSince, hours[i].v);
+    }
+    const pts = hours.slice(start).map((h) => ({ x: h.hour / 86400e3, y: batteryPct(h.v) }));
+    const spanDays = pts.length ? pts.at(-1).x - pts[0].x : 0;
+    if (pts.length < 6 || spanDays < 0.5) return { status: "short" };
+    // Линейная регрессия: процент заряда от времени в сутках
+    const n = pts.length, mx = pts.reduce((a, p) => a + p.x, 0) / n, my = pts.reduce((a, p) => a + p.y, 0) / n;
+    let num = 0, den = 0;
+    pts.forEach((p) => { num += (p.x - mx) * (p.y - my); den += (p.x - mx) ** 2; });
+    const rate = den ? -num / den : 0;
+    if (rate < 0.05) return { status: "flat", spanDays };
+    return { status: "ok", rate, spanDays };
+  }
+
+  function batteryNote(pct, fc) {
+    const span = (d) => fmt(d, d >= 2 ? 0 : 1);
+    if (fc.status === "ok" && pct != null) {
+      const days = pct / fc.rate;
+      const d = days >= 2 ? Math.round(days) : Math.round(days * 10) / 10;
+      return escapeHtml(t("battery.forecast", { days: tn("unit.days", d, days >= 2 ? 0 : 1) })) + "<br>" +
+        escapeHtml(t("battery.rate", { rate: fmt(fc.rate, 1), span: span(fc.spanDays) }));
+    }
+    if (fc.status === "flat") return escapeHtml(t("battery.flat", { span: span(fc.spanDays) }));
+    return escapeHtml(t(fc.status === "short" ? "battery.short" : "battery.nodata"));
+  }
+
+  function intervalText(sec) {
+    if (!sec) return "–";
+    if (sec < 120) return `${sec} ${t("unit.sec")}`;
+    return `${Math.round(sec / 60)} ${t("unit.min")}`;
+  }
+
+  function renderDevice(last, batt) {
     const el = $("device");
     el.hidden = false;
     const pct = batteryPct(last.battery);
-    const temp = last.temperature;
     const unit = last.temp_units === "F" ? "°F" : last.temp_units === "K" ? "K" : "°C";
     el.innerHTML = `
-      <div><dt>${escapeHtml(t("device.temperature"))}</dt><dd>${fmt(temp, 1)}<small>${unit}</small></dd></div>
-      <div><dt>${escapeHtml(t("device.battery"))}</dt><dd class="${pct != null && pct <= 20 ? "warn" : ""}">${pct == null ? "–" : pct + "%"}<small>${fmt(last.battery, 2)} ${escapeHtml(t("unit.volt"))}</small></dd></div>
-      <div><dt>${escapeHtml(t("device.tilt"))}</dt><dd>${fmt(last.angle, 1)}°</dd></div>
-      <div><dt>${escapeHtml(t("device.wifi"))}</dt><dd>${escapeHtml(rssiText(last.rssi))}<small>${last.rssi ?? "–"} dBm</small></dd></div>
-      <div><dt>${escapeHtml(t("device.interval"))}</dt><dd>${last.interval_s ? Math.round(last.interval_s / 60 * 10) / 10 + " " + escapeHtml(t("unit.min")) : "–"}</dd></div>`;
+      <div class="metric battery">${icons.battery(pct)}
+        <div><dt>${escapeHtml(t("device.battery"))}</dt><dd class="${pct != null && pct <= 20 ? "warn" : ""}">${pct == null ? "–" : pct + "%"}<small>${fmt(last.battery, 2)} ${escapeHtml(t("unit.volt"))}</small></dd></div>
+        <div class="note">${batteryNote(pct, batteryForecast(batt))}</div>
+      </div>
+      <div class="metric">${icons.temp()}<div><dt>${escapeHtml(t("device.temperature"))}</dt><dd>${fmt(last.temperature, 1)}<small>${unit}</small></dd></div></div>
+      <div class="metric">${icons.tilt(last.angle)}<div><dt>${escapeHtml(t("device.tilt"))}</dt><dd>${fmt(last.angle, 1)}°</dd></div></div>
+      <div class="metric">${icons.wifi(last.rssi)}<div><dt>${escapeHtml(t("device.wifi"))}</dt><dd>${escapeHtml(rssiText(last.rssi))}<small>${last.rssi ?? "–"} dBm</small></dd></div></div>
+      <div class="metric">${icons.clock()}<div><dt>${escapeHtml(t("device.interval"))}</dt><dd>${escapeHtml(intervalText(last.interval_s))}</dd></div></div>`;
 
-    const seen = $("seen");
-    const expected = (last.interval_s || 900) * 1000;
-    const stale = Date.now() - last.ts > expected * 3 + 120e3;
-    seen.textContent = t("status.lastReading", { ago: ago(last.ts) }) + (stale ? t("status.stale") : "");
-    seen.classList.toggle("stale", stale);
+    seenInfo = { ts: last.ts, expected: (last.interval_s || 900) * 1000 };
+    updateSeen();
   }
+
+  // «Данные получены N секунд назад» — обновляется каждую секунду без запросов
+  let seenInfo = null;
+  function updateSeen() {
+    if (!seenInfo) return;
+    const stale = Date.now() - seenInfo.ts > seenInfo.expected * 3 + 120e3;
+    const el = $("seen");
+    el.textContent = t("status.received", { ago: ago(seenInfo.ts) }) + (stale ? t("status.stale") : "");
+    el.classList.toggle("stale", stale);
+  }
+  setInterval(updateSeen, 1000);
 
   function renderCharts(rows, last) {
     $("charts").hidden = false;
@@ -774,8 +889,8 @@ body.has-install main { padding-bottom: 220px; }
     const tPts = rows.filter((r) => r.temperature != null).map((r) => ({ x: r.ts, y: r.temperature }));
     const unit = last.temp_units === "F" ? "°F" : "°C";
     const g = cfg.smooth ? smoothSeries(gRaw) : gRaw;
-    renderChart("chart-g", g, cfg.smooth ? gRaw : null, css("--amber"), "°P", 2);
-    renderChart("chart-t", tPts, null, css("--teal"), unit, 1);
+    renderChart("chart-g", g, cfg.smooth ? gRaw : null, css("--amber"), "°P", 1, 2);
+    renderChart("chart-t", tPts, null, css("--teal"), unit, 1, 1);
   }
 
   function escapeHtml(s) {
