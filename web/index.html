@@ -121,6 +121,10 @@ button, input, select { font: inherit; color: inherit; }
 .band button:focus-visible { outline-color: #fff; }
 .band-label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; opacity: .92; }
 .band-label svg { width: 22px; height: 22px; }
+.band-label { width: 100%; }
+.band .trend { margin-left: auto; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .2); }
+.band .trend:empty { display: none; }
+.band .trend svg { width: 18px; height: 18px; }
 .band .big { font: 500 clamp(44px, 13.5vw, 66px)/.9 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.01em; white-space: nowrap; }
 .band .big small { font-size: .36em; margin-left: 3px; opacity: .85; }
 .band .sub { font-size: 12.5px; opacity: .92; }
@@ -221,8 +225,31 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .batchp h3 { margin: 0; font: 600 18px/1.2 var(--display); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .batchp h3 small { font: 400 13px var(--body); color: var(--muted); }
 .batchp .style { color: var(--muted); font-size: 13px; margin-top: 2px; }
-.prog { height: 10px; border-radius: 5px; background: var(--rule); position: relative; margin: 12px 0 6px; overflow: hidden; }
+.prog { display: block; height: 10px; border-radius: 5px; background: var(--rule); position: relative; margin: 12px 0 6px; overflow: hidden; }
 .prog i { position: absolute; inset: 0 auto 0 0; background: linear-gradient(90deg, #d99a2b, #b8741a); border-radius: 5px; }
+/* Стадии над шкалой партии */
+.stages { display: block; width: 100%; border: 0; background: none; padding: 0; margin: 10px 0 0; cursor: pointer; text-align: left; font: inherit; color: inherit; position: relative; }
+.st-labels { display: block; position: relative; height: 16px; font-size: 11.5px; color: var(--muted); }
+.st-labels span { position: absolute; top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 4px; }
+.st-labels span.end { text-align: right; padding: 0; }
+.st-labels span.cur { color: var(--amber-deep); font-weight: 700; overflow: visible; z-index: 1; }
+.stages .prog { margin: 4px 0 6px; overflow: visible; }
+.stages .prog i:first-child { border-radius: 5px; }
+.stages .prog i.tick { top: -5px; bottom: -3px; width: 0; border-left: 2px solid var(--muted); background: none; border-radius: 0; }
+.stages .prog i.tick.exp { border-left-style: dashed; border-left-width: 1.5px; opacity: .7; }
+.st-alarm { position: absolute; top: 14px; right: 0; font: 700 11px/1 var(--body); color: #fff; border-radius: 6px; padding: 3px 7px; }
+.st-alarm.bad { background: var(--alert); } .st-alarm.warn { background: var(--amber); }
+.st-now { margin: 6px 0 0; font-size: 14px; font-weight: 600; color: var(--amber-deep); }
+.st-tip { margin: 2px 0 8px; font-size: 13px; color: var(--muted); }
+.st-alarm-text { margin: 6px 0 0; font-size: 13px; padding: 6px 9px; border-radius: 8px; }
+.st-alarm-text.bad { background: color-mix(in srgb, var(--alert) 12%, transparent); color: var(--alert); }
+.st-alarm-text.warn { background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--amber-deep); }
+.stage-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
+.stage-list li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 11px; border-radius: 10px; background: var(--bg); border: 1px solid var(--rule); font-size: 14px; }
+.stage-list li span { color: var(--muted); white-space: nowrap; }
+.stage-list li.cur { border-color: var(--amber); }
+.stage-list li.cur b { color: var(--amber-deep); }
+@media (max-width: 380px) { .st-labels span:not(.cur) { visibility: hidden !important; } }
 .scale { display: flex; justify-content: space-between; gap: 6px; font-size: 12px; color: var(--muted); }
 .kv { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; }
 .kv div { display: grid; }
@@ -500,7 +527,7 @@ body.has-install main { padding-bottom: 220px; }
     <div class="band">
       <div class="tile" id="tile-g">
         <button class="band-g" id="band-g" type="button">
-          <span class="band-label"><span id="g-icon"></span><span data-i18n="band.gravity"></span></span>
+          <span class="band-label"><span id="g-icon"></span><span data-i18n="band.gravity"></span><span class="trend" id="g-trend"></span></span>
           <span class="big"><span id="g-value">–</span><small>°P</small></span>
           <span class="sub" id="g-sg"></span>
           <span class="bar" id="g-bar"><i></i></span>
@@ -512,7 +539,7 @@ body.has-install main { padding-bottom: 220px; }
         </button>
       </div>
       <button class="tile" id="band-t" type="button">
-        <span class="band-label"><span id="t-icon"></span><span data-i18n="device.temperature"></span></span>
+        <span class="band-label"><span id="t-icon"></span><span data-i18n="device.temperature"></span><span class="trend" id="t-trend"></span></span>
         <span class="big"><span id="t-value">–</span><small id="t-unit">°C</small></span>
         <span class="scale" id="t-scale"><span class="zone"></span><span class="mark"></span></span>
         <span class="scale-l" id="t-scale-l"><span></span><span data-i18n="tile.norm"></span><span></span></span>
@@ -1273,6 +1300,116 @@ body.has-install main { padding-bottom: 220px; }
   const rangeText = (r) => `${fmtMax1(r[0])}–${fmtMax1(r[1])}`;
   const dateShort = (ts) => new Date(ts).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
 
+  // ---------- Стадии брожения на шкале партии ----------
+  // Шкала — от НП до цели. Пройденные стадии отмечены сплошными засечками в точке своего начала,
+  // ожидаемые — пунктиром (5 % — активное, 70 % — затухание, 100 % — цель). Конец партии (проверка,
+  // завершено, можно разливать) — у правого края.
+  const STAGE_EXPECT = { active: 0.05, slowing: 0.7, checking: 1 };
+  function stageScale(a, style) {
+    const pct = (v) => Math.round(Math.min(1, Math.max(0, v)) * 1000) / 10;
+    const passed = Object.fromEntries((a.stages || []).map((x) => [x.id, x]));
+    const endId = ["ready", "done", "checking"].find((id) => passed[id]) || "checking";
+    const segs = [["lag", 0], ["active", STAGE_EXPECT.active], ["slowing", STAGE_EXPECT.slowing], [endId, STAGE_EXPECT.checking]]
+      .map(([id, exp]) => {
+        const real = id === "lag" ? passed.lag : passed[id] || (id === endId && (passed.done || passed.ready) && passed.checking);
+        return { id, at: real ? real.progress : exp, real: !!real };
+      });
+    // Позиции не должны идти назад (если стадия началась раньше ожидаемого — сдвигаем следующие).
+    for (let i = 1; i < segs.length; i++) segs[i].at = Math.max(segs[i].at, segs[i - 1].at);
+    const curId = a.stage;
+    const labels = segs.map((x, i) => {
+      const left = pct(x.at), right = i + 1 < segs.length ? pct(segs[i + 1].at) : 100;
+      const isEnd = i === segs.length - 1;
+      const cls = (x.id === curId || (isEnd && ["checking", "done", "ready"].includes(curId)) ? "cur" : "") + (isEnd ? " end" : "");
+      return `<span class="${cls.trim()}" style="${isEnd ? "right:0" : `left:${left}%;width:${Math.max(0, right - left)}%`}">${escapeHtml(t("stage." + x.id))}</span>`;
+    }).join("");
+    const ticks = segs.slice(1).map((x) => `<i class="tick${x.real ? "" : " exp"}" style="left:${pct(x.at)}%"></i>`).join("");
+    const alarm = a.alarm ? `<span class="st-alarm ${a.alarm.id === "stalled" ? "bad" : "warn"}">${escapeHtml(t("stage." + a.alarm.id))}</span>` : "";
+    return `<button type="button" class="stages" id="stages-btn" aria-label="${escapeHtml(t("stage.listTitle"))}">
+      <span class="st-labels">${labels}</span>
+      <span class="prog"><i style="width:${pct(a.progress)}%"></i>${ticks}</span>${alarm}</button>`;
+  }
+  // Подписи над шкалой: текущая — всегда и целиком (не вылезая за край), остальные — только если
+  // помещаются в свой отрезок и не налезают на текущую или на подпись конца.
+  function fitStageLabels() {
+    const box = document.querySelector(".st-labels");
+    if (!box) return;
+    const spans = [...box.children];
+    spans.forEach((x) => { x.style.visibility = ""; });
+    const cur = spans.find((x) => x.classList.contains("cur"));
+    const end = spans.find((x) => x.classList.contains("end"));
+    if (cur && cur !== end) {
+      cur.style.width = "auto";
+      if (cur.offsetLeft + cur.offsetWidth > box.clientWidth) { cur.style.left = "auto"; cur.style.right = "0"; }
+    }
+    const hits = (x, y) => { const a = x.getBoundingClientRect(), b = y.getBoundingClientRect(); return a.left < b.right - 2 && b.left < a.right - 2; };
+    for (const x of spans) {
+      if (x === cur) continue;
+      if (x !== end && x.scrollWidth > x.clientWidth + 1) { x.style.visibility = "hidden"; continue; }
+      if ((cur && hits(x, cur)) || (x !== end && end && end.style.visibility !== "hidden" && hits(x, end))) x.style.visibility = "hidden";
+    }
+  }
+  addEventListener("resize", fitStageLabels);
+  function stageNow(a, style) {
+    if (!a.stage) return "";
+    const cur = (a.stages || []).at(-1);
+    let line = escapeHtml(t("stage.since", { stage: t("stage." + a.stage), time: dayTime(cur.from) }));
+    if (a.stage === "checking" && a.checkingLeft != null) line += ` · ${escapeHtml(t("stage.checkingLeft", { h: a.checkingLeft }))}`;
+    let html = `<p class="st-now">${line}</p>`;
+    if (a.alarm) {
+      const m = (a.gravity.msgs || []).find((x) => x.key === "an.grav." + a.alarm.id);
+      if (m) html += `<p class="st-alarm-text ${a.alarm.id === "stalled" ? "bad" : "warn"}">${escapeHtml(t(m.key, m.params))}</p>`;
+    }
+    const r = style && style.t;
+    const tip = r ? t(`stage.tip.${a.stage}`, { lo: fmtMax1(r[0]), hi: fmtMax1(r[1]), mid: Math.round((r[0] + r[1]) / 2) }) : t(`stage.tip.${a.stage}NoStyle`);
+    return html + `<p class="st-tip">${escapeHtml(tip)}</p>`;
+  }
+  function stagesSheet() {
+    const a = view && view.a;
+    if (!a || !a.stages) return;
+    const now = Date.now();
+    const dur = (ms) => ms >= 48 * 3600e3 ? t("stage.durD", { n: fmt(ms / 86400e3, 1) }) : t("stage.durH", { n: Math.max(1, Math.round(ms / 3600e3)) });
+    const rows = a.stages.map((x, i) => {
+      const end = i + 1 < a.stages.length ? a.stages[i + 1].from : now;
+      return `<li class="${i === a.stages.length - 1 ? "cur" : ""}"><b>${escapeHtml(t("stage." + x.id))}</b><span>${escapeHtml(dayTime(x.from))} · ${escapeHtml(dur(end - x.from))}</span></li>`;
+    }).join("");
+    const alarm = a.alarm ? `<p class="st-alarm-text ${a.alarm.id === "stalled" ? "bad" : "warn"}">${escapeHtml(t("stage.since", { stage: t("stage." + a.alarm.id), time: dayTime(a.alarm.from) }))}</p>` : "";
+    openSheet(`<div class="top-line"><h2>${escapeHtml(t("stage.listTitle"))}</h2>${closeBtn}</div>${alarm}<ul class="stage-list">${rows}</ul>`);
+  }
+  $("batchp").addEventListener("click", (e) => { if (e.target.closest("#stages-btn")) stagesSheet(); });
+
+  // Стрелка тенденции на плитке: up / down / flat; подпись — в title и aria-label.
+  const TREND_SVG = {
+    up: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17L17 7"/><path d="M9 7h8v8"/></svg>`,
+    down: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7l12 10"/><path d="M17 9v8H9"/></svg>`,
+    flat: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15"/><path d="M14 7l5 5-5 5"/></svg>`,
+  };
+  function setTrend(id, dir, label) {
+    const el = $(id);
+    el.innerHTML = dir ? TREND_SVG[dir] : "";
+    el.title = label || "";
+    if (label) el.setAttribute("aria-label", label); else el.removeAttribute("aria-label");
+  }
+  // Температура: изменение за последние 2 ч (по медиане около «тогда»); порог 0,3 °C.
+  function tempTrend(rows, now) {
+    const near = (t0, w) => median(rows.filter((r) => r.temperature != null && Math.abs(r.ts - t0) <= w).map((r) => toC(r.temperature, r.temp_units)));
+    const a = near(now, 0.5 * 3600e3), b = near(now - 2 * 3600e3, 0.5 * 3600e3);
+    if (a == null || b == null) return null;
+    const d = a - b;
+    return { dir: d >= 0.3 ? "up" : d <= -0.3 ? "down" : "flat", d };
+  }
+  // Плотность: скорость за сутки (из анализа), а в первые сутки — по последним 6 ч; порог 0,3 °P/сутки.
+  function gravityTrend(a, valid, now) {
+    let rate = a.rate;
+    if (rate == null) {
+      const near = (t0) => median(valid.filter((r) => Math.abs(r.ts - t0) <= 0.75 * 3600e3).map((r) => r.g));
+      const g0 = near(now), g6 = near(now - 6 * 3600e3);
+      if (g0 == null || g6 == null) return null;
+      rate = (g6 - g0) * 4;
+    }
+    return { dir: rate >= 0.3 ? "down" : rate <= -0.3 ? "up" : "flat", rate };
+  }
+
   // Цвет значка или плитки: good / warn / bad, null — без подсветки.
   function setLevel(id, level) {
     ["good", "warn", "bad"].forEach((c) => $(id).classList.toggle(c, c === level));
@@ -1386,6 +1523,10 @@ body.has-install main { padding-bottom: 220px; }
       || t(hasBatch ? "tile.g.noRate" : "tile.g.noBatch");
     $("abv-value").innerHTML = (a.abvNow != null ? fmt(a.abvNow, 1) + "%" : "–") + (a.projAbv != null ? `<small>→ ${fmt(a.projAbv, 1)}%</small>` : "");
     setLevel("tile-g", current == null ? null : { ok: "good", warn: "warn", bad: "bad" }[a.gravity.level]);
+    const gt = current == null ? null : gravityTrend(a, valid, now);
+    setTrend("g-trend", gt && gt.dir, gt && t("trend.g." + gt.dir, { rate: fmt(Math.abs(gt.rate), 1) }));
+    const tt = tempTrend(rows, now);
+    setTrend("t-trend", tt && tt.dir, tt && t("trend.t." + tt.dir, { d: fmt(Math.abs(tt.d), 1) }));
     $("band-abv").classList.toggle("bad", a.abv.level !== "ok");
 
     // Значки
@@ -1404,7 +1545,7 @@ body.has-install main { padding-bottom: 220px; }
     // Брожение
     const info = $("info");
     const stateKey = current == null ? "notFloating" : a.status;
-    const cls = { active: "ok", slowing: "ok", lag: "idle", done: "ok", quiet: "idle", stalled: "bad", noStart: "bad", notFloating: "idle", unknown: "idle" }[stateKey] || "idle";
+    const cls = { active: "ok", slowing: "ok", lag: "idle", done: "ok", checking: "ok", quiet: "idle", stalled: "bad", noStart: "bad", notFloating: "idle", unknown: "idle" }[stateKey] || "idle";
     info.className = "info " + cls;
     let row = "";
     if (a.rate != null) row += `<span>${escapeHtml(t("info.speed", { rate: fmt(a.rate, 1) }))}</span>`;
@@ -1422,8 +1563,9 @@ body.has-install main { padding-bottom: 220px; }
       let html = `<h3>${escapeHtml(t("batch.title"))}<small>${escapeHtml(t("batch.since", { days: fmt(days, 1), date: dayTime(st.batchStart) }))}</small></h3>
         <div class="style">${escapeHtml(style ? styleName(style) : t("batch.noStyle"))}</div>`;
       if (a.progress != null) {
-        html += `<div class="prog"><i style="width:${Math.round(a.progress * 100)}%"></i></div>
-          <div class="scale"><span>${escapeHtml(t("batch.ogShort", { og: fmt(og, 1) }))}</span><span>${escapeHtml(t("batch.now", { g: fmt(current, 1) }))}</span><span>${escapeHtml(t("batch.target", { fg: fmt(a.fg, 1) }))}</span></div>`;
+        html += stageScale(a, style) +
+          `<div class="scale"><span>${escapeHtml(t("batch.ogShort", { og: fmt(og, 1) }))}</span><span>${escapeHtml(t("batch.now", { g: fmt(current, 1) }))}</span><span>${escapeHtml(t("batch.target", { fg: fmt(a.fg, 1) }))}</span></div>` +
+          stageNow(a, style);
       }
       const left = a.eta ? (a.eta.hi === 0 ? t("batch.ready") : t("batch.leftDays", { lo: fmt(a.eta.lo, a.eta.lo < 2 ? 1 : 0), hi: fmt(a.eta.hi, a.eta.hi < 2 ? 1 : 0) })) : "–";
       html += `<div class="kv">
@@ -1437,6 +1579,7 @@ body.has-install main { padding-bottom: 220px; }
         html += `<p class="eta">${escapeHtml(t("batch.waiting", { date: dayTime(st.batchStart) }))}</p>`;
       }
       bp.innerHTML = html + actionBar(t("act.newBatch"));
+      fitStageLabels();
     } else {
       bp.innerHTML = `<p class="hint">${escapeHtml(t("batch.none"))}</p>` + actionBar(t("batch.startNow"));
     }

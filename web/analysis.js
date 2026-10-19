@@ -74,9 +74,94 @@ const Brew = (() => {
     return [...buckets.entries()].sort((a, b) => a[0] - b[0]).map(([t, v]) => ({ t, v: median(v) }));
   }
 
+  // Плотность в ферментере расти не может: подъёмы — пена или пузырьки CO₂ на колбе. Для стадий, скорости
+  // и прогноза выкидываем часовые точки выше минимума предыдущих 6 часов больше чем на 0,5 °P.
+  // Если отбрасывать пришлось бы 6 часов подряд, это уже не всплеск — точки снова принимаются.
+  function despike(series) {
+    const out = [];
+    for (const p of series) {
+      let min = Infinity;
+      for (let i = out.length - 1; i >= 0 && out[i].t >= p.t - 6 * H; i--) min = Math.min(min, out[i].v);
+      if (min !== Infinity && p.v > min + 0.5) continue;
+      out.push(p);
+    }
+    return out;
+  }
+
   // Значение около момента t (медиана в окне ±1,5 ч), или null.
   function at(series, t, win = 1.5 * H) {
     return median(series.filter((p) => Math.abs(p.t - t) <= win).map((p) => p.v));
+  }
+
+  /* Стадии брожения по часовой (уже без всплесков) плотности с начала партии.
+     Каждую часовую точку классифицируем по данным до неё; новая стадия засчитывается, если держится
+     3 точки подряд, и только вперёд по шкале. «Застряло» и «не стартовало» — не стадии, а тревоги поверх шкалы.
+     Возвращает { stages: [{id, from, progress}], stage, alarm: {id, from} | null, checkingLeft }. */
+  const STAGE_ORDER = ['lag', 'active', 'slowing', 'checking', 'done', 'ready'];
+  const STAGE_HOLD = 3, CONFIRM_H = 48;
+  function stagesOf(series, { batchStart, og, fg, now }) {
+    if (!series.length) return {};
+    const prog = (v) => Math.min(1, Math.max(0, (og - v) / (og - fg)));
+    // Скорость в точке: падение за сутки, а в первые сутки — за сколько есть (не меньше 6 ч), пересчитанное на сутки.
+    const rateAt = (i) => {
+      const p = series[i], w = Math.min(DAY, p.t - batchStart);
+      if (w < 6 * H) return null;
+      const before = at(series, p.t - w);
+      return before == null ? null : (before - p.v) * DAY / w;
+    };
+    // Сколько часов плотность стоит: идём назад, пока размах (по медиане из 3 точек) меньше 0,2 °P.
+    const smooth = series.map((p, i) => median(series.slice(Math.max(0, i - 1), i + 2).map((q) => q.v)));
+    const stableHours = (i) => {
+      let lo = smooth[i], hi = smooth[i], j = i;
+      while (j > 0) {
+        const v = smooth[j - 1];
+        if (Math.max(hi, v) - Math.min(lo, v) >= 0.2) break;
+        lo = Math.min(lo, v); hi = Math.max(hi, v); j--;
+      }
+      return (series[i].t - series[j].t) / H;
+    };
+
+    const stages = [{ id: null, from: batchStart, progress: 0 }];
+    let alarm = null, cand = null, lowSince = null, peak = 0, recover = 0, lastLeft = null;
+    const rank = (id) => STAGE_ORDER.indexOf(id);
+    for (let i = 0; i < series.length; i++) {
+      const p = series[i], g = p.v, rate = rateAt(i), pr = prog(g), age = (p.t - batchStart) / DAY;
+      if (rate != null) peak = Math.max(peak, rate);
+      const moving = rate != null && rate >= 0.3;
+      lowSince = moving ? null : (lowSince ?? p.t);
+      let want = null; lastLeft = null;
+      if (age < 1.5 && (og - g < 0.5 || pr < 0.05) && !moving) want = 'lag';
+      else if (moving) want = pr >= 0.7 || rate < peak * 0.4 ? 'slowing' : 'active';
+      else if (rate != null || age >= 1.5) {
+        if (g <= fg + 1.0 || pr >= 0.85) {
+          const st = stableHours(i);
+          want = st >= CONFIRM_H ? 'done' : 'checking';
+          lastLeft = Math.max(1, Math.ceil(CONFIRM_H - st));
+        }
+      }
+      // Тревоги: не стартовало — сразу; застряло — если скорость < 0,3 держится сутки, а до цели далеко.
+      if (age >= 3 && og - g < 0.5) alarm = alarm && alarm.id === 'noStart' ? alarm : { id: 'noStart', from: p.t };
+      else if (!moving && !(g <= fg + 1.0 || pr >= 0.85) && rate != null && lowSince != null && p.t - lowSince >= DAY && !(age < 1.5 && og - g < 0.5)) {
+        if (!alarm) alarm = { id: 'stalled', from: p.t };
+      } else if (alarm && alarm.id === 'noStart' && og - g >= 0.5) alarm = null;
+      if (alarm && alarm.id === 'stalled') {
+        recover = moving ? recover + 1 : 0;
+        if (recover >= STAGE_HOLD) { alarm = null; recover = 0; }
+      }
+
+      const curStage = stages.at(-1);
+      if (curStage.id === null) { curStage.id = want || 'lag'; continue; }
+      if (curStage.id === 'done' && p.t - curStage.from >= CONFIRM_H * H) {
+        stages.push({ id: 'ready', from: curStage.from + CONFIRM_H * H, progress: curStage.progress });
+        continue;
+      }
+      if (!want || rank(want) <= rank(curStage.id)) { cand = null; continue; }
+      if (!cand || cand.id !== want) cand = { id: want, from: p.t, progress: pr, n: 1 };
+      else cand.n++;
+      if (cand.n >= STAGE_HOLD) { stages.push({ id: cand.id, from: cand.from, progress: cand.progress }); cand = null; }
+    }
+    const stage = stages.at(-1).id;
+    return { stages, stage, alarm, checkingLeft: stage === 'checking' ? lastLeft : null };
   }
 
   /* Разбор партии.
@@ -91,7 +176,7 @@ const Brew = (() => {
     const say = (part, level, key, params = {}) => { res[part].msgs.push({ level, key, params }); bump(part, level); };
 
     const inBatch = batchStart ? rows.filter((r) => r.ts >= batchStart) : rows;
-    const gH = hourly(inBatch.length ? inBatch : rows, 'g');
+    const gH = despike(hourly(inBatch.length ? inBatch : rows, 'g'));
     const tH = hourly(inBatch.length ? inBatch : rows, 'temperature');
     const g = at(gH, now, 3 * H) ?? (gH.length ? gH.at(-1).v : null);
     const ageDays = batchStart ? (now - batchStart) / DAY : null;
@@ -121,6 +206,11 @@ const Brew = (() => {
     if (og != null && fg != null) res.projAbv = abv(og, fg);
     if (og != null && g != null) res.abvNow = abv(og, g);
 
+    // --- Стадии партии (по часовой истории с начала партии)
+    if (batchStart && og != null && fg != null && og - fg > 0.5 && gH.length) {
+      Object.assign(res, stagesOf(gH.filter((p) => p.t >= batchStart), { batchStart, og, fg, now }));
+    }
+
     // --- Статус брожения
     const drop = og != null && g != null ? og - g : null;
     let status = 'unknown';
@@ -130,6 +220,8 @@ const Brew = (() => {
     else if (rate != null && rate >= 0.3) status = res.peak && rate < res.peak.rate * 0.4 ? 'slowing' : 'active';
     else if (rate != null && !batchStart) status = 'quiet';
     else if (rate != null) status = fg != null && g > fg + 1.0 ? 'stalled' : 'done';
+    // Со стадиями статус берётся из них: тревога поверх шкалы важнее, «можно разливать» — то же, что «закончилось».
+    if (res.stage && g != null) status = res.alarm ? res.alarm.id : res.stage === 'ready' ? 'done' : res.stage;
     res.status = status;
 
     // --- Сколько осталось: экспоненциальное затухание к цели
@@ -142,6 +234,8 @@ const Brew = (() => {
       }
     } else if (status === 'done') {
       res.eta = { lo: 0, hi: 0 };
+    } else if (status === 'checking' && res.checkingLeft != null) {
+      res.eta = { lo: res.checkingLeft / 24, hi: res.checkingLeft / 24 };
     }
 
     // --- Плотность
@@ -151,9 +245,10 @@ const Brew = (() => {
     if (status === 'slowing') say('gravity', 'ok', 'an.grav.slowing', { rate: round1(rate), peak: round1(res.peak.rate) });
     if (status === 'stalled') say('gravity', batchStart && ageDays > 3 ? 'bad' : 'warn', 'an.grav.stalled', { g: round1(g), fg: round1(fg) });
     if (status === 'done') say('gravity', 'ok', 'an.grav.done', { g: round1(g) });
+    if (status === 'checking') say('gravity', 'ok', 'an.grav.checking', { g: round1(g), h: res.checkingLeft ?? 48 });
     if (status === 'quiet') say('gravity', 'ok', 'an.grav.quiet', {});
     if (!batchStart) say('gravity', 'ok', 'an.grav.noBatch', {});
-    if (fg != null && g != null && g < fg - 1.5 && (status === 'done' || status === 'stalled' || status === 'slowing')) {
+    if (fg != null && g != null && g < fg - 1.5 && (status === 'done' || status === 'checking' || status === 'stalled' || status === 'slowing')) {
       say('gravity', 'warn', 'an.grav.belowFg', { g: round1(g), fg: round1(fg) });
     }
     if (style && og != null && (og < style.og[0] - 0.5 || og > style.og[1] + 0.5)) {
