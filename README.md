@@ -105,7 +105,7 @@ Local run: `npx http-server web -p 8080` and `cd worker && npx wrangler dev` (se
 
 ## Features
 
-- Current gravity (median of the last 5 readings) in °P and SG, with a hydrometer scale.
+- Two equal tiles on top: gravity (°P, SG, original gravity, attenuation bar, speed, alcohol) and temperature (with the style range scale and a short hint). Each tile is coloured by its own reading: green — fine, yellow — close to a limit or a warning, red — a problem. Battery, Wi-Fi and gravity speed chips below use the same colours.
 - "Start batch" — remembers the start time, calculates original gravity, attenuation and ABV.
 - Fermentation status based on the gravity change over 24 hours.
 - Gravity (with smoothing) and temperature charts: 1 h, 6 h, 24 h, 3 days, 7 days, whole batch.

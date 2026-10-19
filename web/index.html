@@ -105,32 +105,45 @@ button, input, select { font: inherit; color: inherit; }
 }
 .icon-btn:hover { border-color: var(--muted); }
 
-/* Главная плашка: плотность и алкоголь */
+/* Главная плашка: две одинаковые плитки — плотность (с алкоголем) и температура.
+   Цвет каждой — по своему показателю: зелёный в норме, жёлтый у границы, красный — проблема. */
 .hero { margin-top: 16px; display: grid; gap: 10px; }
-.band {
-  display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 8px;
-  border-radius: 18px; padding: 14px 16px; color: #fff;
-  background: linear-gradient(135deg, #d99a2b, #b8741a);
+.band { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tile {
+  display: flex; flex-direction: column; gap: 6px; min-width: 0; border-radius: 18px; padding: 12px 13px; color: #fff;
+  background: linear-gradient(140deg, #8f9b94, #67746c);
 }
-.band button { border: 0; background: none; color: inherit; padding: 0; text-align: left; cursor: pointer; display: grid; gap: 2px; border-radius: 10px; }
+.tile.good { background: linear-gradient(140deg, #4f9a5b, #2f6f45); }
+.tile.warn { background: linear-gradient(140deg, #d99a2b, #b4740f); }
+.tile.bad { background: linear-gradient(140deg, #c95a3f, #9b3220); }
+.band button { border: 0; background: none; color: inherit; padding: 0; text-align: left; cursor: pointer; display: grid; gap: 5px; align-content: start; border-radius: 10px; font: inherit; min-width: 0; }
+.band button.tile { display: flex; padding: 12px 13px; border-radius: 18px; color: #fff; }
 .band button:focus-visible { outline-color: #fff; }
 .band-label { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; opacity: .92; }
-.band-label svg, .band-abv svg { width: 22px; height: 22px; }
-.band .big { font: 500 clamp(56px, 17vw, 84px)/.9 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
-.band .big small { font-size: .38em; margin-left: 4px; opacity: .85; }
-.band .sub { font-size: 13px; opacity: .92; }
-.band-abv { justify-items: end; text-align: right !important; }
-.band-abv b { font: 600 34px/1 var(--display); font-variant-numeric: tabular-nums; }
-.band button.bad { box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--alert); padding: 4px 6px; margin: -4px -6px; }
-.band button.bad::after { content: "!"; position: absolute; }
-.band-g, .band-abv { position: relative; }
-.band button.bad::after {
-  top: -6px; right: -6px; width: 18px; height: 18px; border-radius: 50%; background: var(--alert); color: #fff;
-  font: 700 12px/18px var(--body); text-align: center;
+.band-label svg { width: 22px; height: 22px; }
+.band .big { font: 500 clamp(44px, 13.5vw, 66px)/.9 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.01em; white-space: nowrap; }
+.band .big small { font-size: .36em; margin-left: 3px; opacity: .85; }
+.band .sub { font-size: 12.5px; opacity: .92; }
+.band .bar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .3); overflow: hidden; }
+.band .bar i { display: block; height: 100%; background: #fff; border-radius: 3px; }
+.band .scale { position: relative; height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .3); margin-top: 4px; }
+.band .scale .zone { position: absolute; top: 0; bottom: 0; border-radius: 3px; background: rgba(255, 255, 255, .6); }
+.band .scale .mark { position: absolute; top: -4px; width: 4px; height: 14px; border-radius: 2px; background: #fff; transform: translateX(-50%); box-shadow: 0 0 0 1.5px rgba(0, 0, 0, .25); }
+.band .scale-l { display: flex; justify-content: space-between; font-size: 12px; opacity: .92; }
+.band .msg { font-size: 12.5px; background: rgba(0, 0, 0, .14); border-radius: 8px; padding: 4px 7px; }
+.band-g { flex: 1; }
+.band-abv { display: flex !important; justify-content: space-between; align-items: baseline; gap: 6px; border-top: 1px solid rgba(255, 255, 255, .3); padding-top: 6px !important; border-radius: 0 !important; }
+.band-abv span { font-size: 12.5px; opacity: .92; }
+.band-abv b { font: 600 24px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.band-abv b small { font: 500 13px var(--body); opacity: .9; margin-left: 4px; }
+.band-abv { position: relative; }
+.band-abv.bad::after {
+  content: "!"; position: absolute; top: -9px; right: -4px; width: 18px; height: 18px; border-radius: 50%; background: var(--alert); color: #fff;
+  font: 700 12px/18px var(--body); text-align: center; box-shadow: 0 0 0 2px #fff;
 }
 
 /* Значки показателей */
-.chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .chip {
   display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0;
   border: 1px solid var(--rule); background: var(--surface); border-radius: 12px; padding: 8px 4px; cursor: pointer;
@@ -424,20 +437,29 @@ body.has-install main { padding-bottom: 220px; }
 
   <section class="hero" id="hero" hidden>
     <div class="band">
-      <button class="band-g" id="band-g" type="button">
-        <span class="band-label"><span id="g-icon"></span><span data-i18n="band.gravity"></span></span>
-        <span class="big"><span id="g-value">–</span><small>°P</small></span>
-        <span class="sub" id="g-sg"></span>
-      </button>
-      <button class="band-abv" id="band-abv" type="button">
-        <span id="abv-icon"></span>
-        <b id="abv-value">–</b>
-        <span class="sub" data-i18n="band.abv"></span>
+      <div class="tile" id="tile-g">
+        <button class="band-g" id="band-g" type="button">
+          <span class="band-label"><span id="g-icon"></span><span data-i18n="band.gravity"></span></span>
+          <span class="big"><span id="g-value">–</span><small>°P</small></span>
+          <span class="sub" id="g-sg"></span>
+          <span class="bar" id="g-bar"><i></i></span>
+          <span class="sub" id="g-prog"></span>
+        </button>
+        <button class="band-abv" id="band-abv" type="button">
+          <span data-i18n="band.abv"></span>
+          <b id="abv-value">–</b>
+        </button>
+      </div>
+      <button class="tile" id="band-t" type="button">
+        <span class="band-label"><span id="t-icon"></span><span data-i18n="device.temperature"></span></span>
+        <span class="big"><span id="t-value">–</span><small id="t-unit">°C</small></span>
+        <span class="scale" id="t-scale"><span class="zone"></span><span class="mark"></span></span>
+        <span class="scale-l" id="t-scale-l"><span></span><span data-i18n="tile.norm"></span><span></span></span>
+        <span class="msg" id="t-msg"></span>
       </button>
     </div>
     <div class="chips">
       <button class="chip" id="chip-batt" type="button"></button>
-      <button class="chip" id="chip-temp" type="button"></button>
       <button class="chip" id="chip-wifi" type="button"></button>
       <button class="chip" id="chip-rate" type="button"></button>
     </div>
@@ -1137,7 +1159,7 @@ body.has-install main { padding-bottom: 220px; }
   const rangeText = (r) => `${fmtMax1(r[0])}–${fmtMax1(r[1])}`;
   const dateShort = (ts) => new Date(ts).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
 
-  // Цвет значка: good / warn / bad, null — без подсветки.
+  // Цвет значка или плитки: good / warn / bad, null — без подсветки.
   function setLevel(id, level) {
     ["good", "warn", "bad"].forEach((c) => $(id).classList.toggle(c, c === level));
   }
@@ -1153,6 +1175,37 @@ body.has-install main { padding-bottom: 220px; }
       else if (tc < lo + TEMP_EDGE || tc > hi - TEMP_EDGE) level = "warn";
     }
     return level === "good" && analysisLevel !== "ok" ? "warn" : level;
+  }
+  // Плитка температуры: значение, шкала нормы стиля (±4 °C вокруг неё) и короткая подсказка.
+  function renderTempTile(tc, raw, units, style, a) {
+    const range = style && style.t;
+    $("t-value").textContent = raw == null ? "–" : fmt(raw, 1);
+    $("t-unit").textContent = tUnit(units);
+    $("t-scale").hidden = $("t-scale-l").hidden = !range || tc == null;
+    if (range && tc != null) {
+      const [lo, hi] = range, from = lo - 4, to = hi + 4;
+      const pos = (v) => Math.max(2, Math.min(98, (v - from) / (to - from) * 100));
+      const zone = $("t-scale").querySelector(".zone");
+      zone.style.left = pos(lo) + "%"; zone.style.width = pos(hi) - pos(lo) + "%";
+      $("t-scale").querySelector(".mark").style.left = pos(tc) + "%";
+      const [l, , r] = $("t-scale-l").children;
+      l.textContent = fmtMax1(lo) + "°"; r.textContent = fmtMax1(hi) + "°";
+    }
+    const level = tempLevel(tc, range, a.temp.level);
+    let msg = "";
+    if (tc == null) msg = t("tile.t.none");
+    else if (!range) msg = t("tile.t.noStyle");
+    else {
+      const [lo, hi] = range, d = (v) => fmt(v, 1);
+      if (tc > hi + TEMP_EDGE) msg = t("tile.t.high", { d: d(tc - hi) });
+      else if (tc < lo - TEMP_EDGE) msg = t("tile.t.low", { d: d(lo - tc) });
+      else if (tc > hi - TEMP_EDGE) msg = t("tile.t.edgeHigh", { hi: fmtMax1(hi) });
+      else if (tc < lo + TEMP_EDGE) msg = t("tile.t.edgeLow", { lo: fmtMax1(lo) });
+      else if (level === "warn") msg = a.temp.stats && a.temp.stats.swing > 3 ? t("tile.t.swing", { swing: d(a.temp.stats.swing) }) : t("tile.t.tip");
+      else msg = t("tile.t.ok", { lo: fmtMax1(lo), hi: fmtMax1(hi) });
+    }
+    $("t-msg").textContent = msg;
+    setLevel("band-t", level);
   }
   function renderMain(rows, valid, last, hasBatch, batt, now) {
     $("hero").hidden = false;
@@ -1171,27 +1224,30 @@ body.has-install main { padding-bottom: 220px; }
 
     // Плашка
     $("g-icon").innerHTML = icons.gravity();
-    $("abv-icon").innerHTML = icons.beer();
+    $("t-icon").innerHTML = icons.temp();
     $("g-value").textContent = current == null ? "–" : fmt(current, 1);
     $("g-sg").textContent = current == null ? t("hero.noGravity")
       : `SG ${sgFromPlato(current).toFixed(3)}` + (og != null ? ` · ${t("band.og", { og: fmt(og, 1) })}` : "");
-    $("abv-value").textContent = a.abvNow != null ? fmt(a.abvNow, 1) + "%" : "–";
-    $("band-g").classList.toggle("bad", a.gravity.level !== "ok");
+    $("g-bar").hidden = a.progress == null;
+    if (a.progress != null) $("g-bar").firstElementChild.style.width = Math.round(Math.min(1, Math.max(0, a.progress)) * 100) + "%";
+    const rateText = a.rate != null ? (a.rate >= 0 ? "−" : "+") + fmt(Math.abs(a.rate), 1) + " °P/" + t("unit.dayShort") : null;
+    $("g-prog").textContent = [a.progress != null ? t("tile.g.progress", { p: Math.round(a.progress * 100) }) : null, rateText].filter(Boolean).join(" · ")
+      || t(hasBatch ? "tile.g.noRate" : "tile.g.noBatch");
+    $("abv-value").innerHTML = (a.abvNow != null ? fmt(a.abvNow, 1) + "%" : "–") + (a.projAbv != null ? `<small>→ ${fmt(a.projAbv, 1)}%</small>` : "");
+    setLevel("tile-g", current == null ? null : { ok: "good", warn: "warn", bad: "bad" }[a.gravity.level]);
     $("band-abv").classList.toggle("bad", a.abv.level !== "ok");
 
     // Значки
     const tLast = last.temperature;
     $("chip-batt").innerHTML = `${icons.battery(pct)}<span>${pct == null ? "–" : pct + "%"}</span>`;
     setLevel("chip-batt", pct == null ? null : pct > 50 ? "good" : pct > 20 ? "warn" : "bad");
-    $("chip-temp").innerHTML = `${icons.temp()}<span>${fmt(tLast, 1)}°</span>`;
-    $("chip-temp").querySelector("svg").style.color = css("--teal");
-    setLevel("chip-temp", tempLevel(toC(tLast, last.temp_units), style && style.t, a.temp.level));
+    renderTempTile(toC(tLast, last.temp_units), tLast, last.temp_units, style, a);
     $("chip-wifi").innerHTML = `${icons.wifi(last.rssi)}<span>${last.rssi == null ? "–" : String(last.rssi).replace("-", "−")}</span>`;
     setLevel("chip-wifi", last.rssi == null ? null : last.rssi >= -70 ? "good" : last.rssi >= -80 ? "warn" : "bad");
     $("chip-rate").innerHTML = `${icons.trend()}<span>${a.rate == null ? "–" : (a.rate >= 0 ? "−" : "+") + fmt(Math.abs(a.rate), 1)}</span>`;
     $("chip-rate").title = t("chip.rate");
     setLevel("chip-rate", a.gravity.level === "bad" ? "bad" : null);
-    [["chip-batt", "device.battery"], ["chip-temp", "device.temperature"], ["chip-wifi", "device.wifi"], ["chip-rate", "chip.rate"], ["band-g", "band.gravity"], ["band-abv", "band.abv"]]
+    [["chip-batt", "device.battery"], ["band-t", "device.temperature"], ["chip-wifi", "device.wifi"], ["chip-rate", "chip.rate"], ["band-g", "band.gravity"], ["band-abv", "band.abv"]]
       .forEach(([id, k]) => $(id).setAttribute("aria-label", t(k)));
 
     // Брожение
@@ -1383,7 +1439,7 @@ body.has-install main { padding-bottom: 220px; }
     if (id === "chip-batt") {
       return `<h4>${escapeHtml(t("device.battery"))} ${pct == null ? "–" : pct + "%"} · ${fmt(last.battery, 2)} ${escapeHtml(t("unit.volt"))}</h4><p style="margin:0">${batteryNote(pct, fc)}</p>`;
     }
-    if (id === "chip-temp") {
+    if (id === "band-t") {
       const s = a.temp.stats || {};
       return `<h4>${escapeHtml(t("device.temperature"))} ${fmt(last.temperature, 1)} ${u}</h4>` + dl([
         ["pop.temp.mean", s.mean != null ? fmt(s.mean, 1) + " °C" : null],
@@ -1429,7 +1485,7 @@ body.has-install main { padding-bottom: 220px; }
     pop.querySelector(".close").onclick = hidePop;
   }
   function hidePop() { $("pop").hidden = true; popFor = null; }
-  ["chip-batt", "chip-temp", "chip-wifi", "chip-rate", "band-g", "band-abv"].forEach((id) => {
+  ["chip-batt", "band-t", "chip-wifi", "chip-rate", "band-g", "band-abv"].forEach((id) => {
     $(id).addEventListener("click", (e) => { e.stopPropagation(); if (popFor === id) hidePop(); else showPop(id); });
   });
   document.addEventListener("click", (e) => { if (!$("pop").hidden && !e.target.closest("#pop")) hidePop(); });
