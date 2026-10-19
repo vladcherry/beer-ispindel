@@ -47,9 +47,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(shell(req));
   } else if (STATIC_HOSTS.includes(url.hostname)) {
     event.respondWith(cacheFirst(req));
-  } else if (url.pathname.startsWith("/api/") && url.pathname !== "/api/health" && url.pathname !== "/api/members"
+  } else if (url.pathname.startsWith("/api/") && !["/api/health", "/api/members", "/api/alerts", "/api/push/key"].includes(url.pathname)
              && !url.searchParams.has("after")) {
-    // Догрузка новых строк (?after=) и список участников идут мимо кэша: иначе офлайн-копия истории затрётся.
+    // Догрузка новых строк (?after=), журнал уведомлений и список участников идут мимо кэша:
+    // иначе офлайн-копия затрётся неполными данными.
     event.respondWith(data(req, url));
   }
 });
@@ -112,3 +113,23 @@ async function data(req, url) {
     return new Response(await hit.blob(), { status: hit.status, headers });
   }
 }
+
+// Push: сервер присылает {title, body, tag, url}. Нажатие открывает приложение на нужном стике.
+self.addEventListener("push", (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch { d = { body: event.data && event.data.text() }; }
+  event.waitUntil(self.registration.showNotification(d.title || "iSpindel", {
+    body: d.body || "", tag: d.tag, renotify: !!d.tag, icon: "./icons/icon-192.png", data: { url: d.url || "./" },
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || "./", self.registration.scope).href;
+  event.waitUntil((async () => {
+    const wins = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    const win = wins.find((w) => w.url.startsWith(self.registration.scope));
+    if (win) { await win.focus(); return win.navigate(url).catch(() => {}); }
+    return self.clients.openWindow(url);
+  })());
+});

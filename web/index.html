@@ -142,6 +142,43 @@ button, input, select { font: inherit; color: inherit; }
   font: 700 12px/18px var(--body); text-align: center; box-shadow: 0 0 0 2px #fff;
 }
 
+/* Уведомления: колокольчик в шапке, журнал, вкладка включения */
+.icon-btn.bell { position: relative; }
+.icon-btn.bell.has-new { color: var(--alert); border-color: color-mix(in srgb, var(--alert) 45%, var(--rule)); }
+.icon-btn.bell .badge {
+  position: absolute; top: -4px; right: -4px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 10px;
+  background: var(--alert); color: #fff; font: 700 11.5px/19px var(--body); text-align: center; box-shadow: 0 0 0 2px var(--bg);
+}
+.alerts { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.alerts .day { font: 600 12px/1 var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 8px 2px 0; }
+.alerts .ev { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 2px 10px; padding: 9px 10px; border-radius: 12px; background: var(--bg); border: 1px solid var(--rule); }
+.alerts .ev.new { border-color: color-mix(in srgb, var(--alert) 40%, var(--rule)); background: color-mix(in srgb, var(--alert) 5%, var(--bg)); }
+.alerts .ic { grid-row: 1 / 3; width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; }
+.alerts .ic svg { width: 20px; height: 20px; }
+.alerts .ic.bad { background: var(--alert); } .alerts .ic.warn { background: var(--amber); } .alerts .ic.ok { background: var(--ok); } .alerts .ic.info { background: var(--teal); }
+.alerts b { font-size: 14.5px; }
+.alerts .t { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.alerts small { grid-column: 2 / 4; color: var(--muted); font-size: 13px; }
+.alerts .dotnew { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--alert); margin-left: 6px; vertical-align: middle; }
+.sheet .link { border: 0; background: none; color: var(--teal); font-weight: 600; font-size: 14px; cursor: pointer; padding: 4px 0; }
+.seg .seg-icon { display: flex; align-items: center; justify-content: center; flex: 0 0 48px; }
+.push-off { justify-items: center; text-align: center; }
+.push-off b { font: 600 19px/1.2 var(--display); }
+.push-off button { width: 100%; }
+.push-bell { width: 58px; height: 58px; border-radius: 18px; background: var(--amber-soft); color: var(--amber); display: flex; align-items: center; justify-content: center; }
+.push-steps { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: 14px; }
+.push-status { display: inline-flex; align-items: center; gap: 8px; color: var(--ink); }
+.push-status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--ok); }
+label.sw-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; color: var(--ink); cursor: pointer; }
+.sw-row span { display: grid; gap: 1px; min-width: 0; }
+.sw-row b { font-weight: 500; font-size: 14.5px; }
+.sw-row small { color: var(--muted); font-size: 12.5px; }
+input.switch { appearance: none; -webkit-appearance: none; flex: none; width: 42px; height: 25px; border-radius: 13px; background: var(--rule); position: relative; cursor: pointer; margin: 0; transition: background .15s; }
+input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: left .15s; }
+input.switch:checked { background: var(--ok); }
+input.switch:checked::after { left: 20px; }
+.push .note:empty { display: none; }
+
 /* Демо: пока не добавлено ни одного iSpindel */
 .demo { margin-top: 14px; display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px dashed var(--amber); }
 .demo-head { display: flex; align-items: center; gap: 8px; }
@@ -438,6 +475,7 @@ body.has-install main { padding-bottom: 220px; }
     <div class="title-row">
       <h1 id="title" data-i18n="app.name"></h1>
       <div class="top-actions">
+        <button class="icon-btn round bell" id="open-alerts" type="button" data-i18n-label="alerts.title" data-i18n-title="alerts.title"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span class="badge" id="alerts-badge" hidden></span></button>
         <button class="icon-btn round" id="open-settings" type="button" data-i18n-label="ui.settings" data-i18n-title="ui.settings"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       </div>
     </div>
@@ -593,6 +631,7 @@ body.has-install main { padding-bottom: 220px; }
         <button type="button" data-seg="batch" data-i18n="seg.batch"></button>
         <button type="button" data-seg="measure" data-i18n="seg.measure"></button>
         <button type="button" data-seg="access" data-i18n="seg.access"></button>
+        <button type="button" data-seg="notify" class="seg-icon" data-i18n-label="seg.notify" data-i18n-title="seg.notify"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></button>
       </div>
       <div class="set-seg" data-seg-page="batch">
         <div class="row">
@@ -648,6 +687,33 @@ body.has-install main { padding-bottom: 220px; }
           <small class="note" id="history-msg"></small>
           <div class="set-line"><span data-i18n="acc.remove"></span><button class="btn-danger" type="button" id="stick-remove" data-i18n="acc.removeBtn"></button></div>
         </div>
+      </div>
+      <div class="set-seg push" data-seg-page="notify" hidden>
+        <p class="set-note" id="push-note" hidden></p>
+        <div class="set-card push-off" id="push-off" hidden>
+          <span class="push-bell"><svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></span>
+          <b data-i18n="push.offTitle"></b>
+          <small class="muted" data-i18n="push.offText"></small>
+          <button class="primary" type="button" id="push-enable" data-i18n="push.enable"></button>
+          <small class="muted" data-i18n="push.offHint"></small>
+        </div>
+        <div class="set-card" id="push-ios" hidden>
+          <h4 data-i18n="push.iosTitle"></h4>
+          <ol class="push-steps"><li data-i18n="push.ios1"></li><li data-i18n="push.ios2"></li><li data-i18n="push.ios3"></li></ol>
+        </div>
+        <div class="set-card" id="push-on" hidden>
+          <div class="set-line"><span class="push-status" data-i18n="push.onTitle"></span><button class="secondary" type="button" id="push-disable" data-i18n="push.disable"></button></div>
+        </div>
+        <div class="set-card" id="push-events" hidden>
+          <h4 data-i18n="push.eventsTitle"></h4>
+          <label class="sw-row"><span><b data-i18n="push.ev.temp"></b><small id="push-temp-sub"></small></span><input type="checkbox" class="switch" value="temp"></label>
+          <label class="sw-row"><span><b data-i18n="push.ev.silent"></b><small data-i18n="push.ev.silentSub"></small></span><input type="checkbox" class="switch" value="silent"></label>
+          <label class="sw-row"><span><b data-i18n="push.ev.battery"></b><small data-i18n="push.ev.batterySub"></small></span><input type="checkbox" class="switch" value="battery"></label>
+          <label class="sw-row"><span><b data-i18n="push.ev.done"></b><small data-i18n="push.ev.doneSub"></small></span><input type="checkbox" class="switch" value="done"></label>
+        </div>
+        <button class="secondary" type="button" id="push-test" data-i18n="push.test" hidden></button>
+        <small class="note" id="push-msg"></small>
+        <p class="set-note" data-i18n="push.rulesNote"></p>
       </div>
     </div>
 
@@ -1036,6 +1102,13 @@ body.has-install main { padding-bottom: 220px; }
       // Админ ли этот браузер — решает сервер по ключу доступа.
       if ("admin" in data && st.admin !== data.admin) { st.admin = data.admin; save(); }
       if ("style" in data) { st.style = data.style; st.fg = data.fg; save(); }
+      // Норма температуры для оповещений — из стиля; сервер стилей не знает, поэтому передаём её сами.
+      if ("range" in data) {
+        const style = st.style ? Brew.byId[st.style] : null;
+        const want = style ? style.t : null;
+        if (JSON.stringify(want) !== JSON.stringify(data.range)) postBatch(st, { range: want }).catch(() => {});
+      }
+      loadAlerts(st).catch(() => {});
       let formula = null;
       try { formula = compileFormula(st.formula); }
       catch (e) { msgs.push(e.message + t("err.formulaFallback")); }
@@ -1113,6 +1186,7 @@ body.has-install main { padding-bottom: 220px; }
 
   function switchStick(id) {
     cfg.current = id; cfg.device = ""; devices = [];
+    renderBell();
     if (cfg.range === "batch") cfg.range = "24h";
     rangePicked = false;
     save(); syncRanges();
@@ -1803,8 +1877,9 @@ body.has-install main { padding-bottom: 220px; }
     setSeg = seg;
     $("set-seg").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.seg === seg)));
     dlg.querySelectorAll(".set-seg").forEach((el) => { el.hidden = el.dataset.segPage !== seg; });
-    $("set-actions").hidden = !(setPage === "server" || (setPage === "stick" && seg !== "access"));
+    $("set-actions").hidden = !(setPage === "server" || (setPage === "stick" && (seg === "batch" || seg === "measure")));
     if (setPage === "stick" && seg === "access") syncAccess();
+    if (setPage === "stick" && seg === "notify") syncPush();
   }
   // Доступ: у гостя — пояснение; список подключённых и очистка истории — только у владельца.
   function syncAccess() {
@@ -2153,6 +2228,169 @@ body.has-install main { padding-bottom: 220px; }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
   addEventListener("online", refresh);
 
+  // ---------- Журнал уведомлений ----------
+  // Сервер пишет события стика в журнал; приложение раз в минуту догружает только новые (?since=).
+  // «Новые» — после последнего открытия журнала на этом устройстве.
+  const ALERT_KINDS = {
+    tempHigh: ["bad", "temp", "temp"], tempLow: ["bad", "temp", "temp"], tempOk: ["ok", "temp", "check"],
+    silent: ["warn", "link", "nolink"], back: ["info", "link", "check"], battery: ["warn", "link", "battery"], done: ["info", "ferm", "beer"],
+  };
+  const ALERT_ICONS = {
+    temp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 14.8V5a2 2 0 0 0-4 0v9.8a4 4 0 1 0 4 0z"/><path d="M12 9v8"/></svg>`,
+    check: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>`,
+    nolink: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 0 1 7 0M5 13a10 10 0 0 1 5-2.7M19 13a10 10 0 0 0-2.2-1.6"/><circle cx="12" cy="20" r="1" fill="currentColor"/></svg>`,
+    battery: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2" stroke-linecap="round"/><rect x="4" y="9" width="3" height="6" fill="currentColor" stroke="none"/></svg>`,
+    beer: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 8h10v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M15 11h2a2 2 0 0 1 0 4h-2"/><path d="M5 8a2.5 2.5 0 0 1 2.5-3.5 3 3 0 0 1 5 0A2 2 0 0 1 15 8"/></svg>`,
+  };
+  const alertsCache = {};
+  let alertsFilter = "all";
+  const seenKey = (st) => `ispindel.alertsSeen.${st.id}`;
+  const getSeen = (st) => { try { return Number(localStorage.getItem(seenKey(st))) || 0; } catch { return 0; } };
+  async function loadAlerts(st) {
+    const c = alertsCache[st.id] || (alertsCache[st.id] = { list: [], max: 0 });
+    const { alerts } = await api("/api/alerts", c.max ? { since: c.max } : {}, st.access);
+    if (alerts.length) {
+      c.list = alerts.concat(c.list).slice(0, 100);
+      c.max = Math.max(c.max, ...alerts.map((a) => a.ts));
+    }
+    if (cur() === st) renderBell();
+  }
+  function renderBell() {
+    const st = cur(), c = st && alertsCache[st.id];
+    $("open-alerts").hidden = !st;
+    const n = c ? c.list.filter((a) => a.ts > getSeen(st)).length : 0;
+    $("alerts-badge").hidden = !n;
+    $("alerts-badge").textContent = n > 9 ? "9+" : String(n);
+    $("open-alerts").classList.toggle("has-new", n > 0);
+  }
+  function alertText(a) {
+    const p = { ...a.params };
+    for (const k of ["t", "lo", "hi"]) if (typeof p[k] === "number") p[k] = fmtMax1(Math.round(p[k] * 10) / 10);
+    return { title: t(`alert.${a.key}.title`, p), body: t(`alert.${a.key}.body`, p) };
+  }
+  function dayLabel(ts) {
+    const d = new Date(ts), today = new Date(); today.setHours(0, 0, 0, 0);
+    const diff = Math.round((today - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 86400e3);
+    return diff === 0 ? t("alerts.today") : diff === 1 ? t("alerts.yesterday")
+      : d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
+  }
+  function alertsHtml() {
+    const st = cur(), c = alertsCache[st.id] || { list: [] }, seen = getSeen(st);
+    const list = c.list.filter((a) => ALERT_KINDS[a.key] && (alertsFilter === "all" || ALERT_KINDS[a.key][1] === alertsFilter));
+    const chips = ["all", "temp", "link", "ferm"].map((f) =>
+      `<button type="button" data-afilter="${f}" aria-pressed="${f === alertsFilter}">${escapeHtml(t("alerts.f." + f))}</button>`).join("");
+    let day = "", rows = "";
+    for (const a of list) {
+      const label = dayLabel(a.ts);
+      if (label !== day) { day = label; rows += `<li class="day">${escapeHtml(label)}</li>`; }
+      const [lvl, , icon] = ALERT_KINDS[a.key], txt = alertText(a), fresh = a.ts > seen;
+      rows += `<li class="ev${fresh ? " new" : ""}"><span class="ic ${lvl}">${ALERT_ICONS[icon]}</span>
+        <b>${escapeHtml(txt.title)}${fresh ? `<span class="dotnew"></span>` : ""}</b>
+        <span class="t">${new Date(a.ts).toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" })}</span>
+        <small>${escapeHtml(txt.body)}</small></li>`;
+    }
+    return `<div class="top-line"><h2>${escapeHtml(t("alerts.title"))}</h2><button type="button" class="link" data-alerts-setup>${escapeHtml(t("alerts.setup"))}</button>${closeBtn}</div>
+      <div class="cats">${chips}</div>
+      ${rows ? `<ul class="alerts">${rows}</ul>` : `<p class="hint">${escapeHtml(t("alerts.empty"))}</p>`}`;
+  }
+  $("open-alerts").onclick = async () => {
+    const st = cur();
+    if (!st) return;
+    await loadAlerts(st).catch(() => {});
+    alertsFilter = "all";
+    openSheet(alertsHtml());
+    const c = alertsCache[st.id];
+    // Отмечаем просмотренными, но подсветка «новых» остаётся до закрытия листа.
+    try { localStorage.setItem(seenKey(st), String(c && c.max ? c.max : Date.now())); } catch { /* приватный режим */ }
+    renderBell();
+  };
+  sheet.addEventListener("click", (e) => {
+    const f = e.target.closest("[data-afilter]");
+    if (f) { alertsFilter = f.dataset.afilter; $("sheet-body").innerHTML = alertsHtml(); }
+    if (e.target.closest("[data-alerts-setup]")) {
+      sheet.close();
+      $("open-settings").click();
+      showPage("stick"); showSeg("notify");
+    }
+  });
+
+  // ---------- Push-уведомления на этом устройстве ----------
+  const pushSupported = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const b64uBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (ch) => ch.charCodeAt(0));
+  async function pushSub(create) {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) throw new Error(t("push.noSw"));
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub && create) {
+      const { key } = await api("/api/push/key");
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(key) });
+    }
+    return sub;
+  }
+  const pushEvents = () => [...dlg.querySelectorAll("#push-events input.switch")].filter((i) => i.checked).map((i) => i.value);
+  function pushSave(sub, events) {
+    const k = sub.toJSON().keys;
+    return post("/api/push/subscribe", { endpoint: sub.endpoint, p256dh: k.p256dh, auth: k.auth, events, lang: I18N.lang() }, cur().access);
+  }
+  function showPushState(on, events) {
+    $("push-off").hidden = on;
+    ["push-on", "push-events", "push-test"].forEach((id) => { $(id).hidden = !on; });
+    if (events) dlg.querySelectorAll("#push-events input.switch").forEach((i) => { i.checked = events.includes(i.value); });
+  }
+  async function syncPush() {
+    const st = cur();
+    const style = st && st.style ? Brew.byId[st.style] : null;
+    $("push-temp-sub").textContent = style ? t("push.ev.tempSub", { lo: fmtMax1(style.t[0]), hi: fmtMax1(style.t[1]) }) : t("push.ev.tempNoStyle");
+    $("push-msg").textContent = "";
+    const iosBrowser = isIOS && !installed();
+    $("push-ios").hidden = !iosBrowser;
+    const note = iosBrowser ? t("push.iosNote") : !pushSupported() ? t("push.unsupported")
+      : Notification.permission === "denied" ? t("push.denied") : "";
+    $("push-note").textContent = note; $("push-note").hidden = !note;
+    if (iosBrowser || !pushSupported()) { showPushState(false); $("push-off").hidden = true; return; }
+    showPushState(false);
+    try {
+      const sub = await pushSub(false);
+      if (!sub) return;
+      const state = await post("/api/push/state", { endpoint: sub.endpoint }, st.access);
+      if (cur() !== st) return;
+      showPushState(state.subscribed, state.events);
+      if (state.subscribed && state.lang !== I18N.lang()) pushSave(sub, state.events).catch(() => {});
+    } catch { /* нет service worker или сети — останется «включить» */ }
+  }
+  $("push-enable").onclick = async () => {
+    const btn = $("push-enable"); btn.disabled = true; $("push-msg").textContent = "";
+    try {
+      if (await Notification.requestPermission() !== "granted") { syncPush(); return; }
+      const sub = await pushSub(true);
+      const { events } = await pushSave(sub, ["temp", "silent", "battery", "done"]);
+      showPushState(true, events);
+    } catch (err) {
+      $("push-msg").textContent = t("push.fail", { message: err.message });
+    } finally { btn.disabled = false; }
+  };
+  $("push-disable").onclick = async () => {
+    try {
+      const sub = await pushSub(false);
+      if (sub) await post("/api/push/unsubscribe", { endpoint: sub.endpoint }, cur().access);
+      showPushState(false);
+    } catch (err) { $("push-msg").textContent = t("push.fail", { message: err.message }); }
+  };
+  $("push-events").addEventListener("change", async () => {
+    try { const sub = await pushSub(false); if (sub) await pushSave(sub, pushEvents()); }
+    catch (err) { $("push-msg").textContent = t("push.fail", { message: err.message }); }
+  });
+  $("push-test").onclick = async () => {
+    const btn = $("push-test"); btn.disabled = true;
+    try {
+      const sub = await pushSub(false);
+      await post("/api/push/test", { endpoint: sub.endpoint }, cur().access);
+      $("push-msg").textContent = t("push.testSent");
+    } catch (err) {
+      $("push-msg").textContent = t("push.fail", { message: err.message });
+    } finally { btn.disabled = false; }
+  };
+
   // ---------- Установка на телефон ----------
   // Android/Chrome: ловим beforeinstallprompt и показываем свою кнопку.
   // iOS: такого события нет — показываем инструкцию «Поделиться → На экран „Домой“».
@@ -2217,6 +2455,13 @@ body.has-install main { padding-bottom: 220px; }
 
   syncRanges();
   (async () => {
+    // Нажали на уведомление: открываем приложение на его стике.
+    const fromPush = new URLSearchParams(location.search).get("stick");
+    if (fromPush) {
+      history.replaceState(null, "", location.pathname + location.hash);
+      if (cfg.sticks.some((x) => x.id === fromPush)) { cfg.current = fromPush; cfg.device = ""; save(); }
+    }
+    renderBell();
     await handleJoin();
     await migrateLegacy();
     refresh();
