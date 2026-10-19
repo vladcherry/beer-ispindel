@@ -37,7 +37,6 @@ jobs:
             curl -sSI "$site/" | grep -iE '^(last-modified|cache-control|age):' || true
             curl -sS "$site/sw.js" | grep -m1 '^const VERSION' || true
             echo "install banner in index: $(curl -sS "$site/" | grep -c 'id="install"')"
-            echo "language button in index: $(curl -sS "$site/" | grep -c 'class="icon-btn lang"')"
             echo "config: $(curl -sS "$site/config.js" | grep -o 'api: *"[^"]*"')"
             echo '```'
             echo "### Health"

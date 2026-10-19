@@ -237,6 +237,8 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .members li svg { width: 20px; height: 20px; color: var(--muted); margin-top: 1px; }
 .members li small { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
 .members .revoke { font-size: 12px; padding: 2px 8px; border: 1px solid var(--alert); color: var(--alert); background: transparent; border-radius: 6px; cursor: pointer; }
+.members .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.members .role { font-size: 12px; padding: 2px 8px; border: 1px solid var(--rule); color: var(--ink); background: var(--surface); border-radius: 6px; cursor: pointer; }
 .members .revoke:hover { background: color-mix(in srgb, var(--alert) 10%, transparent); }
 .members .you { color: var(--ok); font-weight: 600; }
 .members .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
@@ -319,7 +321,6 @@ label small { font-size: 13px; }
 .guide code { font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 2px 6px; overflow-wrap: anywhere; }
 .copy { font-size: 12px; padding: 2px 8px; border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; cursor: pointer; flex: none; }
 .guide .note { color: var(--muted); font-size: 13px; }
-.lang { min-width: 44px; font-weight: 600; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
 /* Настройки: список → страница стика (разделы Партия / Измерения / Доступ) */
 .set-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .set-head h2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -404,7 +405,6 @@ body.has-install main { padding-bottom: 220px; }
     <div class="title-row">
       <h1 id="title" data-i18n="app.name"></h1>
       <div class="top-actions">
-        <button class="icon-btn lang" id="lang" type="button"></button>
         <button class="icon-btn round" id="open-settings" type="button" data-i18n-label="ui.settings" data-i18n-title="ui.settings"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
       </div>
     </div>
@@ -965,6 +965,8 @@ body.has-install main { padding-bottom: 220px; }
         st.formulaSynced = true; save();
       }
       if ("units" in data && st.units !== data.units) { st.units = data.units; save(); }
+      // Админ ли этот браузер — решает сервер по ключу доступа.
+      if ("admin" in data && st.admin !== data.admin) { st.admin = data.admin; save(); }
       if ("style" in data) { st.style = data.style; st.fg = data.fg; save(); }
       let formula = null;
       try { formula = compileFormula(st.formula); }
@@ -1593,12 +1595,14 @@ body.has-install main { padding-bottom: 220px; }
   }
 
   // ---------- Окно настроек ----------
+  // Права админа хранит сервер (у ключа доступа); до первого ответа — по токену, он есть у зарегистрировавшего.
+  const isAdmin = (st) => !!st && (st.admin ?? !!st.token);
   function renderSticks() {
     const st = cur();
     $("stick-list").innerHTML = cfg.sticks.length ? cfg.sticks.map((x) => `
       <li><button type="button" class="set-row" data-id="${escapeHtml(x.id)}"><span class="dot${x === st ? " on" : ""}"></span>
         <span class="t"><b>${escapeHtml(stickName(x))}</b><small>${escapeHtml(stickSub(x))}</small></span>
-        <span class="tag${x.token ? "" : " guest"}">${escapeHtml(t(x.token ? "role.owner" : "role.guest"))}</span><span class="ch">›</span></button></li>`).join("")
+        <span class="tag${isAdmin(x) ? "" : " guest"}">${escapeHtml(t(isAdmin(x) ? "role.owner" : "role.guest"))}</span><span class="ch">›</span></button></li>`).join("")
       : `<li class="empty">${escapeHtml(t("sticks.empty"))}</li>`;
   }
   // Подпись в списке: стиль и день партии.
@@ -1621,8 +1625,8 @@ body.has-install main { padding-bottom: 220px; }
       : t({ root: "settings.title", add: "sticks.add", server: "settings.server" }[page]);
     $("set-role").hidden = page !== "stick";
     if (page === "stick") {
-      $("set-role").textContent = t(st.token ? "role.owner" : "role.guest");
-      $("set-role").classList.toggle("guest", !st.token);
+      $("set-role").textContent = t(isAdmin(st) ? "role.owner" : "role.guest");
+      $("set-role").classList.toggle("guest", !isAdmin(st));
     }
     if (page === "root") {
       renderSticks();
@@ -1641,7 +1645,7 @@ body.has-install main { padding-bottom: 220px; }
   }
   // Доступ: у гостя — пояснение; список подключённых и очистка истории — только у владельца.
   function syncAccess() {
-    const st = cur(), owner = !!(st && st.token);
+    const st = cur(), owner = isAdmin(st);
     $("acc-guest").hidden = owner;
     $("history-row").hidden = !owner;
     $("share-box").hidden = true;
@@ -1670,51 +1674,51 @@ body.has-install main { padding-bottom: 220px; }
   // Список видит и правит только тот, кто зарегистрировал стик (у остальных воркер отвечает 403).
   async function renderMembers() {
     const box = $("members"), st = cur();
-    if (!st || !st.token) { box.hidden = true; return; }
+    if (!isAdmin(st)) { box.hidden = true; return; }
     let list;
     try { list = (await api("/api/members", {}, st.access)).members || []; }
     catch { box.hidden = true; return; }
     if (cur() !== st) return;
     const used = list.filter((m) => m.last_used != null);
     const pending = list.filter((m) => m.last_used == null);
-    const revokeBtn = (m, key) => m.kind === "owner" || m.you ? ""
+    const revokeBtn = (m, key) => m.you ? ""
       : `<button type="button" class="revoke" data-revoke="${escapeHtml(m.id)}">${escapeHtml(t(key))}</button>`;
+    const adminBtn = (m) => m.you ? ""
+      : `<button type="button" class="role" data-admin="${escapeHtml(m.id)}" data-to="${m.kind === "owner" ? "0" : "1"}">${escapeHtml(t(m.kind === "owner" ? "members.unAdmin" : "members.makeAdmin"))}</button>`;
     box.innerHTML = `<h4>${escapeHtml(t("members.title", { name: stickName(st), n: used.length }))}</h4>
       <ul>${used.map((m) => {
         const p = parseUA(m.user_agent);
         const icon = p && p.mobile ? DEVICE_ICONS.phone : DEVICE_ICONS.desktop;
         return `<li>${icon}<span class="who">${escapeHtml(p ? p.label : t("members.unknown"))}${m.you ? ` <span class="you">· ${escapeHtml(t("members.you"))}</span>` : ""}</span>
-          ${revokeBtn(m, "members.revoke")}
+          <span class="acts">${adminBtn(m)}${revokeBtn(m, "members.revoke")}</span>
           <small>${escapeHtml(t(m.kind === "owner" ? "members.owner" : "members.shared"))} · ${escapeHtml(Date.now() - m.last_used < 5 * 60e3 ? t("members.now") : t("members.active", { ago: ago(m.last_used) }))}</small></li>`;
       }).join("")}
       ${pending.map((m) => `<li>${DEVICE_ICONS.link}<span class="who">${escapeHtml(t("members.link", { date: dayTime(m.created) }))}</span>
-          ${revokeBtn(m, "members.revokeLink")}<small>${escapeHtml(t("members.notOpened"))}</small></li>`).join("")}</ul>
+          <span class="acts">${revokeBtn(m, "members.revokeLink")}</span><small>${escapeHtml(t("members.notOpened"))}</small></li>`).join("")}</ul>
       <p class="note">${escapeHtml(t("members.hint"))}</p>
       <small class="field-error" id="members-error"></small>`;
     box.hidden = false;
   }
   $("members").addEventListener("click", async (e) => {
-    const b = e.target.closest("[data-revoke]");
+    const b = e.target.closest("[data-revoke], [data-admin]");
     if (!b) return;
-    const st = cur();
-    if (!confirm(t("members.confirm"))) return;
+    const st = cur(), revoke = "revoke" in b.dataset, toAdmin = b.dataset.to === "1";
+    if (!confirm(t(revoke ? "members.confirm" : toAdmin ? "members.adminConfirm" : "members.unAdminConfirm"))) return;
     b.disabled = true;
     try {
-      const res = await fetch(apiBase() + "/api/members/revoke", {
-        method: "POST", headers: { "Content-Type": "application/json", "X-Access": st.access }, body: JSON.stringify({ id: b.dataset.revoke }),
-      });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+      if (revoke) await post("/api/members/revoke", { id: b.dataset.revoke }, st.access);
+      else await post("/api/members/admin", { id: b.dataset.admin, admin: toAdmin }, st.access);
       renderMembers();
     } catch (err) {
       b.disabled = false;
-      $("members-error").textContent = t("members.revokeFail", { message: err.message });
+      $("members-error").textContent = t(revoke ? "members.revokeFail" : "members.adminFail", { message: err.message });
     }
   });
 
   // Очистить историю выбранного стика (только владелец): на сервере остаётся последнее показание.
   async function clearHistory(btn) {
     const st = cur();
-    if (!st || !st.token || !confirm(t("history.confirm", { name: stickName(st) }))) return;
+    if (!isAdmin(st) || !confirm(t("history.confirm", { name: stickName(st) }))) return;
     btn.disabled = true;
     try {
       const { deleted } = await post("/api/history/clear", {}, st.access);
@@ -1742,7 +1746,7 @@ body.has-install main { padding-bottom: 220px; }
     const b = e.target.closest("button[data-seg]");
     if (b) showSeg(b.dataset.seg);
   });
-  $("set-lang").onclick = () => { langBtn.click(); };
+  $("set-lang").onclick = () => cycleLang();
   $("set-newbatch").onclick = () => { dlg.close(); openBatchDialog(); };
   $("history-clear").onclick = () => clearHistory($("history-clear"));
   $("share-new").onclick = async () => {
@@ -2008,26 +2012,18 @@ body.has-install main { padding-bottom: 220px; }
 
   // Язык — маленькая кнопка: каждый клик переключает на следующий по кругу.
   const LANG_CYCLE = ["en", "uk", "ru", "es"];
-  const LANG_CODE = { en: "EN", uk: "UA", ru: "RU", es: "ES" };
-  const langBtn = $("lang");
-  function syncLang() {
-    const code = I18N.lang();
-    langBtn.textContent = LANG_CODE[code] || code.toUpperCase();
-    langBtn.title = `${t("ui.language")}: ${I18N.name(code)}`;
-    langBtn.setAttribute("aria-label", langBtn.title);
-  }
   I18N.use(I18N.detect());
-  langBtn.onclick = () => {
+  // Язык переключается по кругу в настройках (строка «Язык»).
+  function cycleLang() {
     const next = LANG_CYCLE[(LANG_CYCLE.indexOf(I18N.lang()) + 1) % LANG_CYCLE.length];
     I18N.use(next, true);
-    applyStatic(); syncLang(); syncInstallText();
+    applyStatic(); syncInstallText();
     if (dlg.open) { showPage(setPage); syncServer(); }
     // Axis ticks and tooltips are baked into the chart options, so rebuild them.
     Object.values(charts).forEach((c) => c.destroy());
     charts = {};
     refresh();
-  };
-  syncLang();
+  }
   applyStatic();
 
   syncRanges();

@@ -9,7 +9,8 @@
 //   GET  /api/readings      — история: ?device=&from=&to= (ms UTC)
 //   GET  /api/battery       — среднее напряжение по часам для прогноза батареи: ?device=&days=14
 //   GET  /api/members       — кто подключён к стику (только владельцу): браузер, когда были активны
-//   POST /api/members/revoke — {id}: владелец отключает пользователя или неоткрытую ссылку
+//   POST /api/members/revoke — {id}: админ отключает пользователя, другого админа или неоткрытую ссылку
+//   POST /api/members/admin — {id, admin}: админ выдаёт или снимает права админа у подключённого
 //   POST /api/history/clear — владелец удаляет все показания стика, кроме последнего
 //   GET  /api/health        — проверка
 //
@@ -54,6 +55,11 @@ export default {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await revokeMember(request, env, stick, cors);
+      }
+      if (request.method === "POST" && url.pathname === "/api/members/admin") {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        return await setAdmin(request, env, stick, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/history/clear") {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
@@ -159,7 +165,7 @@ async function stickByAccess(env, key, request) {
 // Кто подключён к стику — видит только владелец. Хеши ключей не отдаём: id — их начало,
 // его хватает, чтобы отключить ключ; свой ключ помечаем как you.
 async function members(env, stick, cors) {
-  if (stick.key_kind !== "owner") return json({ error: "only the owner can see who is connected" }, 403, cors);
+  if (stick.key_kind !== "owner") return json({ error: "only an admin can see who is connected" }, 403, cors);
   const { results } = await env.DB.prepare(
     `SELECT hash, kind, created, last_used, user_agent FROM access_keys WHERE token_hash = ?1
      ORDER BY last_used IS NULL, last_used DESC, created DESC`
@@ -172,7 +178,7 @@ async function members(env, stick, cors) {
 // Очистить историю: остаётся одно последнее показание стика, чтобы на главной были текущие
 // значения. Устройства без показаний (старые имена iSpindel) убираем и из latest.
 async function clearHistory(env, stick, cors) {
-  if (stick.key_kind !== "owner") return json({ error: "only the owner can clear the history" }, 403, cors);
+  if (stick.key_kind !== "owner") return json({ error: "only an admin can clear the history" }, 403, cors);
   const [del] = await env.DB.batch([
     env.DB.prepare(
       `DELETE FROM readings WHERE owner = ?1
@@ -185,16 +191,38 @@ async function clearHistory(env, stick, cors) {
   return json({ deleted: del.meta.changes }, 200, cors);
 }
 
-// Отключить: удаляем ключ доступа. Ключ владельца так не удалить.
-async function revokeMember(request, env, stick, cors) {
-  if (stick.key_kind !== "owner") return json({ error: "only the owner can disconnect people" }, 403, cors);
+// Права админа привязаны к ключу доступа (kind = 'owner'), то есть к браузеру на устройстве,
+// а не к токену. Свой ключ так не отключить и не понизить — у стика всегда остаётся хотя бы один админ.
+async function memberId(request) {
   let body;
-  try { body = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
+  try { body = await request.json(); } catch { return { error: "bad json" }; }
   const id = body && body.id;
-  if (typeof id !== "string" || !/^[0-9a-f]{16}$/.test(id)) return json({ error: "bad id" }, 400, cors);
+  if (typeof id !== "string" || !/^[0-9a-f]{16}$/.test(id)) return { error: "bad id" };
+  return { id, body };
+}
+
+// Отключить: удаляем ключ доступа.
+async function revokeMember(request, env, stick, cors) {
+  if (stick.key_kind !== "owner") return json({ error: "only an admin can disconnect people" }, 403, cors);
+  const { id, error } = await memberId(request);
+  if (error) return json({ error }, 400, cors);
+  if (stick.keyHash.startsWith(id)) return json({ error: "you cannot disconnect yourself" }, 400, cors);
   const res = await env.DB.prepare(
-    "DELETE FROM access_keys WHERE token_hash = ?1 AND substr(hash, 1, 16) = ?2 AND kind != 'owner'"
+    "DELETE FROM access_keys WHERE token_hash = ?1 AND substr(hash, 1, 16) = ?2"
   ).bind(stick.hash, id).run();
+  if (!res.meta.changes) return json({ error: "not found" }, 404, cors);
+  return json({ ok: true }, 200, cors);
+}
+
+// Сделать админом или снять права.
+async function setAdmin(request, env, stick, cors) {
+  if (stick.key_kind !== "owner") return json({ error: "only an admin can change admins" }, 403, cors);
+  const { id, body, error } = await memberId(request);
+  if (error) return json({ error }, 400, cors);
+  if (stick.keyHash.startsWith(id)) return json({ error: "you cannot change your own role" }, 400, cors);
+  const res = await env.DB.prepare(
+    "UPDATE access_keys SET kind = ?3 WHERE token_hash = ?1 AND substr(hash, 1, 16) = ?2"
+  ).bind(stick.hash, id, body.admin ? "owner" : "share").run();
   if (!res.meta.changes) return json({ error: "not found" }, 404, cors);
   return json({ ok: true }, 200, cors);
 }
@@ -402,7 +430,7 @@ async function devices(env, stick, cors) {
      FROM latest WHERE owner = ?1 ORDER BY device`
   ).bind(owner).all();
   return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", units: stick.units || "auto",
-    style: stick.style ?? null, fg: stick.fg_target ?? null, devices: results }, 200, cors);
+    style: stick.style ?? null, fg: stick.fg_target ?? null, admin: stick.key_kind === "owner", devices: results }, 200, cors);
 }
 
 // История. ?after=ts — только новые строки после ts (приложение так догружает раз в минуту).
