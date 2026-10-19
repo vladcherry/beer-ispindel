@@ -132,9 +132,9 @@ button, input, select { font: inherit; color: inherit; }
 .band .scale-l { display: flex; justify-content: space-between; font-size: 12px; opacity: .92; }
 .band .msg { font-size: 12.5px; background: rgba(0, 0, 0, .14); border-radius: 8px; padding: 4px 7px; }
 .band-g { flex: 1; }
-.band-abv { display: flex !important; justify-content: space-between; align-items: baseline; gap: 6px; border-top: 1px solid rgba(255, 255, 255, .3); padding-top: 6px !important; border-radius: 0 !important; }
+.band-abv { gap: 2px !important; margin-top: auto; border-top: 1px solid rgba(255, 255, 255, .3); padding-top: 6px !important; border-radius: 0 !important; }
 .band-abv span { font-size: 12.5px; opacity: .92; }
-.band-abv b { font: 600 24px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.band-abv b { font: 600 24px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .band-abv b small { font: 500 13px var(--body); opacity: .9; margin-left: 4px; }
 .band-abv { position: relative; }
 .band-abv.bad::after {
@@ -153,6 +153,7 @@ button, input, select { font: inherit; color: inherit; }
 .chip:hover { border-color: var(--muted); }
 /* Уровень: зелёный — в норме с запасом, жёлтый — у границы, красный — за пределами */
 .chip.good { border-color: color-mix(in srgb, var(--ok) 55%, var(--rule)); background: color-mix(in srgb, var(--ok) 7%, var(--surface)); }
+.chip.good svg { color: var(--ok) !important; }
 .chip.warn { border-color: var(--amber); color: var(--amber-deep); background: color-mix(in srgb, var(--amber) 10%, var(--surface)); }
 .chip.warn svg { color: var(--amber) !important; }
 .chip.bad { border-color: var(--alert); color: var(--alert); background: color-mix(in srgb, var(--alert) 8%, var(--surface)); }
@@ -745,6 +746,8 @@ body.has-install main { padding-bottom: 220px; }
     }
     return 0;
   }
+  // Сила сигнала в процентах: −50 dBm и сильнее — 100 %, −100 dBm — 0 %.
+  const wifiPct = (r) => r == null ? null : Math.max(0, Math.min(100, 2 * (r + 100)));
   function rssiText(r) {
     if (r == null) return "–";
     if (r >= -60) return t("wifi.excellent");
@@ -1242,7 +1245,7 @@ body.has-install main { padding-bottom: 220px; }
     $("chip-batt").innerHTML = `${icons.battery(pct)}<span>${pct == null ? "–" : pct + "%"}</span>`;
     setLevel("chip-batt", pct == null ? null : pct > 50 ? "good" : pct > 20 ? "warn" : "bad");
     renderTempTile(toC(tLast, last.temp_units), tLast, last.temp_units, style, a);
-    $("chip-wifi").innerHTML = `${icons.wifi(last.rssi)}<span>${last.rssi == null ? "–" : String(last.rssi).replace("-", "−")}</span>`;
+    $("chip-wifi").innerHTML = `${icons.wifi(last.rssi)}<span>${last.rssi == null ? "–" : wifiPct(last.rssi) + "%"}</span>`;
     setLevel("chip-wifi", last.rssi == null ? null : last.rssi >= -70 ? "good" : last.rssi >= -80 ? "warn" : "bad");
     $("chip-rate").innerHTML = `${icons.trend()}<span>${a.rate == null ? "–" : (a.rate >= 0 ? "−" : "+") + fmt(Math.abs(a.rate), 1)}</span>`;
     $("chip-rate").title = t("chip.rate");
@@ -1452,7 +1455,7 @@ body.has-install main { padding-bottom: 220px; }
     }
     if (id === "chip-wifi") {
       return `<h4>${escapeHtml(t("device.wifi"))}: ${escapeHtml(rssiText(last.rssi))}</h4>` + dl([
-        ["pop.wifi.rssi", last.rssi != null ? last.rssi + " dBm" : null],
+        ["pop.wifi.rssi", last.rssi != null ? `${wifiPct(last.rssi)}% · ${String(last.rssi).replace("-", "−")} dBm` : null],
         ["device.interval", intervalText(last.interval_s)],
         ["device.tilt", last.angle != null ? fmt(last.angle, 1) + "°" : null],
       ]) + (last.rssi != null && last.rssi < -80 ? `<ul><li class="warn">${escapeHtml(t("pop.wifi.weak"))}</li></ul>` : "");
