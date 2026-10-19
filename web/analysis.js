@@ -164,6 +164,35 @@ const Brew = (() => {
     return { stages, stage, alarm, checkingLeft: stage === 'checking' ? lastLeft : null };
   }
 
+  /* Прогноз начала предстоящих стадий: {id: {lo, hi}} — время (ms), диапазон как у «осталось».
+     Плотность идёт к цели экспоненциально: g(t) = fg + (g − fg)·e^(−k·t), k = скорость / (g − fg).
+     Затухание — 70 % пути; проверка — у цели и скорость < 0,3 °P/сутки; дальше по 48 ч. */
+  function stageForecast(res, { g, og, fg, rate, now, batchStart }) {
+    const out = {}, stage = res.stage;
+    if (!stage) return out;
+    const shift = (r, ms) => ({ lo: r.lo + ms, hi: r.hi + ms });
+    if (stage === 'lag') {
+      out.active = { lo: Math.max(now, batchStart + 12 * H), hi: Math.max(now, batchStart + 36 * H) };
+      return out;
+    }
+    if ((stage === 'active' || stage === 'slowing') && rate > 0.05 && g > fg) {
+      const k = rate / (g - fg);
+      const reach = (d) => {
+        const days = Math.log((g - fg) / d) / k;
+        return Number.isFinite(days) && days > 0 ? { lo: now + days * 0.8 * DAY, hi: now + days * 1.4 * DAY } : { lo: now, hi: now };
+      };
+      if (stage === 'active') out.slowing = reach(Math.max(0.3 * (og - fg), 0.01));
+      out.checking = reach(Math.min(Math.max(1.0, 0.15 * (og - fg)), 0.3 / k));
+      out.done = shift(out.checking, CONFIRM_H * H);
+    } else if (stage === 'checking') {
+      const left = (res.checkingLeft ?? CONFIRM_H) * H;
+      out.done = { lo: now + left, hi: now + left };
+    }
+    if (out.done) out.ready = shift(out.done, CONFIRM_H * H);
+    if (stage === 'done') { const d = res.stages.at(-1).from + CONFIRM_H * H; out.ready = { lo: d, hi: d }; }
+    return out;
+  }
+
   /* Разбор партии.
      rows: [{ts, g, temperature}] — g уже в °P и только правдоподобные; temperature в °C.
      batchStart: ms или null; og: начальная плотность или null; fgManual: °P или null; style: объект или null. */
@@ -237,6 +266,7 @@ const Brew = (() => {
     } else if (status === 'checking' && res.checkingLeft != null) {
       res.eta = { lo: res.checkingLeft / 24, hi: res.checkingLeft / 24 };
     }
+    if (res.stage && g != null) res.stageEta = stageForecast(res, { g, og, fg, rate, now, batchStart });
 
     // --- Плотность
     if (status === 'lag') say('gravity', 'ok', 'an.grav.lag', { hours: Math.round(ageDays * 24) });

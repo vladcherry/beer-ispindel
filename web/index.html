@@ -246,7 +246,7 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .st-alarm-text.warn { background: color-mix(in srgb, var(--amber) 14%, transparent); color: var(--amber-deep); }
 .stage-list { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 6px; }
 .stage-list li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 11px; border-radius: 10px; background: var(--bg); border: 1px solid var(--rule); font-size: 14px; }
-.stage-list li span { color: var(--muted); white-space: nowrap; }
+.stage-list li span { color: var(--muted); text-align: right; }
 .stage-list li.cur { border-color: var(--amber); }
 .stage-list li.cur b { color: var(--amber-deep); }
 .stage-list li.next { background: transparent; border-style: dashed; }
@@ -1379,10 +1379,16 @@ body.has-install main { padding-bottom: 220px; }
       return `<li class="${i === a.stages.length - 1 ? "cur" : ""}"><b>${escapeHtml(t("stage." + x.id))}</b><span>${escapeHtml(dayTime(x.from))} · ${escapeHtml(dur(end - x.from))}</span></li>`;
     }).join("");
     // Впереди — оставшиеся стадии шкалы, серым.
+    // Прогноз: близкие границы — одной датой со временем, широкий диапазон — днями.
+    const when = (r) => !r ? t("stage.ahead")
+      : r.hi - r.lo < 3 * 3600e3 ? "≈ " + dayTime(r.lo)
+      : dateShort(r.lo) === dateShort(r.hi) ? "≈ " + dateShort(r.lo) : `≈ ${dateShort(r.lo)} – ${dateShort(r.hi)}`;
+    const eta = a.stageEta || {};
     const ahead = STAGES_ALL.slice(STAGES_ALL.indexOf(a.stage) + 1).map((id) =>
-      `<li class="next"><b>${escapeHtml(t("stage." + id))}</b><span>${escapeHtml(t("stage.ahead"))}</span></li>`).join("");
+      `<li class="next"><b>${escapeHtml(t("stage." + id))}</b><span>${escapeHtml(when(eta[id]))}</span></li>`).join("");
+    const note = Object.keys(eta).length ? `<p class="hint">${escapeHtml(t("stage.etaNote"))}</p>` : "";
     const alarm = a.alarm ? `<p class="st-alarm-text ${a.alarm.id === "stalled" ? "bad" : "warn"}">${escapeHtml(t("stage.since", { stage: t("stage." + a.alarm.id), time: dayTime(a.alarm.from) }))}</p>` : "";
-    openSheet(`<div class="top-line"><h2>${escapeHtml(t("stage.listTitle"))}</h2>${closeBtn}</div>${alarm}<ul class="stage-list">${rows}${ahead}</ul>`);
+    openSheet(`<div class="top-line"><h2>${escapeHtml(t("stage.listTitle"))}</h2>${closeBtn}</div>${alarm}<ul class="stage-list">${rows}${ahead}</ul>${note}`);
   }
   $("batchp").addEventListener("click", (e) => { if (e.target.closest("#stages-btn")) stagesSheet(); });
 
