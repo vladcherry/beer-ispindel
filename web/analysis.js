@@ -52,6 +52,7 @@ const Brew = (() => {
   const mid = (r) => (r[0] + r[1]) / 2;
   const round1 = (x) => Math.round(x * 10) / 10;
   const H = 3600e3, DAY = 86400e3;
+  const SETTLE = 6 * H; // первые часы партии сусло выходит на температуру брожения
 
   function median(a) {
     const v = a.filter((x) => x != null && Number.isFinite(x)).sort((x, y) => x - y);
@@ -174,7 +175,9 @@ const Brew = (() => {
 
     // --- Температура
     const tLast = at(tH, now, 3 * H) ?? (tH.length ? tH.at(-1).v : null);
-    const t24 = tH.filter((p) => p.t >= now - DAY).map((p) => p.v);
+    // Колебание — за сутки, но без первых часов партии: сусло ещё охлаждается или греется до температуры брожения.
+    const swingFrom = Math.max(now - DAY, batchStart ? batchStart + SETTLE : 0);
+    const t24 = tH.filter((p) => p.t >= swingFrom).map((p) => p.v);
     const tAll = tH.map((p) => p.v);
     let spikes = 0, maxJump = 0;
     for (let i = 1; i < tH.length; i++) {

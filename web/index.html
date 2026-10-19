@@ -138,6 +138,10 @@ button, input, select { font: inherit; color: inherit; }
 }
 .chip svg { width: 22px; height: 22px; flex: none; }
 .chip:hover { border-color: var(--muted); }
+/* Уровень: зелёный — в норме с запасом, жёлтый — у границы, красный — за пределами */
+.chip.good { border-color: color-mix(in srgb, var(--ok) 55%, var(--rule)); background: color-mix(in srgb, var(--ok) 7%, var(--surface)); }
+.chip.warn { border-color: var(--amber); color: var(--amber-deep); background: color-mix(in srgb, var(--amber) 10%, var(--surface)); }
+.chip.warn svg { color: var(--amber) !important; }
 .chip.bad { border-color: var(--alert); color: var(--alert); background: color-mix(in srgb, var(--alert) 8%, var(--surface)); }
 .chip.bad svg { color: var(--alert) !important; }
 
@@ -254,6 +258,7 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .rec ul { margin: 2px 0 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; color: var(--muted); grid-column: 2; }
 .rec li.warn, .rec li.bad { color: var(--ink); }
 .rec li.warn::before, .rec li.bad::before { content: "▲ "; color: var(--alert); font-size: 11px; }
+.rec li.warn::before { color: var(--amber); }
 
 /* Всплывающая подсказка у показателей */
 .pop {
@@ -265,7 +270,8 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .pop dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0 0 8px; font-size: 13px; }
 .pop dt { opacity: .7; } .pop dd { margin: 0; font-variant-numeric: tabular-nums; }
 .pop ul { margin: 0; padding-left: 16px; display: grid; gap: 4px; }
-.pop li.warn, .pop li.bad { color: #ffb4a6; }
+.pop li.warn { color: #ffd27a; }
+.pop li.bad { color: #ffb4a6; }
 .pop .close { position: absolute; top: 6px; right: 8px; border: 0; background: none; color: inherit; opacity: .6; font-size: 18px; cursor: pointer; }
 
 /* Графики */
@@ -1131,6 +1137,23 @@ body.has-install main { padding-bottom: 220px; }
   const rangeText = (r) => `${fmtMax1(r[0])}–${fmtMax1(r[1])}`;
   const dateShort = (ts) => new Date(ts).toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
 
+  // Цвет значка: good / warn / bad, null — без подсветки.
+  function setLevel(id, level) {
+    ["good", "warn", "bad"].forEach((c) => $(id).classList.toggle(c, c === level));
+  }
+  // Температура по диапазону стиля: дальше 0,5 °C от границ внутри — зелёный, ±0,5 °C у границы — жёлтый,
+  // дальше за границей — красный. Колебания и скачки из анализа делают зелёный жёлтым.
+  const TEMP_EDGE = 0.5;
+  function tempLevel(tc, range, analysisLevel) {
+    if (tc == null) return null;
+    let level = "good";
+    if (range) {
+      const [lo, hi] = range;
+      if (tc < lo - TEMP_EDGE || tc > hi + TEMP_EDGE) level = "bad";
+      else if (tc < lo + TEMP_EDGE || tc > hi - TEMP_EDGE) level = "warn";
+    }
+    return level === "good" && analysisLevel !== "ok" ? "warn" : level;
+  }
   function renderMain(rows, valid, last, hasBatch, batt, now) {
     $("hero").hidden = false;
     const st = cur();
@@ -1159,15 +1182,15 @@ body.has-install main { padding-bottom: 220px; }
     // Значки
     const tLast = last.temperature;
     $("chip-batt").innerHTML = `${icons.battery(pct)}<span>${pct == null ? "–" : pct + "%"}</span>`;
-    $("chip-batt").classList.toggle("bad", pct != null && pct <= 20);
+    setLevel("chip-batt", pct == null ? null : pct > 50 ? "good" : pct > 20 ? "warn" : "bad");
     $("chip-temp").innerHTML = `${icons.temp()}<span>${fmt(tLast, 1)}°</span>`;
     $("chip-temp").querySelector("svg").style.color = css("--teal");
-    $("chip-temp").classList.toggle("bad", a.temp.level !== "ok");
+    setLevel("chip-temp", tempLevel(toC(tLast, last.temp_units), style && style.t, a.temp.level));
     $("chip-wifi").innerHTML = `${icons.wifi(last.rssi)}<span>${last.rssi == null ? "–" : String(last.rssi).replace("-", "−")}</span>`;
-    $("chip-wifi").classList.toggle("bad", last.rssi != null && last.rssi < -80);
+    setLevel("chip-wifi", last.rssi == null ? null : last.rssi >= -70 ? "good" : last.rssi >= -80 ? "warn" : "bad");
     $("chip-rate").innerHTML = `${icons.trend()}<span>${a.rate == null ? "–" : (a.rate >= 0 ? "−" : "+") + fmt(Math.abs(a.rate), 1)}</span>`;
     $("chip-rate").title = t("chip.rate");
-    $("chip-rate").classList.toggle("bad", a.gravity.level === "bad");
+    setLevel("chip-rate", a.gravity.level === "bad" ? "bad" : null);
     [["chip-batt", "device.battery"], ["chip-temp", "device.temperature"], ["chip-wifi", "device.wifi"], ["chip-rate", "chip.rate"], ["band-g", "band.gravity"], ["band-abv", "band.abv"]]
       .forEach(([id, k]) => $(id).setAttribute("aria-label", t(k)));
 
