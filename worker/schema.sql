@@ -28,6 +28,10 @@ CREATE TABLE IF NOT EXISTS tokens (
   fg_target REAL,                  -- ожидаемая конечная плотность партии, °P
   t_lo      REAL,                  -- норма температуры (°C) для оповещений — из стиля
   t_hi      REAL,
+  ai_engine TEXT,                  -- AI-помощник: модель DeepSeek, ключ (только на сервере), вопросов в сутки, длина ответа
+  ai_key    TEXT,
+  ai_limit  INTEGER,
+  ai_len    TEXT,
   created   INTEGER NOT NULL,
   last_seen INTEGER
 );
@@ -77,3 +81,10 @@ CREATE TABLE IF NOT EXISTS alert_log (
   id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL, ts INTEGER NOT NULL, event TEXT, key TEXT, params TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_alert_log ON alert_log (token_hash, ts);
+
+-- Чат с AI по партиям; по нему же считается лимит вопросов за сутки.
+CREATE TABLE IF NOT EXISTS ai_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL, batch_start INTEGER, ts INTEGER NOT NULL,
+  key_hash TEXT, user_agent TEXT, question TEXT, answer TEXT, lang TEXT, tokens_in INTEGER, tokens_out INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_ai_log ON ai_log (token_hash, ts);

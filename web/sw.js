@@ -47,7 +47,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(shell(req));
   } else if (STATIC_HOSTS.includes(url.hostname)) {
     event.respondWith(cacheFirst(req));
-  } else if (url.pathname.startsWith("/api/") && !["/api/health", "/api/members", "/api/alerts", "/api/push/key"].includes(url.pathname)
+  } else if (url.pathname.startsWith("/api/") && !["/api/health", "/api/members", "/api/alerts", "/api/push/key", "/api/ai"].includes(url.pathname)
              && !url.searchParams.has("after")) {
     // Догрузка новых строк (?after=), журнал уведомлений и список участников идут мимо кэша:
     // иначе офлайн-копия затрётся неполными данными.

@@ -15,6 +15,9 @@
 //   GET  /api/alerts        — журнал событий стика (?since=ts)
 //   GET  /api/push/key      — публичный ключ VAPID для подписки браузера
 //   POST /api/push/subscribe|unsubscribe|state|test — {endpoint, …}: push-подписка этого устройства на стик
+//   GET  /api/ai            — AI-помощник: включён ли, лимит на сегодня, чат текущей партии
+//   POST /api/ai/ask        — {question, context, lang}: вопрос AI (лимит в сутки на стик)
+//   POST /api/ai/config|test — админ: движок, ключ, лимит, длина ответа; проверка ключа
 //   GET  /api/health        — проверка
 //
 // Токен стика знают iSpindel и тот, кто его зарегистрировал; зарегистрировать токен можно
@@ -35,6 +38,7 @@ const TOKEN_MIN = 8;
 const TOKEN_MAX = 64;
 
 import { onReading, onSchedule, pushApi, alertsList, vapidKeys } from "./push.js";
+import { aiState, aiConfig, aiTest, aiAsk } from "./ai.js";
 
 export default {
   async scheduled(event, env, ctx) {
@@ -83,6 +87,13 @@ export default {
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await pushApi(request, env, stick, url.pathname, json, cors);
       }
+      if (request.method === "POST" && url.pathname.startsWith("/api/ai/")) {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        if (url.pathname === "/api/ai/ask") return await aiAsk(request, env, stick, json, cors);
+        if (url.pathname === "/api/ai/config") return await aiConfig(request, env, stick, json, cors);
+        if (url.pathname === "/api/ai/test") return await aiTest(env, stick, json, cors);
+      }
       if (request.method === "POST" && url.pathname === "/api/batch") {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
@@ -123,6 +134,7 @@ export default {
         if (url.pathname === "/api/readings") return await readings(env, stick.hash, url, cors);
         if (url.pathname === "/api/battery") return await battery(env, stick.hash, url, cors);
         if (url.pathname === "/api/alerts") return await alertsList(env, stick, url, json, cors);
+        if (url.pathname === "/api/ai") return await aiState(env, stick, url, json, cors);
       }
       return json({ error: "Not found" }, 404, cors);
     } catch (err) {
@@ -287,7 +299,7 @@ async function register(request, env, cors) {
 
 // Миграции выполняются один раз: номер версии схемы лежит в таблице meta, и дальше
 // каждый новый экземпляр воркера тратит на проверку одно чтение, а не обход таблиц.
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
@@ -317,6 +329,9 @@ async function ensureSchema(env) {
   if (!tokenCols.includes("fg_target")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN fg_target REAL").run();
   if (!tokenCols.includes("t_lo")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_lo REAL").run();
   if (!tokenCols.includes("t_hi")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_hi REAL").run();
+  for (const [col, type] of [["ai_engine", "TEXT"], ["ai_key", "TEXT"], ["ai_limit", "INTEGER"], ["ai_len", "TEXT"]]) {
+    if (!tokenCols.includes(col)) await env.DB.prepare(`ALTER TABLE tokens ADD COLUMN ${col} ${type}`).run();
+  }
   const fixes = [
     env.DB.prepare("UPDATE tokens SET id = lower(hex(randomblob(6))) WHERE id IS NULL"),
     env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_id ON tokens (id)"),
@@ -349,6 +364,11 @@ async function ensureSchema(env) {
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS alert_log (
       id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL, ts INTEGER NOT NULL, event TEXT, key TEXT, params TEXT)`),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_alert_log ON alert_log (token_hash, ts)"),
+    // Чат с AI по партиям: по нему же считается лимит вопросов за сутки.
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS ai_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL, batch_start INTEGER, ts INTEGER NOT NULL,
+      key_hash TEXT, user_agent TEXT, question TEXT, answer TEXT, lang TEXT, tokens_in INTEGER, tokens_out INTEGER)`),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_ai_log ON ai_log (token_hash, ts)"),
     env.DB.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('schema', ?1)").bind(String(SCHEMA_VERSION)),
   );
   await env.DB.batch(fixes);

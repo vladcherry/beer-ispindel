@@ -165,7 +165,7 @@ button, input, select { font: inherit; color: inherit; }
 .alerts small { grid-column: 2 / 4; color: var(--muted); font-size: 13px; }
 .alerts .dotnew { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--alert); margin-left: 6px; vertical-align: middle; }
 .sheet .link { border: 0; background: none; color: var(--teal); font-weight: 600; font-size: 14px; cursor: pointer; padding: 4px 0; }
-.seg .seg-icon { display: flex; align-items: center; justify-content: center; flex: 0 0 48px; }
+.seg .seg-icon { display: flex; align-items: center; justify-content: center; flex: 0 0 40px; }
 .push-off { justify-items: center; text-align: center; }
 .push-off b { font: 600 19px/1.2 var(--display); }
 .push-off button { width: 100%; }
@@ -267,7 +267,7 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .batchp button.act:hover { background: var(--amber-soft); }
 
 /* Панель действий партии */
-.actbar { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 12px -12px -12px; border-top: 1px solid var(--rule); }
+.actbar { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); margin: 12px -12px -12px; border-top: 1px solid var(--rule); }
 .actbar button {
   display: grid; justify-items: center; gap: 3px; padding: 9px 4px; border: 0; background: none; cursor: pointer;
   font-size: 13px; color: var(--ink); line-height: 1.2;
@@ -277,6 +277,26 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .actbar button:hover { background: var(--amber-soft); }
 .actbar button:first-child { border-bottom-left-radius: 12px; } .actbar button:last-child { border-bottom-right-radius: 12px; }
 .actbar svg { width: 20px; height: 20px; }
+.actbar button.ai { color: var(--violet); font-weight: 600; background: color-mix(in srgb, var(--violet) 9%, transparent); }
+/* AI-чат партии */
+.ai-count { font: 600 12px var(--body); border-radius: 999px; padding: 3px 9px; background: color-mix(in srgb, var(--violet) 13%, transparent); color: var(--violet); white-space: nowrap; }
+.ai-count.low { background: color-mix(in srgb, var(--alert) 13%, transparent); color: var(--alert); }
+.ai-thread { display: grid; gap: 8px; margin: 8px 0; }
+.ai-thread .q { justify-self: end; max-width: 85%; background: var(--violet); color: #fff; border-radius: 14px 14px 4px 14px; padding: 7px 11px; font-size: 14.5px; white-space: pre-wrap; }
+.ai-thread .a { justify-self: start; max-width: 92%; background: var(--bg); border: 1px solid var(--rule); border-radius: 14px 14px 14px 4px; padding: 8px 11px; font-size: 14.5px; white-space: pre-wrap; }
+.ai-thread small { display: block; font-size: 11px; opacity: .72; margin-top: 3px; }
+.ai-thread .who { display: inline-flex; align-items: center; gap: 4px; font: 600 11.5px var(--body); color: var(--violet); }
+.ai-thread .who svg { width: 14px; height: 14px; }
+.ai-thread .a.wait { color: var(--muted); font-style: italic; }
+.ai-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 8px; }
+.ai-chips button { font-size: 13px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer; }
+.ai-ask { display: flex; gap: 6px; align-items: flex-end; border: 1px solid var(--rule); background: var(--surface); border-radius: 12px; padding: 6px; }
+.ai-ask textarea { flex: 1; min-width: 0; border: 0; background: transparent; resize: none; font: inherit; color: var(--ink); padding: 6px; max-height: 120px; }
+.ai-ask textarea:focus { outline: none; }
+.ai-ask button { flex: none; width: 38px; height: 38px; border-radius: 10px; border: 0; background: var(--violet); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.ai-ask button:disabled { opacity: .5; }
+.ai-foot { text-align: center; font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+.ai-note { text-align: center; font-size: 13.5px; color: var(--muted); background: var(--bg); border-radius: 10px; padding: 10px; }
 
 /* Карточка стиля и справочник — лист снизу */
 dialog.sheet {
@@ -660,6 +680,7 @@ body.has-install main { padding-bottom: 220px; }
         <button type="button" data-seg="batch" data-i18n="seg.batch"></button>
         <button type="button" data-seg="measure" data-i18n="seg.measure"></button>
         <button type="button" data-seg="access" data-i18n="seg.access"></button>
+        <button type="button" data-seg="ai" class="seg-icon" data-i18n-label="seg.ai" data-i18n-title="seg.ai"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></button>
         <button type="button" data-seg="notify" class="seg-icon" data-i18n-label="seg.notify" data-i18n-title="seg.notify"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></button>
       </div>
       <div class="set-seg" data-seg-page="batch">
@@ -716,6 +737,40 @@ body.has-install main { padding-bottom: 220px; }
           <small class="note" id="history-msg"></small>
           <div class="set-line"><span data-i18n="acc.remove"></span><button class="btn-danger" type="button" id="stick-remove" data-i18n="acc.removeBtn"></button></div>
         </div>
+      </div>
+      <div class="set-seg" data-seg-page="ai" hidden>
+        <div class="set-card" id="ai-admin" hidden>
+          <h4 data-i18n="ai.setTitle"></h4>
+          <label><span data-i18n="ai.engine"></span>
+            <select name="aiEngine">
+              <option value="deepseek-chat">DeepSeek · deepseek-chat</option>
+              <option value="deepseek-reasoner">DeepSeek · deepseek-reasoner</option>
+            </select>
+            <small data-i18n="ai.engineHint"></small>
+          </label>
+          <label><span data-i18n="ai.key"></span>
+            <input name="aiKey" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="200">
+            <small><a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener" data-i18n="ai.keyLink"></a> · <span data-i18n="ai.keyHint"></span></small>
+          </label>
+          <label><span data-i18n="ai.limit"></span>
+            <input name="aiLimit" type="number" min="1" max="200" step="1" inputmode="numeric">
+            <small id="ai-used"></small>
+          </label>
+          <label><span data-i18n="ai.len"></span>
+            <select name="aiLen"><option value="short" data-i18n="ai.lenShort"></option><option value="medium" data-i18n="ai.lenMedium"></option></select>
+          </label>
+          <div class="field-row">
+            <button class="primary" type="button" id="ai-save" data-i18n="ai.save"></button>
+            <button class="secondary" type="button" id="ai-test" data-i18n="ai.test"></button>
+            <button class="btn-danger" type="button" id="ai-off" data-i18n="ai.off"></button>
+          </div>
+          <small class="note" id="ai-msg"></small>
+        </div>
+        <div class="set-card" id="ai-guest" hidden>
+          <h4 data-i18n="ai.guestTitle"></h4>
+          <small class="muted" id="ai-guest-text"></small>
+        </div>
+        <p class="set-note" data-i18n="ai.privacy"></p>
       </div>
       <div class="set-seg push" data-seg-page="notify" hidden>
         <p class="set-note" id="push-note" hidden></p>
@@ -1138,6 +1193,7 @@ body.has-install main { padding-bottom: 220px; }
         if (JSON.stringify(want) !== JSON.stringify(data.range)) postBatch(st, { range: want }).catch(() => {});
       }
       loadAlerts(st).catch(() => {});
+      loadAi(st).catch(() => {});
       let formula = null;
       try { formula = compileFormula(st.formula); }
       catch (e) { msgs.push(e.message + t("err.formulaFallback")); }
@@ -1598,6 +1654,7 @@ body.has-install main { padding-bottom: 220px; }
       bp.innerHTML = `<p class="hint">${escapeHtml(t("batch.none"))}</p>` + actionBar(t("batch.startNow"));
     }
     $("new-batch").onclick = () => openBatchDialog();
+    if ($("ai-btn")) $("ai-btn").onclick = () => openAi();
     $("about-style").onclick = () => style ? openStyle(style.id) : openCatalog();
     $("open-catalog").onclick = () => openCatalog();
 
@@ -1627,6 +1684,7 @@ body.has-install main { padding-bottom: 220px; }
       <button type="button" class="main" id="new-batch">${ACT_ICONS.play}${escapeHtml(first)}</button>
       <button type="button" id="about-style">${ACT_ICONS.book}${escapeHtml(t("act.style"))}</button>
       <button type="button" id="open-catalog">${ACT_ICONS.list}${escapeHtml(t("act.catalog"))}</button>
+      ${aiButton()}
     </div>`;
 
   // ---------- Справочник стилей и карточка стиля (лист снизу) ----------
@@ -2037,6 +2095,7 @@ body.has-install main { padding-bottom: 220px; }
     $("set-actions").hidden = !(setPage === "server" || (setPage === "stick" && (seg === "batch" || seg === "measure")));
     if (setPage === "stick" && seg === "access") syncAccess();
     if (setPage === "stick" && seg === "notify") syncPush();
+    if (setPage === "stick" && seg === "ai") syncAi();
   }
   // Доступ: у гостя — пояснение; список подключённых и очистка истории — только у владельца.
   function syncAccess() {
@@ -2547,6 +2606,169 @@ body.has-install main { padding-bottom: 220px; }
       $("push-msg").textContent = t("push.fail", { message: err.message });
     } finally { btn.disabled = false; }
   };
+
+  // ---------- AI-помощник по партии (DeepSeek) ----------
+  // Ключ, движок и лимит хранит сервер (настраивает админ). Счётчик обновляем не чаще раза в 5 минут,
+  // чат партии загружаем только при открытии — чтобы не тратить чтения базы.
+  const AI_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>`;
+  const SEND_ICON = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
+  const aiCache = {};
+  let aiBusy = false, aiDraft = "";
+  async function loadAi(st, withLog = false, force = false) {
+    const c = aiCache[st.id];
+    if (!force && !withLog && c && Date.now() - c.at < 5 * 60e3) return c;
+    const data = await api("/api/ai", withLog ? { log: 1 } : {}, st.access);
+    aiCache[st.id] = { ...(c || {}), ...data, log: data.log || (c && c.log) || null, at: Date.now() };
+    if (cur() === st) updateAiButton();
+    return aiCache[st.id];
+  }
+  // Кнопка в панели партии: появляется после первой загрузки состояния, число — сколько вопросов осталось.
+  function updateAiButton() {
+    const bar = document.querySelector("#batchp .actbar");
+    if (!bar) return;
+    const html = aiButton(), old = $("ai-btn");
+    if (old) old.outerHTML = html; else if (html) bar.insertAdjacentHTML("beforeend", html);
+    if ($("ai-btn")) $("ai-btn").onclick = () => openAi();
+  }
+  function aiButton() {
+    const st = cur(), c = st && aiCache[st.id];
+    if (!c || (!c.enabled && !isAdmin(st))) return "";
+    const label = c.enabled ? `AI · ${c.left}` : "AI";
+    return `<button type="button" class="ai" id="ai-btn">${AI_ICON}${escapeHtml(label)}</button>`;
+  }
+  // Сжатая сводка партии для промта: одна строка, десятичные через точку.
+  function aiContext() {
+    if (!view) return "";
+    const { a, st, style, og, current, last } = view;
+    const r1 = (x) => String(Math.round(x * 10) / 10);
+    const p = [];
+    if (style) p.push(`${style.id} ${r1(style.t[0])}-${r1(style.t[1])}C`);
+    if (og != null) p.push(`OG${r1(og)}`);
+    if (current != null) p.push(`g${r1(current)}P`);
+    if (a.fg != null) p.push(`FG~${r1(a.fg)}`);
+    if (st.batchStart) p.push(`d${r1((Date.now() - st.batchStart) / 86400e3)}`);
+    if (a.stage) p.push(`st=${a.stage}`);
+    if (a.alarm) p.push(`alarm=${a.alarm.id}`);
+    if (a.rate != null) p.push(`r${r1(a.rate)}`);
+    if (a.peak) p.push(`pk${r1(a.peak.rate)}`);
+    const tc = toC(last.temperature, last.temp_units);
+    if (tc != null) p.push(`T${r1(tc)}C`);
+    const ts = a.temp.stats || {};
+    if (ts.min != null) p.push(`T24 ${r1(ts.min)}-${r1(ts.max)}`);
+    if (a.abvNow != null) p.push(`abv${r1(a.abvNow)}${a.projAbv != null ? ">" + r1(a.projAbv) : ""}`);
+    return p.join(" ");
+  }
+  const resetIn = (ts) => { const m = Math.max(0, Math.round((ts - Date.now()) / 60e3)); return t("ai.resetIn", { h: Math.floor(m / 60), m: m % 60 }); };
+  function aiHtml(pending) {
+    const st = cur(), c = aiCache[st.id] || {};
+    const who = (x) => x.mine ? t("ai.you") : (parseUA(x.ua) || {}).label || t("members.unknown");
+    const time = (ts) => new Date(ts).toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
+    const rows = (c.log || []).map((x) => `<div class="q">${escapeHtml(x.q)}<small>${escapeHtml(who(x))} · ${time(x.ts)}</small></div>
+      <div class="a"><span class="who">${AI_ICON}DeepSeek</span><br>${escapeHtml(x.a)}<small>${time(x.ts)}</small></div>`).join("");
+    const wait = pending ? `<div class="q">${escapeHtml(pending)}</div><div class="a wait">${escapeHtml(t("ai.thinking"))}</div>` : "";
+    const count = c.enabled ? `<span class="ai-count${c.left ? "" : " low"}">${escapeHtml(t("ai.count", { used: c.limit - c.left, limit: c.limit }))}</span>` : "";
+    let bottom;
+    if (!c.enabled) {
+      bottom = `<p class="ai-note">${escapeHtml(t(isAdmin(st) ? "ai.offAdmin" : "ai.offGuest"))}</p>` +
+        (isAdmin(st) ? `<button type="button" class="link" data-ai-setup>${escapeHtml(t("ai.setup"))}</button>` : "");
+    } else if (!c.left) {
+      bottom = `<p class="ai-note">${escapeHtml(t("ai.limitReached", { in: resetIn(c.resetAt) }))}</p>`;
+    } else {
+      const chips = ["ai.q.ok", "ai.q.bottle", "ai.q.temp"].map((k) => `<button type="button" data-ai-q="${escapeHtml(t(k))}">${escapeHtml(t(k))}</button>`).join("");
+      bottom = `<div class="ai-chips">${chips}</div>
+        <div class="ai-ask"><textarea id="ai-q" rows="1" maxlength="500" placeholder="${escapeHtml(t("ai.placeholder"))}">${escapeHtml(aiDraft)}</textarea>
+          <button type="button" id="ai-send" aria-label="${escapeHtml(t("ai.send"))}" ${aiBusy ? "disabled" : ""}>${SEND_ICON}</button></div>
+        <p class="ai-foot">${escapeHtml(t("ai.foot", { in: resetIn(c.resetAt), lang: I18N.name(I18N.lang()) }))}</p>`;
+    }
+    const empty = !rows && !wait && c.enabled ? `<p class="hint">${escapeHtml(t("ai.empty"))}</p>` : "";
+    return `<div class="top-line"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${count}${closeBtn}</div>
+      <div class="ai-thread" id="ai-thread">${rows}${wait}</div>${empty}${bottom}`;
+  }
+  function renderAi(pending) {
+    $("sheet-body").innerHTML = aiHtml(pending);
+    sheet.scrollTop = sheet.scrollHeight;
+    const q = $("ai-q");
+    if (q) q.oninput = () => { aiDraft = q.value; };
+  }
+  async function openAi() {
+    const st = cur();
+    if (!st) return;
+    openSheet(aiHtml());
+    try { await loadAi(st, true, true); } catch (err) { notice(escapeHtml(err.message), "error"); }
+    if (sheet.open && cur() === st) renderAi();
+  }
+  async function askAi(text) {
+    const st = cur(), question = (text || "").trim();
+    if (!st || !question || aiBusy) return;
+    aiBusy = true; aiDraft = "";
+    renderAi(question);
+    try {
+      const res = await post("/api/ai/ask", { question, context: aiContext(), lang: I18N.lang() }, st.access);
+      const c = aiCache[st.id];
+      c.log = (c.log || []).concat({ ts: res.ts, q: question, a: res.answer, mine: true });
+      c.left = res.left; c.limit = res.limit;
+    } catch (err) {
+      aiDraft = question;
+      if (err.status === 429 && aiCache[st.id]) aiCache[st.id].left = 0;
+      setTimeout(() => notice(escapeHtml(t("ai.fail", { message: err.message })), "error"), 0);
+    } finally {
+      aiBusy = false;
+      if (sheet.open) renderAi();
+      updateAiButton();
+    }
+  }
+  sheet.addEventListener("click", (e) => {
+    if (e.target.closest("#ai-send")) askAi($("ai-q").value);
+    const chip = e.target.closest("[data-ai-q]");
+    if (chip) askAi(chip.dataset.aiQ);
+    if (e.target.closest("[data-ai-setup]")) { sheet.close(); $("open-settings").click(); showPage("stick"); showSeg("ai"); }
+  });
+  sheet.addEventListener("keydown", (e) => {
+    if (e.target.id === "ai-q" && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askAi(e.target.value); }
+  });
+
+  // Настройки AI: админ задаёт движок, ключ, лимит и длину ответа; гость видит, что включено.
+  async function syncAi() {
+    const st = cur(), admin = isAdmin(st);
+    $("ai-admin").hidden = !admin; $("ai-guest").hidden = admin;
+    $("ai-msg").textContent = "";
+    let c = aiCache[st.id];
+    try { c = await loadAi(st, false, true); } catch { /* покажем то, что есть */ }
+    if (!c || cur() !== st) return;
+    if (admin) {
+      form.elements.aiEngine.value = c.engine || "deepseek-chat";
+      form.elements.aiKey.value = "";
+      form.elements.aiKey.placeholder = c.key ? t("ai.keySet", { hint: c.key }) : t("ai.keyPlaceholder");
+      form.elements.aiLimit.value = c.limit;
+      form.elements.aiLen.value = c.len || "short";
+      $("ai-used").textContent = t("ai.usedToday", { n: c.used });
+      $("ai-off").hidden = $("ai-test").hidden = !c.enabled;
+    } else {
+      $("ai-guest-text").textContent = c.enabled ? t("ai.guestOn", { limit: c.limit, left: c.left }) : t("ai.offGuest");
+    }
+  }
+  async function aiAdmin(path, body, okKey) {
+    const st = cur();
+    $("ai-msg").textContent = "";
+    try {
+      const res = await post(path, body, st.access);
+      if (res.ok === false) throw new Error(res.error || String(res.status));
+      $("ai-msg").textContent = t(okKey);
+      await syncAi();
+      $("ai-msg").textContent = t(okKey);
+      if (aiCache[st.id]) aiCache[st.id].at = 0;
+      refresh();
+    } catch (err) { $("ai-msg").textContent = t("ai.fail", { message: err.message }); }
+  }
+  $("ai-save").onclick = () => {
+    const body = { engine: form.elements.aiEngine.value, limit: Math.round(Number(form.elements.aiLimit.value)) || 10, len: form.elements.aiLen.value };
+    const key = form.elements.aiKey.value.trim();
+    if (key) body.key = key;
+    else if (!(aiCache[cur().id] || {}).key) { $("ai-msg").textContent = t("ai.needKey"); form.elements.aiKey.focus(); return; }
+    aiAdmin("/api/ai/config", body, "ai.saved");
+  };
+  $("ai-test").onclick = () => aiAdmin("/api/ai/test", {}, "ai.keyOk");
+  $("ai-off").onclick = () => { if (confirm(t("ai.offConfirm"))) aiAdmin("/api/ai/config", { off: true }, "ai.offDone"); };
 
   // ---------- Установка на телефон ----------
   // Android/Chrome: ловим beforeinstallprompt и показываем свою кнопку.
