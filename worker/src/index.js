@@ -335,9 +335,11 @@ async function ensureSchema(env) {
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS latest (
       owner TEXT NOT NULL, device TEXT NOT NULL, ts INTEGER NOT NULL, chip_id TEXT, angle REAL, temperature REAL,
       temp_units TEXT, battery REAL, gravity REAL, interval_s INTEGER, rssi INTEGER, PRIMARY KEY (owner, device))`),
-    env.DB.prepare(`INSERT OR REPLACE INTO latest (owner, device, ts, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi)
+    // Только при первом появлении latest (до версии 8): позже её ведёт приём показаний, а устройства,
+    // убранные из неё вручную, пересборка вернула бы обратно.
+    ...(!ver || Number(ver.v) < 8 ? [env.DB.prepare(`INSERT OR REPLACE INTO latest (owner, device, ts, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi)
       SELECT owner, device, ts, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi
-      FROM readings WHERE owner IS NOT NULL ORDER BY ts`),
+      FROM readings WHERE owner IS NOT NULL ORDER BY ts`)] : []),
     // Push-подписки устройств и состояние оповещений (чтобы не повторять одно и то же).
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS push_subs (
       endpoint TEXT NOT NULL, token_hash TEXT NOT NULL, key_hash TEXT, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
