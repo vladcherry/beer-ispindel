@@ -26,6 +26,8 @@ CREATE TABLE IF NOT EXISTS tokens (
   units     TEXT,                  -- P / SG — в чём приходит плотность; NULL = определять автоматически
   style     TEXT,                  -- стиль пива текущей партии (id из web/analysis.js)
   fg_target REAL,                  -- ожидаемая конечная плотность партии, °P
+  t_lo      REAL,                  -- норма температуры (°C) для оповещений — из стиля
+  t_hi      REAL,
   created   INTEGER NOT NULL,
   last_seen INTEGER
 );
@@ -61,3 +63,17 @@ CREATE TABLE IF NOT EXISTS latest (
 
 -- Служебное: версия схемы, чтобы миграции в воркере выполнялись один раз.
 CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT);
+
+-- Push-подписки устройств: одно устройство (endpoint) может следить за несколькими стиками.
+CREATE TABLE IF NOT EXISTS push_subs (
+  endpoint TEXT NOT NULL, token_hash TEXT NOT NULL, key_hash TEXT, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+  events TEXT, lang TEXT, created INTEGER, PRIMARY KEY (endpoint, token_hash)
+);
+-- Состояние оповещений стика (чтобы не повторять одно и то же) и журнал событий для приложения.
+CREATE TABLE IF NOT EXISTS alert_state (
+  token_hash TEXT NOT NULL, kind TEXT NOT NULL, active INTEGER, at INTEGER, ref INTEGER, PRIMARY KEY (token_hash, kind)
+);
+CREATE TABLE IF NOT EXISTS alert_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL, ts INTEGER NOT NULL, event TEXT, key TEXT, params TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_alert_log ON alert_log (token_hash, ts);

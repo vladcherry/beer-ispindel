@@ -12,6 +12,9 @@
 //   POST /api/members/revoke — {id}: админ отключает пользователя, другого админа или неоткрытую ссылку
 //   POST /api/members/admin — {id, admin}: админ выдаёт или снимает права админа у подключённого
 //   POST /api/history/clear — владелец удаляет все показания стика, кроме последнего
+//   GET  /api/alerts        — журнал событий стика (?since=ts)
+//   GET  /api/push/key      — публичный ключ VAPID для подписки браузера
+//   POST /api/push/subscribe|unsubscribe|state|test — {endpoint, …}: push-подписка этого устройства на стик
 //   GET  /api/health        — проверка
 //
 // Токен стика знают iSpindel и тот, кто его зарегистрировал; зарегистрировать токен можно
@@ -31,8 +34,14 @@ const GAP_TOLERANCE_MS = 2 * 1000;
 const TOKEN_MIN = 8;
 const TOKEN_MAX = 64;
 
+import { onReading, onSchedule, pushApi, alertsList, vapidKeys } from "./push.js";
+
 export default {
-  async fetch(request, env) {
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(ensureSchema(env).then(() => onSchedule(env)));
+  },
+
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const cors = corsHeaders(request, env);
 
@@ -66,6 +75,14 @@ export default {
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await clearHistory(env, stick, cors);
       }
+      if (request.method === "GET" && url.pathname === "/api/push/key") {
+        return json({ key: (await vapidKeys(env)).pub }, 200, cors);
+      }
+      if (request.method === "POST" && url.pathname.startsWith("/api/push/")) {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        return await pushApi(request, env, stick, url.pathname, json, cors);
+      }
       if (request.method === "POST" && url.pathname === "/api/batch") {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
@@ -90,7 +107,7 @@ export default {
         const raw = await request.text();
         // iSpindel иногда шлёт на "/" — принимаем и туда.
         const res = url.pathname === "/ingest" || url.pathname === "/"
-          ? await ingest(raw, env, url)
+          ? await ingest(raw, env, url, ctx)
           : text("Not found", 404);
         await logAttempt(env, request, url, raw, res.status, res.headers.get("X-Reason"));
         return res;
@@ -105,6 +122,7 @@ export default {
         if (url.pathname === "/api/members") return await members(env, stick, cors);
         if (url.pathname === "/api/readings") return await readings(env, stick.hash, url, cors);
         if (url.pathname === "/api/battery") return await battery(env, stick.hash, url, cors);
+        if (url.pathname === "/api/alerts") return await alertsList(env, stick, url, json, cors);
       }
       return json({ error: "Not found" }, 404, cors);
     } catch (err) {
@@ -138,7 +156,7 @@ function randomKey() {
 // Стик по токену (для приёма показаний).
 async function stickByToken(env, token) {
   if (!token) return null;
-  return await env.DB.prepare("SELECT hash, id FROM tokens WHERE hash = ?1").bind(await sha256(token)).first();
+  return await env.DB.prepare("SELECT hash, id, batch_start, t_lo, t_hi FROM tokens WHERE hash = ?1").bind(await sha256(token)).first();
 }
 
 // Стик по ключу доступа (для чтения). Заодно отмечаем, когда и с какого браузера ключом пользовались —
@@ -148,7 +166,7 @@ async function stickByAccess(env, key, request) {
   if (!key) return null;
   const keyHash = await sha256(key);
   const stick = await env.DB.prepare(
-    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, a.last_used, a.user_agent, a.kind AS key_kind
+    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, t.t_lo, t.t_hi, a.last_used, a.user_agent, a.kind AS key_kind
      FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1`
   ).bind(keyHash).first();
   if (stick && request) {
@@ -211,6 +229,7 @@ async function revokeMember(request, env, stick, cors) {
     "DELETE FROM access_keys WHERE token_hash = ?1 AND substr(hash, 1, 16) = ?2"
   ).bind(stick.hash, id).run();
   if (!res.meta.changes) return json({ error: "not found" }, 404, cors);
+  await env.DB.prepare("DELETE FROM push_subs WHERE token_hash = ?1 AND substr(key_hash, 1, 16) = ?2").bind(stick.hash, id).run();
   return json({ ok: true }, 200, cors);
 }
 
@@ -268,7 +287,7 @@ async function register(request, env, cors) {
 
 // Миграции выполняются один раз: номер версии схемы лежит в таблице meta, и дальше
 // каждый новый экземпляр воркера тратит на проверку одно чтение, а не обход таблиц.
-const SCHEMA_VERSION = 8;
+const SCHEMA_VERSION = 9;
 let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
@@ -296,6 +315,8 @@ async function ensureSchema(env) {
   if (!tokenCols.includes("units")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN units TEXT").run();
   if (!tokenCols.includes("style")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN style TEXT").run();
   if (!tokenCols.includes("fg_target")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN fg_target REAL").run();
+  if (!tokenCols.includes("t_lo")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_lo REAL").run();
+  if (!tokenCols.includes("t_hi")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_hi REAL").run();
   const fixes = [
     env.DB.prepare("UPDATE tokens SET id = lower(hex(randomblob(6))) WHERE id IS NULL"),
     env.DB.prepare("CREATE UNIQUE INDEX IF NOT EXISTS idx_tokens_id ON tokens (id)"),
@@ -317,6 +338,15 @@ async function ensureSchema(env) {
     env.DB.prepare(`INSERT OR REPLACE INTO latest (owner, device, ts, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi)
       SELECT owner, device, ts, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi
       FROM readings WHERE owner IS NOT NULL ORDER BY ts`),
+    // Push-подписки устройств и состояние оповещений (чтобы не повторять одно и то же).
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS push_subs (
+      endpoint TEXT NOT NULL, token_hash TEXT NOT NULL, key_hash TEXT, p256dh TEXT NOT NULL, auth TEXT NOT NULL,
+      events TEXT, lang TEXT, created INTEGER, PRIMARY KEY (endpoint, token_hash))`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS alert_state (
+      token_hash TEXT NOT NULL, kind TEXT NOT NULL, active INTEGER, at INTEGER, ref INTEGER, PRIMARY KEY (token_hash, kind))`),
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS alert_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL, ts INTEGER NOT NULL, event TEXT, key TEXT, params TEXT)`),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_alert_log ON alert_log (token_hash, ts)"),
     env.DB.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('schema', ?1)").bind(String(SCHEMA_VERSION)),
   );
   await env.DB.batch(fixes);
@@ -325,7 +355,7 @@ async function ensureSchema(env) {
 
 // ---------- Приём ----------
 
-async function ingest(raw, env, url) {
+async function ingest(raw, env, url, ctx) {
   let body;
   try {
     body = JSON.parse(raw);
@@ -340,7 +370,7 @@ async function ingest(raw, env, url) {
   const owner = stick.hash;
 
   const device = String(body.name ?? "iSpindel").slice(0, 64);
-  const last = await env.DB.prepare("SELECT ts FROM latest WHERE owner = ?1 AND device = ?2").bind(owner, device).first();
+  const last = await env.DB.prepare("SELECT ts, temperature, temp_units FROM latest WHERE owner = ?1 AND device = ?2").bind(owner, device).first();
   const gap = last && last.ts ? Date.now() - last.ts : Infinity;
   if (gap < MIN_GAP_MS - GAP_TOLERANCE_MS) {
     return text("Too Many Requests", 429, `too frequent: ${Math.round(gap / 1000)} s since the last reading, minimum 60 s`);
@@ -372,6 +402,9 @@ async function ingest(raw, env, url) {
            row.battery, row.gravity, row.interval_s, row.rssi),
     env.DB.prepare("UPDATE tokens SET last_seen = ?1 WHERE hash = ?2").bind(row.ts, owner),
   ]);
+  // Оповещения — после ответа iSpindel, чтобы он не ждал рассылки.
+  const alerts = onReading(env, stick, row, last).catch((e) => console.error("alerts", e));
+  if (ctx) ctx.waitUntil(alerts); else await alerts;
 
   return text("ok", 200);
 }
@@ -402,6 +435,13 @@ async function setBatch(request, env, stick, cors) {
     if (fg !== null && !(typeof fg === "number" && Number.isFinite(fg) && fg > -5 && fg < 30)) return json({ error: "bad fg" }, 400, cors);
     sets.push("fg_target"); params.push(fg);
   }
+  if ("range" in body) {
+    // Норма температуры (°C) для оповещений — из стиля пива, её присылает приложение.
+    const r = body.range;
+    const ok = r === null || (Array.isArray(r) && r.length === 2 && r.every((v) => typeof v === "number" && v > -10 && v < 50) && r[0] < r[1]);
+    if (!ok) return json({ error: "bad range" }, 400, cors);
+    sets.push("t_lo", "t_hi"); params.push(r ? r[0] : null, r ? r[1] : null);
+  }
   if (!sets.length) return json({ error: "nothing to update" }, 400, cors);
   const sql = `UPDATE tokens SET ${sets.map((c, i) => `${c} = ?${i + 1}`).join(", ")} WHERE hash = ?${sets.length + 1}`;
   await env.DB.prepare(sql).bind(...params, stick.hash).run();
@@ -430,7 +470,7 @@ async function devices(env, stick, cors) {
      FROM latest WHERE owner = ?1 ORDER BY device`
   ).bind(owner).all();
   return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", units: stick.units || "auto",
-    style: stick.style ?? null, fg: stick.fg_target ?? null, admin: stick.key_kind === "owner", devices: results }, 200, cors);
+    style: stick.style ?? null, fg: stick.fg_target ?? null, range: stick.t_lo != null ? [stick.t_lo, stick.t_hi] : null, admin: stick.key_kind === "owner", devices: results }, 200, cors);
 }
 
 // История. ?after=ts — только новые строки после ts (приложение так догружает раз в минуту).
