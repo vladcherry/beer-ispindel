@@ -142,6 +142,19 @@ button, input, select { font: inherit; color: inherit; }
   font: 700 12px/18px var(--body); text-align: center; box-shadow: 0 0 0 2px #fff;
 }
 
+/* Демо: пока не добавлено ни одного iSpindel */
+.demo { margin-top: 14px; display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; background: var(--surface); border: 1px dashed var(--amber); }
+.demo-head { display: flex; align-items: center; gap: 8px; }
+.demo-tag { font: 700 12px/1 var(--body); letter-spacing: .08em; color: #fff; background: var(--amber); border-radius: 6px; padding: 4px 7px; }
+.demo p, .demo ul { margin: 0; font-size: 14px; color: var(--muted); }
+.demo ul { padding-left: 18px; display: grid; gap: 4px; }
+.demo button { justify-self: start; }
+body.is-demo .hero, body.is-demo .charts { position: relative; }
+body.is-demo .hero::before, body.is-demo .charts::before {
+  content: attr(data-demo); position: absolute; z-index: 2; top: -9px; left: 50%; transform: translateX(-50%);
+  font: 700 11px/1 var(--body); letter-spacing: .2em; color: #fff; background: var(--amber); border-radius: 6px; padding: 4px 8px; pointer-events: none;
+}
+
 /* Значки показателей */
 .chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .chip {
@@ -434,6 +447,15 @@ body.has-install main { padding-bottom: 220px; }
     </div>
   </header>
 
+  <section class="demo" id="demo" hidden>
+    <div class="demo-head"><span class="demo-tag" data-i18n="demo.tag"></span><b data-i18n="demo.title"></b></div>
+    <p data-i18n="demo.text"></p>
+    <ul>
+      <li data-i18n="demo.share"></li>
+      <li data-i18n="demo.token"></li>
+    </ul>
+    <button class="primary" type="button" id="demo-add" data-i18n="sticks.add"></button>
+  </section>
   <div id="notice"></div>
 
   <section class="hero" id="hero" hidden>
@@ -968,7 +990,11 @@ body.has-install main { padding-bottom: 220px; }
   async function refresh() {
     if (busy) return;
     const st = cur();
-    if (!apiBase() || !st) {
+    document.body.classList.toggle("is-demo", !st);
+    $("demo").hidden = !!st;
+    if (!st) { renderDemo(); return; }
+    demoStick = null;
+    if (!apiBase()) {
       devices = []; renderTitle();
       ["hero", "charts", "recs"].forEach((id) => $(id).hidden = true);
       seenInfo = null; $("seen").textContent = t("status.notConnected");
@@ -1210,9 +1236,46 @@ body.has-install main { padding-bottom: 220px; }
     $("t-msg").textContent = msg;
     setLevel("band-t", level);
   }
+  // ---------- Демо ----------
+  // Пока не добавлено ни одного iSpindel, показываем выдуманную партию: 3,5 дня хефевайцена.
+  let demoStick = null;
+  function demoData(now) {
+    const H = 3600e3, start = now - 3.5 * 24 * H, og = 12.4, fg = 2.9;
+    const st = { id: "demo", name: t("demo.name"), batchStart: start, style: Brew.byId.hefeweizen ? "hefeweizen" : Brew.STYLES[0].id, fg: null, units: "P", formula: "" };
+    const noise = (i, k) => Math.sin(i * 12.9898 + k * 78.233) * 0.5;
+    const readings = [];
+    for (let ts = start - 6 * H, i = 0; ts <= now; ts += 15 * 60e3, i++) {
+      const h = (ts - start) / H;
+      const g = h < 0 ? og : fg + (og - fg) / (1 + Math.exp((h - 60) / 16));
+      const temp = h < 0 ? 22 : h < 5 ? 21.5 - h * 0.45 : 19.6 + 0.35 * Math.sin(h / 24 * 2 * Math.PI) + noise(i, 1) * 0.1;
+      readings.push({ ts, device: st.name, temperature: Math.round(temp * 16) / 16, temp_units: "C", battery: 4.12 - (ts - start + 6 * H) / (24 * H) * 0.012,
+        gravity: g + noise(i, 2) * 0.08, angle: 25 + g * 2.6, interval_s: 900, rssi: -63 + Math.round(noise(i, 3) * 4) });
+    }
+    const hours = readings.filter((_, i) => i % 4 === 0).map((r) => ({ hour: r.ts, v: r.battery }));
+    return { st, readings, last: readings.at(-1), hours };
+  }
+  function renderDemo() {
+    const now = Date.now();
+    const { st, readings, last, hours } = demoData(now);
+    demoStick = st;
+    devices = [last]; cfg.device = last.device;
+    renderTitle();
+    $("ranges").querySelector('[data-range="batch"]').hidden = false;
+    if (!rangePicked && cfg.range !== "batch") { cfg.range = "batch"; syncRanges(); }
+    const rangeFrom = cfg.range === "batch" ? st.batchStart : now - RANGES[cfg.range];
+    const rows = readings.map((r) => ({ ...r, g: r.gravity }));
+    detectedUnits = "P";
+    renderMain(rows, rows.filter((r) => plausible(r.g)), last, true, hours, now);
+    renderCharts(rows.filter((r) => r.ts >= rangeFrom), last);
+    ["hero", "charts"].forEach((id) => $(id).setAttribute("data-demo", t("demo.tag")));
+    seenInfo = null; $("seen").textContent = t("demo.seen");
+    notice("");
+  }
+  $("demo-add").onclick = () => $("open-settings").click();
+
   function renderMain(rows, valid, last, hasBatch, batt, now) {
     $("hero").hidden = false;
-    const st = cur();
+    const st = cur() || demoStick;
     const style = st.style ? Brew.byId[st.style] || null : null;
     const current = median(valid.slice(-5).map((r) => r.g));
     let og = null;
@@ -1571,7 +1634,7 @@ body.has-install main { padding-bottom: 220px; }
   const bdlg = $("batch-dlg"), bform = $("batch-form");
   function openBatchDialog(preStyle) {
     const st = cur();
-    if (!st) return;
+    if (!st) { $("open-settings").click(); return; }
     fillStyles(bform.elements.style, preStyle || st.style);
     bform.elements.fg.value = st.fg ?? "";
     bform.elements.fg.placeholder = fgPlaceholder(preStyle || st.style);
@@ -2113,7 +2176,6 @@ body.has-install main { padding-bottom: 220px; }
     await handleJoin();
     await migrateLegacy();
     refresh();
-    if (!cfg.sticks.length) $("open-settings").click();
   })();
   setInterval(() => { if (!document.hidden) refresh(); }, 60e3);
 })();

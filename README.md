@@ -51,6 +51,8 @@ If the account has never used Workers, open Workers & Pages in the Cloudflare da
 
 ## iSpindels, tokens and sharing
 
+- **Demo**: until an iSpindel is added, the main page shows a made-up wheat beer batch marked DEMO, with a note on how to connect: open a share link from an iSpindel's owner, or add an iSpindel by the token set in its own configuration.
+
 - **Add an iSpindel** (Settings): think up a token or press Generate, then press Add. The worker registers the token and returns an access key, which the app keeps in localStorage. Enter the same token in the iSpindel's Token field.
 - **A token can be registered only once.** Registering an existing token is refused ("already registered") — knowing someone's token gives no access to their data.
 - **Reading uses the access key**, not the token. The worker stores only SHA-256 hashes of tokens and keys.
