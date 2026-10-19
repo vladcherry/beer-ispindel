@@ -652,6 +652,17 @@ body.has-install main { padding-bottom: 220px; }
     </div>
 
     <div class="set-page" data-page="add" hidden>
+      <div class="set-card" id="join-card">
+        <h4 data-i18n="join.title"></h4>
+        <small class="muted" data-i18n="join.hint"></small>
+        <span class="field-row">
+          <input name="join" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" data-i18n-placeholder="join.placeholder">
+          <button class="secondary" type="button" id="join-paste" data-i18n="join.paste"></button>
+          <button class="primary" type="button" id="join-add" data-i18n="join.add"></button>
+        </span>
+        <small class="field-error" id="join-error"></small>
+      </div>
+      <h3 class="gl" data-i18n="join.or"></h3>
       <label><span data-i18n="settings.token"></span>
         <span class="field-row">
           <input name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64" data-i18n-placeholder="settings.token">
@@ -1703,24 +1714,31 @@ body.has-install main { padding-bottom: 220px; }
 
   // Ссылка «Поделиться»: #join=<ключ доступа>. Открыл — стик добавился.
   let joined = false;
-  async function handleJoin() {
-    const m = /[#&]join=([A-Za-z0-9_-]{16,})/.exec(location.hash);
-    if (!m) return;
-    history.replaceState(null, "", location.pathname + location.search);
-    const access = m[1];
-    try {
-      const data = await api("/api/devices", {}, access);
-      let entry = cfg.sticks.find((x) => x.id === data.stick);
-      if (!entry) {
-        entry = { id: data.stick, access, token: null, name: (data.devices[0] || {}).device || "", batchStart: null, formula: "" };
-        cfg.sticks.push(entry);
-      }
-      cfg.current = entry.id; cfg.device = "";
-      save();
-      joined = true;
-    } catch (e) {
-      notice(escapeHtml(t("err.joinFailed", { message: e.message })), "error");
+  // Подключиться по ключу из ссылки «Поделиться»: проверяем его на сервере и добавляем стик.
+  async function joinAccess(access) {
+    const data = await api("/api/devices", {}, access);
+    let entry = cfg.sticks.find((x) => x.id === data.stick);
+    if (!entry) {
+      entry = { id: data.stick, access, token: null, name: (data.devices[0] || {}).device || "", batchStart: null, formula: "" };
+      cfg.sticks.push(entry);
     }
+    cfg.current = entry.id; cfg.device = "";
+    save();
+    joined = true;
+    return entry;
+  }
+  // Ключ из ссылки целиком (…#join=КЛЮЧ) или сам ключ.
+  function parseJoin(text) {
+    const s = (text || "").trim();
+    const m = /[#&?]join=([A-Za-z0-9_-]{16,})/.exec(s) || /^([A-Za-z0-9_-]{16,})$/.exec(s);
+    return m ? m[1] : null;
+  }
+  async function handleJoin() {
+    const access = parseJoin(location.hash);
+    if (!access) return;
+    history.replaceState(null, "", location.pathname + location.search);
+    try { await joinAccess(access); }
+    catch (e) { notice(escapeHtml(t("err.joinFailed", { message: e.message })), "error"); }
   }
 
   // Переход со старой версии, где был один токен: забираем его стик.
@@ -1979,6 +1997,7 @@ body.has-install main { padding-bottom: 220px; }
     form.elements.token.type = "password";
     $("token-show").textContent = t("settings.show");
     $("token-error").textContent = "";
+    form.elements.join.value = ""; $("join-error").textContent = "";
     $("formula-error").textContent = "";
     $("guide").open = !cfg.sticks.length;
     syncForm(); syncServerForm();
@@ -2019,6 +2038,31 @@ body.has-install main { padding-bottom: 220px; }
     } finally { btn.disabled = false; }
   }
   $("token-add").onclick = onAdd;
+
+  // Ссылка «Поделиться» внутри приложения: на iPhone приложение с экрана «Домой» и браузер
+  // хранят данные раздельно, поэтому открытая в браузере ссылка до приложения не доходит.
+  async function onJoin() {
+    const access = parseJoin(form.elements.join.value);
+    if (!access) { $("join-error").textContent = t("join.bad"); form.elements.join.focus(); return; }
+    const btn = $("join-add"); btn.disabled = true;
+    try {
+      await joinAccess(access);
+      form.elements.join.value = "";
+      $("join-error").textContent = "";
+      dlg.close();
+      switchStick(cfg.current);
+    } catch (err) {
+      $("join-error").textContent = t("err.joinFailed", { message: err.message });
+    } finally { btn.disabled = false; }
+  }
+  $("join-add").onclick = onJoin;
+  form.elements.join.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); onJoin(); } });
+  form.elements.join.addEventListener("input", () => { $("join-error").textContent = ""; });
+  $("join-paste").hidden = !(navigator.clipboard && navigator.clipboard.readText);
+  $("join-paste").onclick = async () => {
+    try { form.elements.join.value = (await navigator.clipboard.readText()).trim(); $("join-error").textContent = ""; }
+    catch { form.elements.join.focus(); }
+  };
   form.elements.token.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); onAdd(); } });
   form.elements.token.addEventListener("input", () => { $("token-error").textContent = ""; syncGuide(); });
   form.elements.api.addEventListener("input", () => { $("api-error").textContent = ""; syncServer(); });
