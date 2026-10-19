@@ -56,6 +56,7 @@ If the account has never used Workers, open Workers & Pages in the Cloudflare da
 - **Reading uses the access key**, not the token. The worker stores only SHA-256 hashes of tokens and keys.
 - **Share**: creates a new access key and a link `…/#join=<key>`. Opening the link adds the iSpindel to that browser (read-only: the token is not shared).
 - **Several iSpindels**: each one is listed in Settings; switch between them in the header on the main page.
+- **Settings layout**: the first screen lists your iSpindels (owner or guest), Add iSpindel, Server and Language. Tapping an iSpindel opens its page with three sections: Batch (start, style, expected FG, new batch), Measurement (units, formula) and Access (share link; for the owner also who is connected and clearing the history; removing it from this browser).
 - **Batch start is shared** by everyone connected to an iSpindel and stored on the worker. Restarting or clearing a running batch asks for confirmation, because it resets original gravity, attenuation, alcohol and the batch history for all users. While a batch runs, the charts show it from its start.
 - **Beer style and target final gravity** are chosen when a batch starts (≈ 37 styles with fermentation temperature, OG, FG and ABV ranges in `web/analysis.js`) and shared per iSpindel.
 - **Analysis**: fermentation status and speed, peak, progress towards the final gravity, time left and ready date; temperature average, swing, sudden jumps and the style range; expected alcohol against the style. Problems turn the matching button red; tapping it explains the problem and what to do. A recommendations panel sums it up.
@@ -63,7 +64,7 @@ If the account has never used Workers, open Workers & Pages in the Cloudflare da
 - **Gravity units** (Auto / °P / SG) are shared per iSpindel. SG from the iSpindel or from the formula is converted to °P before every calculation; Auto decides from the readings at the start of the batch (SG ≈ 1.03–1.12 vs 7–28 °P).
 - **The gravity formula (polynomial from tilt) is shared** per iSpindel too, stored on the worker. Changing it asks for confirmation because it recalculates gravity, original gravity, attenuation and alcohol for everyone. A formula set locally in an older version is uploaded once if the iSpindel has none yet.
 - **Who is connected** (Settings, owner only): every access key in use with its browser, OS and last activity; the owner can disconnect a shared key or revoke an unopened share link.
-- **Clear history** (Settings, owner only): deletes all readings of the selected iSpindel except the latest one, for everyone connected to it. Other iSpindels are not touched.
+- **Clear history** (Settings → iSpindel → Access, owner only): deletes all readings of the selected iSpindel except the latest one, for everyone connected to it. Other iSpindels are not touched.
 - Tokens: 8–64 characters, no spaces, quotes or backslashes.
 - Migration: an iSpindel registered before access keys existed (including the old shared `INGEST_TOKEN`) can be claimed once by adding its token.
 
@@ -106,7 +107,7 @@ Local run: `npx http-server web -p 8080` and `cd worker && npx wrangler dev` (se
 - Current gravity (median of the last 5 readings) in °P and SG, with a hydrometer scale.
 - "Start batch" — remembers the start time, calculates original gravity, attenuation and ABV.
 - Fermentation status based on the gravity change over 24 hours.
-- Gravity (with smoothing) and temperature charts: 6 h, 24 h, 3 days, 7 days, whole batch.
+- Gravity (with smoothing) and temperature charts: 1 h, 6 h, 24 h, 3 days, 7 days, whole batch.
 - Battery percentage, tilt, Wi-Fi strength, "sensor silent longer than usual" warning.
 - Custom gravity formula from tilt — recalculates the whole history, handy after recalibration.
 - Readings where the sensor is clearly not floating (standing or lying) are hidden from the gravity chart.

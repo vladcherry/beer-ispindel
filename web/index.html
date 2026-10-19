@@ -227,17 +227,16 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .cat-list .cur { color: var(--ok); font-weight: 600; }
 
 /* Кто подключён к стику */
-.members { margin-top: 10px; background: var(--bg); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; }
+.members { background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; padding: 12px; }
 .members h4 { margin: 0 0 6px; font: 600 16px/1.2 var(--display); }
-.sticks .members ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
-.sticks .members li {
+.members ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.members li {
   display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: start; gap: 0 8px; font-size: 14px;
   padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
 }
 .members li svg { width: 20px; height: 20px; color: var(--muted); margin-top: 1px; }
 .members li small { grid-column: 2 / 4; color: var(--muted); font-size: 12px; }
 .members .revoke { font-size: 12px; padding: 2px 8px; border: 1px solid var(--alert); color: var(--alert); background: transparent; border-radius: 6px; cursor: pointer; }
-.members .clear-history { display: block; margin-top: 10px; font-size: 13px; padding: 6px 10px; }
 .members .revoke:hover { background: color-mix(in srgb, var(--alert) 10%, transparent); }
 .members .you { color: var(--ok); font-weight: 600; }
 .members .note { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
@@ -321,17 +320,45 @@ label small { font-size: 13px; }
 .copy { font-size: 12px; padding: 2px 8px; border: 1px solid var(--rule); background: var(--surface); border-radius: 6px; cursor: pointer; flex: none; }
 .guide .note { color: var(--muted); font-size: 13px; }
 .lang { min-width: 44px; font-weight: 600; letter-spacing: .04em; font-variant-numeric: tabular-nums; }
-.sticks h3 { font: 600 18px/1.2 var(--display); margin: 0 0 8px; }
-.sticks ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
-.sticks li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--bg); }
-.sticks li.current { border-color: var(--amber); box-shadow: inset 3px 0 0 var(--amber); }
-.sticks .pick { flex: 1; min-width: 0; text-align: left; background: none; border: 0; padding: 0; cursor: pointer; color: var(--ink); }
-.sticks .pick b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sticks .pick small { color: var(--muted); font-size: 12px; }
-.sticks li .copy { font-size: 13px; padding: 4px 10px; }
+/* Настройки: список → страница стика (разделы Партия / Измерения / Доступ) */
+.set-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.set-head h2 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-icon { flex: none; border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; padding: 4px 6px; cursor: pointer; }
+.set-icon.back { color: var(--teal); font-size: 30px; margin-left: -6px; }
+.tag { flex: none; font-size: 12px; border-radius: 999px; padding: 2px 8px; background: var(--amber-soft); color: var(--amber-deep); white-space: nowrap; }
+.tag.guest { background: var(--bg); color: var(--muted); border: 1px solid var(--rule); }
+.set-page, .set-seg { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.gl { font: 600 12px/1 var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 4px 4px -6px; }
+.set-list { list-style: none; margin: 0; padding: 0; background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; }
+.set-list li + li { border-top: 1px solid var(--rule); }
+.set-list li.empty { padding: 12px; color: var(--muted); font-size: 14px; }
+.set-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 12px; border: 0; background: none; text-align: left; color: var(--ink); font: inherit; cursor: pointer; }
+.set-row .t { flex: 1; min-width: 0; }
+.set-row .t b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-row .t small { display: block; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-row .accent { color: var(--teal); }
+.set-row .ic { flex: none; width: 22px; display: flex; justify-content: center; color: var(--teal); }
+.set-row .ic svg { width: 20px; height: 20px; }
+.set-row .v { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.set-row .ch { color: var(--muted); font-size: 20px; line-height: 1; }
+.dot { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--rule); margin: 0 6px; }
+.dot.on { background: var(--ok); }
+.seg { display: flex; gap: 2px; padding: 3px; background: var(--bg); border: 1px solid var(--rule); border-radius: 10px; }
+.seg button { flex: 1; min-width: 0; border: 0; background: none; padding: 7px 4px; border-radius: 7px; font: 600 14px var(--body); color: var(--muted); cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .15); }
+.set-card { display: grid; gap: 8px; padding: 12px; background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; }
+.set-card h4 { margin: 0; font: 600 16px/1.2 var(--display); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.set-card.danger { border-color: color-mix(in srgb, var(--alert) 45%, transparent); }
+.set-card.danger h4 { color: var(--alert); }
+.set-card .note { color: var(--muted); font-size: 13px; }
+.set-card .note:empty { display: none; }
+.set-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; }
+.set-note { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--bg); color: var(--muted); font-size: 14px; }
+.btn-danger { flex: none; font-size: 13px; padding: 5px 10px; border: 1px solid var(--alert); color: var(--alert); background: transparent; border-radius: 8px; cursor: pointer; white-space: nowrap; }
+.btn-danger:hover { background: color-mix(in srgb, var(--alert) 10%, transparent); }
 .muted { color: var(--muted); font-size: 14px; margin: 0; }
-.share-box { margin-top: 8px; display: grid; gap: 6px; }
-.share-box code { flex: 1; min-width: 0; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--bg); border: 1px solid var(--rule); border-radius: 6px; padding: 4px 6px; overflow-wrap: anywhere; }
+.share-box { display: grid; gap: 6px; }
+.share-box code { flex: 1; min-width: 0; font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 4px 6px; overflow-wrap: anywhere; }
 #stick-switch { font: 600 28px/1.1 var(--display); border: 0; background: transparent; padding: 0; cursor: pointer; max-width: 100%; }
 #device-switch { margin-top: 4px; font-size: 15px; border: 1px solid var(--rule); border-radius: 8px; background: var(--surface); padding: 2px 6px; }
 .guide dd code { flex: 1 1 auto; min-width: 0; }
@@ -416,6 +443,7 @@ body.has-install main { padding-bottom: 220px; }
     <div class="charts-head">
       <h2 data-i18n="charts.history"></h2>
       <div class="ranges" id="ranges" role="group" data-i18n-label="charts.period">
+        <button type="button" data-range="1h" data-i18n="range.1h"></button>
         <button type="button" data-range="6h" data-i18n="range.6h"></button>
         <button type="button" data-range="24h" data-i18n="range.24h"></button>
         <button type="button" data-range="3d" data-i18n="range.3d"></button>
@@ -486,94 +514,139 @@ body.has-install main { padding-bottom: 220px; }
 
 <dialog id="settings">
   <form method="dialog" id="settings-form">
-    <h2 data-i18n="settings.title"></h2>
+    <div class="set-head">
+      <button class="set-icon back" type="button" id="set-back" hidden data-i18n-label="set.back">‹</button>
+      <h2 id="set-title"></h2>
+      <span class="tag" id="set-role" hidden></span>
+      <button class="set-icon" type="button" id="set-close" data-i18n-label="settings.cancel">✕</button>
+    </div>
 
-    <section class="sticks">
-      <h3 data-i18n="sticks.title"></h3>
-      <ul id="stick-list"></ul>
-      <p class="muted" id="stick-empty" data-i18n="sticks.empty"></p>
-      <div class="share-box" id="share-box" hidden>
-        <small data-i18n="sticks.shareHint"></small>
-        <div class="field-row"><code id="share-link"></code><button class="copy" type="button" data-copy="share-link" data-i18n="ui.copy"></button></div>
+    <div class="set-page" data-page="root">
+      <h3 class="gl" data-i18n="sticks.title"></h3>
+      <ul class="set-list" id="stick-list"></ul>
+      <ul class="set-list">
+        <li><button type="button" class="set-row" data-go="add"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+          <span class="t"><b class="accent" data-i18n="sticks.add"></b><small data-i18n="set.addSub"></small></span><span class="ch">›</span></button></li>
+      </ul>
+      <h3 class="gl" data-i18n="set.app"></h3>
+      <ul class="set-list">
+        <li><button type="button" class="set-row" data-go="server"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg></span>
+          <span class="t"><b data-i18n="settings.server"></b></span><span class="v" id="set-server-v"></span><span class="ch">›</span></button></li>
+        <li><button type="button" class="set-row" id="set-lang"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8M8 3v2M6 5c0 4 2.5 7 6 8M10 5c0 4-2.5 7-6 8M13 21l4-9 4 9M14.5 18h5"/></svg></span>
+          <span class="t"><b data-i18n="ui.language"></b></span><span class="v" id="set-lang-v"></span><span class="ch">›</span></button></li>
+      </ul>
+    </div>
+
+    <div class="set-page" data-page="stick" hidden>
+      <div class="seg" id="set-seg" role="group">
+        <button type="button" data-seg="batch" data-i18n="seg.batch"></button>
+        <button type="button" data-seg="measure" data-i18n="seg.measure"></button>
+        <button type="button" data-seg="access" data-i18n="seg.access"></button>
       </div>
-      <small class="field-error" id="stick-error"></small>
-      <div class="members" id="members" hidden></div>
-    </section>
-
-    <label><span data-i18n="sticks.add"></span>
-      <span class="field-row">
-        <input name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64" data-i18n-placeholder="settings.token">
-        <button class="secondary" type="button" id="token-show" data-i18n="settings.show"></button>
-        <button class="secondary" type="button" id="token-gen" data-i18n="settings.generate"></button>
-        <button class="primary" type="button" id="token-add" data-i18n="sticks.addBtn"></button>
-      </span>
-      <small data-i18n="settings.tokenHint"></small>
-      <small class="field-error" id="token-error"></small>
-    </label>
-
-    <details class="guide" id="guide">
-      <summary data-i18n="guide.title"></summary>
-      <ol>
-        <li data-i18n="guide.step1"></li>
-        <li data-i18n="guide.step2"></li>
-        <li><span data-i18n="guide.step3"></span>
-          <dl>
-            <dt data-i18n="guide.serviceType"></dt><dd><code>HTTPS Post</code></dd>
-            <dt data-i18n="guide.serverUrl"></dt><dd><code id="guide-url"></code><button class="copy" type="button" data-copy="guide-url" data-i18n="ui.copy"></button></dd>
-            <dt data-i18n="guide.token"></dt><dd><code id="guide-token"></code><button class="copy" type="button" data-copy="guide-token" data-i18n="ui.copy"></button></dd>
-            <dt data-i18n="guide.interval"></dt><dd><code data-i18n="guide.intervalValue"></code></dd>
-          </dl>
-        </li>
-        <li data-i18n="guide.step4"></li>
-        <li data-i18n="guide.step5"></li>
-      </ol>
-      <p class="note" id="guide-fallback"></p>
-    </details>
-    <div class="row">
-      <label><span data-i18n="settings.batchStart"></span>
-        <input name="batchStart" type="datetime-local">
-        <small data-i18n="settings.batchHint"></small>
-      </label>
-      <button class="secondary" type="button" id="batch-now" data-i18n="settings.now"></button>
+      <div class="set-seg" data-seg-page="batch">
+        <div class="row">
+          <label><span data-i18n="settings.batchStart"></span>
+            <input name="batchStart" type="datetime-local">
+            <small data-i18n="settings.batchHint"></small>
+          </label>
+          <button class="secondary" type="button" id="batch-now" data-i18n="settings.now"></button>
+        </div>
+        <label><span data-i18n="batchdlg.style"></span>
+          <select name="style" class="style-select"></select>
+        </label>
+        <label><span data-i18n="batchdlg.fg"></span>
+          <input name="fg" type="number" step="0.1" min="-5" max="30" inputmode="decimal">
+          <small data-i18n="batchdlg.fgHint"></small>
+          <small class="field-error" id="profile-error"></small>
+        </label>
+        <div class="set-card"><div class="set-line"><span data-i18n="set.newBatchText"></span><button class="secondary" type="button" id="set-newbatch" data-i18n="set.newBatch"></button></div></div>
+      </div>
+      <div class="set-seg" data-seg-page="measure" hidden>
+        <label><span data-i18n="settings.units"></span>
+          <select name="units">
+            <option value="auto" data-i18n="units.auto"></option>
+            <option value="P" data-i18n="units.P"></option>
+            <option value="SG" data-i18n="units.SG"></option>
+          </select>
+          <small id="units-detected"></small>
+          <small data-i18n="settings.unitsHint"></small>
+          <small class="field-error" id="units-error"></small>
+        </label>
+        <label><span data-i18n="settings.formula"></span>
+          <input name="formula" type="text" placeholder="-0.0322987*tilt^2+2.643882645*tilt-38.64180015" autocomplete="off" spellcheck="false">
+          <small data-i18n="settings.formulaHint"></small>
+          <small data-i18n="settings.formulaShared"></small>
+          <small class="field-error" id="formula-error"></small>
+        </label>
+      </div>
+      <div class="set-seg" data-seg-page="access" hidden>
+        <p class="set-note" id="acc-guest" data-i18n="acc.guest"></p>
+        <div class="set-card">
+          <h4 data-i18n="sticks.share"></h4>
+          <small class="muted" data-i18n="sticks.shareHint"></small>
+          <div class="share-box" id="share-box" hidden>
+            <div class="field-row"><code id="share-link"></code><button class="copy" type="button" data-copy="share-link" data-i18n="ui.copy"></button></div>
+          </div>
+          <div><button class="secondary" type="button" id="share-new" data-i18n="acc.shareBtn"></button></div>
+          <small class="field-error" id="stick-error"></small>
+        </div>
+        <div class="members" id="members" hidden></div>
+        <div class="set-card danger">
+          <h4 data-i18n="acc.danger"></h4>
+          <div class="set-line" id="history-row"><span data-i18n="acc.clear"></span><button class="btn-danger" type="button" id="history-clear" data-i18n="acc.clearBtn"></button></div>
+          <small class="note" id="history-msg"></small>
+          <div class="set-line"><span data-i18n="acc.remove"></span><button class="btn-danger" type="button" id="stick-remove" data-i18n="acc.removeBtn"></button></div>
+        </div>
+      </div>
     </div>
-    <label><span data-i18n="batchdlg.style"></span>
-      <select name="style" class="style-select"></select>
-    </label>
-    <label><span data-i18n="batchdlg.fg"></span>
-      <input name="fg" type="number" step="0.1" min="-5" max="30" inputmode="decimal">
-      <small data-i18n="batchdlg.fgHint"></small>
-      <small class="field-error" id="profile-error"></small>
-    </label>
-    <label><span data-i18n="settings.units"></span>
-      <select name="units">
-        <option value="auto" data-i18n="units.auto"></option>
-        <option value="P" data-i18n="units.P"></option>
-        <option value="SG" data-i18n="units.SG"></option>
-      </select>
-      <small id="units-detected"></small>
-      <small data-i18n="settings.unitsHint"></small>
-      <small class="field-error" id="units-error"></small>
-    </label>
-    <label><span data-i18n="settings.formula"></span>
-      <input name="formula" type="text" placeholder="-0.0322987*tilt^2+2.643882645*tilt-38.64180015" autocomplete="off" spellcheck="false">
-      <small data-i18n="settings.formulaHint"></small>
-      <small data-i18n="settings.formulaShared"></small>
-      <small class="field-error" id="formula-error"></small>
-    </label>
-    <div class="server">
-      <div><span data-i18n="settings.server"></span>: <b id="server-name"></b> <span id="server-default" data-i18n="settings.serverDefault"></span></div>
-      <div><button class="link" type="button" id="server-edit" data-i18n="settings.serverCustom"></button></div>
-      <label id="server-field" hidden><span data-i18n="settings.serverAddress"></span>
+
+    <div class="set-page" data-page="add" hidden>
+      <label><span data-i18n="settings.token"></span>
         <span class="field-row">
-          <input name="api" type="url" data-i18n-placeholder="settings.apiPlaceholder" autocomplete="off" spellcheck="false">
-          <button class="secondary" type="button" id="server-reset" data-i18n="settings.serverReset"></button>
+          <input name="token" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="64" data-i18n-placeholder="settings.token">
+          <button class="secondary" type="button" id="token-show" data-i18n="settings.show"></button>
+          <button class="secondary" type="button" id="token-gen" data-i18n="settings.generate"></button>
+          <button class="primary" type="button" id="token-add" data-i18n="sticks.addBtn"></button>
         </span>
-        <small class="field-error" id="api-error"></small>
+        <small data-i18n="settings.tokenHint"></small>
+        <small class="field-error" id="token-error"></small>
       </label>
+      <details class="guide" id="guide">
+        <summary data-i18n="guide.title"></summary>
+        <ol>
+          <li data-i18n="guide.step1"></li>
+          <li data-i18n="guide.step2"></li>
+          <li><span data-i18n="guide.step3"></span>
+            <dl>
+              <dt data-i18n="guide.serviceType"></dt><dd><code>HTTPS Post</code></dd>
+              <dt data-i18n="guide.serverUrl"></dt><dd><code id="guide-url"></code><button class="copy" type="button" data-copy="guide-url" data-i18n="ui.copy"></button></dd>
+              <dt data-i18n="guide.token"></dt><dd><code id="guide-token"></code><button class="copy" type="button" data-copy="guide-token" data-i18n="ui.copy"></button></dd>
+              <dt data-i18n="guide.interval"></dt><dd><code data-i18n="guide.intervalValue"></code></dd>
+            </dl>
+          </li>
+          <li data-i18n="guide.step4"></li>
+          <li data-i18n="guide.step5"></li>
+        </ol>
+        <p class="note" id="guide-fallback"></p>
+      </details>
     </div>
-    <div class="dialog-actions">
-      <button class="secondary" value="cancel" formnovalidate data-i18n="settings.cancel"></button>
-      <button class="primary" value="save" data-i18n="settings.save"></button>
+
+    <div class="set-page" data-page="server" hidden>
+      <div class="server">
+        <div><span data-i18n="settings.server"></span>: <b id="server-name"></b> <span id="server-default" data-i18n="settings.serverDefault"></span></div>
+        <div><button class="link" type="button" id="server-edit" data-i18n="settings.serverCustom"></button></div>
+        <label id="server-field" hidden><span data-i18n="settings.serverAddress"></span>
+          <span class="field-row">
+            <input name="api" type="url" data-i18n-placeholder="settings.apiPlaceholder" autocomplete="off" spellcheck="false">
+            <button class="secondary" type="button" id="server-reset" data-i18n="settings.serverReset"></button>
+          </span>
+          <small class="field-error" id="api-error"></small>
+        </label>
+      </div>
+    </div>
+
+    <div class="dialog-actions" id="set-actions">
+      <button class="primary" value="save" id="set-save" data-i18n="settings.save"></button>
     </div>
   </form>
 </dialog>
@@ -598,7 +671,7 @@ body.has-install main { padding-bottom: 220px; }
 
   // ---------- Настройки ----------
   const STORE = "ispindel.cfg";
-  const RANGES = { "6h": 6 * 3600e3, "24h": 24 * 3600e3, "3d": 3 * 86400e3, "7d": 7 * 86400e3 };
+  const RANGES = { "1h": 3600e3, "6h": 6 * 3600e3, "24h": 24 * 3600e3, "3d": 3 * 86400e3, "7d": 7 * 86400e3 };
   // Адрес воркера по умолчанию — из config.js; cfg.api хранит только свой адрес, если он задан.
   const DEFAULT_API = ((window.ISPINDEL_DEFAULTS || {}).api || "").replace(/\/+$/, "");
   // sticks: [{ id, access, token, name, batchStart, formula }] — token есть только у того, кто стик зарегистрировал.
@@ -1521,15 +1594,59 @@ body.has-install main { padding-bottom: 220px; }
 
   // ---------- Окно настроек ----------
   function renderSticks() {
-    const list = $("stick-list"), st = cur();
-    list.innerHTML = cfg.sticks.map((x) => `
-      <li class="${x === st ? "current" : ""}" data-id="${escapeHtml(x.id)}">
-        <button class="pick" type="button" data-act="pick"><b>${escapeHtml(stickName(x))}</b>
-          <small>${escapeHtml(t(x.token ? "sticks.mine" : "sticks.shared"))}</small></button>
-        <button class="copy" type="button" data-act="share">${escapeHtml(t("sticks.share"))}</button>
-        <button class="copy" type="button" data-act="remove" aria-label="${escapeHtml(t("sticks.remove"))}">✕</button>
-      </li>`).join("");
-    $("stick-empty").hidden = cfg.sticks.length > 0;
+    const st = cur();
+    $("stick-list").innerHTML = cfg.sticks.length ? cfg.sticks.map((x) => `
+      <li><button type="button" class="set-row" data-id="${escapeHtml(x.id)}"><span class="dot${x === st ? " on" : ""}"></span>
+        <span class="t"><b>${escapeHtml(stickName(x))}</b><small>${escapeHtml(stickSub(x))}</small></span>
+        <span class="tag${x.token ? "" : " guest"}">${escapeHtml(t(x.token ? "role.owner" : "role.guest"))}</span><span class="ch">›</span></button></li>`).join("")
+      : `<li class="empty">${escapeHtml(t("sticks.empty"))}</li>`;
+  }
+  // Подпись в списке: стиль и день партии.
+  function stickSub(x) {
+    const style = x.style && Brew.byId[x.style];
+    const parts = style ? [style.name[I18N.lang()] || style.name.en] : [];
+    parts.push(x.batchStart ? t("set.day", { n: Math.floor((Date.now() - x.batchStart) / 86400e3) + 1 }) : t("set.noBatch"));
+    return parts.join(" · ");
+  }
+
+  // Экраны настроек: корень (стики, сервер, язык) → страница стика с разделами, добавление, сервер.
+  let setPage = "root", setSeg = "batch";
+  function showPage(page) {
+    const st = cur();
+    if (page === "stick" && !st) page = "root";
+    setPage = page;
+    dlg.querySelectorAll(".set-page").forEach((el) => { el.hidden = el.dataset.page !== page; });
+    $("set-back").hidden = page === "root";
+    $("set-title").textContent = page === "stick" ? stickName(st)
+      : t({ root: "settings.title", add: "sticks.add", server: "settings.server" }[page]);
+    $("set-role").hidden = page !== "stick";
+    if (page === "stick") {
+      $("set-role").textContent = t(st.token ? "role.owner" : "role.guest");
+      $("set-role").classList.toggle("guest", !st.token);
+    }
+    if (page === "root") {
+      renderSticks();
+      $("set-server-v").textContent = t(cfg.api ? "set.serverCustom" : "set.serverDefault");
+      $("set-lang-v").textContent = I18N.name(I18N.lang());
+    }
+    showSeg(setSeg);
+    form.scrollTop = 0;
+  }
+  function showSeg(seg) {
+    setSeg = seg;
+    $("set-seg").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.seg === seg)));
+    dlg.querySelectorAll(".set-seg").forEach((el) => { el.hidden = el.dataset.segPage !== seg; });
+    $("set-actions").hidden = !(setPage === "server" || (setPage === "stick" && seg !== "access"));
+    if (setPage === "stick" && seg === "access") syncAccess();
+  }
+  // Доступ: у гостя — пояснение; список подключённых и очистка истории — только у владельца.
+  function syncAccess() {
+    const st = cur(), owner = !!(st && st.token);
+    $("acc-guest").hidden = owner;
+    $("history-row").hidden = !owner;
+    $("share-box").hidden = true;
+    $("stick-error").textContent = $("history-msg").textContent = "";
+    $("members").hidden = true; renderMembers();
   }
 
   // ---------- Кто подключён к стику ----------
@@ -1573,14 +1690,10 @@ body.has-install main { padding-bottom: 220px; }
       ${pending.map((m) => `<li>${DEVICE_ICONS.link}<span class="who">${escapeHtml(t("members.link", { date: dayTime(m.created) }))}</span>
           ${revokeBtn(m, "members.revokeLink")}<small>${escapeHtml(t("members.notOpened"))}</small></li>`).join("")}</ul>
       <p class="note">${escapeHtml(t("members.hint"))}</p>
-      <small class="field-error" id="members-error"></small>
-      <button type="button" class="revoke clear-history" id="history-clear">${escapeHtml(t("history.clear", { name: stickName(st) }))}</button>
-      <small class="note" id="history-msg"></small>`;
+      <small class="field-error" id="members-error"></small>`;
     box.hidden = false;
   }
   $("members").addEventListener("click", async (e) => {
-    const c = e.target.closest("#history-clear");
-    if (c) return clearHistory(c);
     const b = e.target.closest("[data-revoke]");
     if (!b) return;
     const st = cur();
@@ -1615,39 +1728,50 @@ body.has-install main { padding-bottom: 220px; }
     btn.disabled = false;
   }
 
-  $("stick-list").addEventListener("click", async (e) => {
-    const btn = e.target.closest("button[data-act]");
-    if (!btn) return;
-    const id = btn.closest("li").dataset.id;
-    const x = cfg.sticks.find((s) => s.id === id);
-    $("stick-error").textContent = "";
-    if (btn.dataset.act === "pick") {
-      if (cfg.current !== id) switchStick(id);
-      renderSticks(); syncForm(); renderMembers();
-    } else if (btn.dataset.act === "share") {
-      btn.disabled = true;
-      try {
-        const { access } = await post("/api/share", {}, x.access);
-        const link = location.origin + location.pathname + "#join=" + access;
-        $("share-link").textContent = link;
-        $("share-box").hidden = false;
-        if (navigator.share) {
-          try { await navigator.share({ title: t("app.name"), text: stickName(x), url: link }); } catch { /* закрыли */ }
-        } else {
-          try { await navigator.clipboard.writeText(link); } catch { /* скопируют кнопкой */ }
-        }
-      } catch (err) {
-        $("stick-error").textContent = t("sticks.shareFail", { message: err.message });
-      } finally { btn.disabled = false; }
-    } else if (btn.dataset.act === "remove") {
-      if (!confirm(t("sticks.removeConfirm", { name: stickName(x) }))) return;
-      cfg.sticks = cfg.sticks.filter((s) => s !== x);
-      $("share-box").hidden = true;
-      if (cfg.current === id) switchStick(cfg.sticks[0] ? cfg.sticks[0].id : "");
-      else save();
-      renderSticks(); syncForm();
-    }
+  $("stick-list").addEventListener("click", (e) => {
+    const row = e.target.closest("[data-id]");
+    if (!row) return;
+    if (cfg.current !== row.dataset.id) switchStick(row.dataset.id);
+    syncForm();
+    showPage("stick");
   });
+  dlg.querySelectorAll("[data-go]").forEach((b) => { b.onclick = () => showPage(b.dataset.go); });
+  $("set-back").onclick = () => { syncForm(); syncServerForm(); showPage("root"); };
+  $("set-close").onclick = () => dlg.close();
+  $("set-seg").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-seg]");
+    if (b) showSeg(b.dataset.seg);
+  });
+  $("set-lang").onclick = () => { langBtn.click(); };
+  $("set-newbatch").onclick = () => { dlg.close(); openBatchDialog(); };
+  $("history-clear").onclick = () => clearHistory($("history-clear"));
+  $("share-new").onclick = async () => {
+    const x = cur(), btn = $("share-new");
+    $("stick-error").textContent = "";
+    btn.disabled = true;
+    try {
+      const { access } = await post("/api/share", {}, x.access);
+      const link = location.origin + location.pathname + "#join=" + access;
+      $("share-link").textContent = link;
+      $("share-box").hidden = false;
+      if (navigator.share) {
+        try { await navigator.share({ title: t("app.name"), text: stickName(x), url: link }); } catch { /* закрыли */ }
+      } else {
+        try { await navigator.clipboard.writeText(link); } catch { /* скопируют кнопкой */ }
+      }
+      renderMembers();
+    } catch (err) {
+      $("stick-error").textContent = t("sticks.shareFail", { message: err.message });
+    } finally { btn.disabled = false; }
+  };
+  $("stick-remove").onclick = () => {
+    const x = cur();
+    if (!x || !confirm(t("sticks.removeConfirm", { name: stickName(x) }))) return;
+    cfg.sticks = cfg.sticks.filter((s) => s !== x);
+    switchStick(cfg.sticks[0] ? cfg.sticks[0].id : "");
+    syncForm(); showPage("root");
+  };
+
 
   // Сервер: по умолчанию скрыт, свой адрес — по кнопке.
   let serverCustom = false;
@@ -1694,20 +1818,23 @@ body.has-install main { padding-bottom: 220px; }
     syncGuide();
   }
 
+  // Поля сервера — как в сохранённых настройках (при открытии и при возврате к списку).
+  function syncServerForm() {
+    form.elements.api.value = cfg.api;
+    serverCustom = !!cfg.api;
+    $("api-error").textContent = "";
+    syncServer();
+  }
   $("open-settings").onclick = () => {
     form.elements.token.value = "";
     form.elements.token.type = "password";
     $("token-show").textContent = t("settings.show");
-    form.elements.api.value = cfg.api;
-    serverCustom = !!cfg.api;
     $("token-error").textContent = "";
-    $("stick-error").textContent = "";
-    $("api-error").textContent = "";
     $("formula-error").textContent = "";
-    $("share-box").hidden = true;
     $("guide").open = !cfg.sticks.length;
-    renderSticks(); syncForm(); syncServer();
-    $("members").hidden = true; renderMembers();
+    syncForm(); syncServerForm();
+    setSeg = "batch";
+    showPage(cfg.sticks.length ? "root" : "add");
     dlg.showModal();
   };
   $("batch-now").onclick = () => { form.elements.batchStart.value = toLocalInput(Date.now()); };
@@ -1894,7 +2021,7 @@ body.has-install main { padding-bottom: 220px; }
     const next = LANG_CYCLE[(LANG_CYCLE.indexOf(I18N.lang()) + 1) % LANG_CYCLE.length];
     I18N.use(next, true);
     applyStatic(); syncLang(); syncInstallText();
-    if (dlg.open) { renderSticks(); syncServer(); }
+    if (dlg.open) { showPage(setPage); syncServer(); }
     // Axis ticks and tooltips are baked into the chart options, so rebuild them.
     Object.values(charts).forEach((c) => c.destroy());
     charts = {};
