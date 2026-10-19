@@ -61,6 +61,12 @@ jobs:
               "SELECT (SELECT COUNT(*) FROM tokens) AS sticks, (SELECT COUNT(*) FROM access_keys) AS access_keys, (SELECT datetime(MAX(last_seen)/1000,'unixepoch') FROM tokens) AS last_seen_utc" \
               | jq -c 'if type == "array" then .[0].results[] else . end' || true
             echo '```'
+            echo "### Sticks and access keys (UTC)"
+            echo '```'
+            npx wrangler d1 execute ispindel --remote --json --command \
+              "SELECT t.id AS stick, (SELECT GROUP_CONCAT(DISTINCT device) FROM latest WHERE owner = t.hash) AS devices, a.kind, datetime(a.created/1000,'unixepoch') AS created, datetime(a.last_used/1000,'unixepoch') AS last_used, a.user_agent FROM tokens t LEFT JOIN access_keys a ON a.token_hash = t.hash ORDER BY t.id, a.kind DESC, a.created" \
+              | jq -c 'if type == "array" then .[0].results[] else . end' || true
+            echo '```'
             echo "### Last ingest attempts (UTC)"
             echo '```'
             npx wrangler d1 execute ispindel --remote --json --command \
