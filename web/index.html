@@ -289,6 +289,8 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .ok-chip { font: 600 12px var(--body); border-radius: 999px; padding: 2px 9px; background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); white-space: nowrap; }
 .ok-chip.bad { background: color-mix(in srgb, var(--alert) 13%, transparent); color: var(--alert); }
 .ai-close { width: 100%; margin-top: 8px; }
+/* Заголовок чата остаётся сверху при прокрутке листа */
+.sheet .ai-head { position: sticky; top: -10px; z-index: 3; margin: 0 -16px; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--rule); }
 .actbar button.ai { color: var(--violet); font-weight: 600; background: color-mix(in srgb, var(--violet) 9%, transparent); }
 /* AI-чат партии */
 .ai-count { font: 600 12px var(--body); border-radius: 999px; padding: 3px 9px; background: color-mix(in srgb, var(--violet) 13%, transparent); color: var(--violet); white-space: nowrap; }
@@ -2716,7 +2718,7 @@ body.has-install main { padding-bottom: 220px; }
         <p class="ai-foot">${escapeHtml(t("ai.foot", { in: resetIn(c.resetAt), lang: I18N.name(I18N.lang()) }))}</p>`;
     }
     const empty = !rows && !wait && c.enabled ? `<p class="hint">${escapeHtml(t("ai.empty"))}</p>` : "";
-    return `<div class="top-line"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${count}${closeBtn}</div>
+    return `<div class="top-line ai-head"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${count}${closeBtn}</div>
       <div class="ai-thread" id="ai-thread">${rows}${wait}</div>${empty}${bottom}
       <button type="button" class="secondary ai-close" data-close>${escapeHtml(t("ai.close"))}</button>`;
   }
