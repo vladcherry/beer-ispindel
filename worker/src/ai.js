@@ -104,7 +104,7 @@ export async function aiAsk(request, env, stick, json, cors) {
   ).bind(stick.hash, c.batch_start ?? null).first();
   const len = c.ai_len || "short";
   const messages = [
-    { role: "system", content: `Homebrew fermentation expert. Data: ${context || "none"}. Units °P, °C; r=gravity drop °P/day. Reply in ${LANGS[lang]}, ≤${WORDS[len]} words, practical, no preamble.` },
+    { role: "system", content: `Homebrew fermentation expert. Data: ${context || "none"}. Units °P, °C; r=gravity drop °P/day. Reply in ${LANGS[lang]}, ≤${WORDS[len]} words, practical, no preamble, plain words — never use the data codes.` },
   ];
   if (prev) {
     messages.push({ role: "user", content: prev.question.slice(0, 200) }, { role: "assistant", content: prev.answer.slice(0, 300) });

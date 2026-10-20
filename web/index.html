@@ -165,7 +165,12 @@ button, input, select { font: inherit; color: inherit; }
 .alerts small { grid-column: 2 / 4; color: var(--muted); font-size: 13px; }
 .alerts .dotnew { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--alert); margin-left: 6px; vertical-align: middle; }
 .sheet .link { border: 0; background: none; color: var(--teal); font-weight: 600; font-size: 14px; cursor: pointer; padding: 4px 0; }
-.seg .seg-icon { display: flex; align-items: center; justify-content: center; flex: 0 0 40px; }
+/* Вкладки стика: пять равных колонок, иконка и короткая подпись */
+.seg.seg5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; }
+.seg.seg5 button { display: grid; justify-items: center; gap: 2px; padding: 6px 0 5px; font: 600 11px/1.1 var(--body); min-width: 0; }
+.seg.seg5 button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.seg.seg5 svg { width: 19px; height: 19px; }
+.seg.seg5 button[aria-pressed="true"] { color: var(--amber-deep); }
 .push-off { justify-items: center; text-align: center; }
 .push-off b { font: 600 19px/1.2 var(--display); }
 .push-off button { width: 100%; }
@@ -277,6 +282,13 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .actbar button:hover { background: var(--amber-soft); }
 .actbar button:first-child { border-bottom-left-radius: 12px; } .actbar button:last-child { border-bottom-right-radius: 12px; }
 .actbar svg { width: 20px; height: 20px; }
+.ai-actions > * + * { border-top: 1px solid var(--rule); }
+.ai-actions .set-row .t b { white-space: normal; }
+.set-row.danger-row b { color: var(--alert); }
+.ok-chip:empty { display: none; }
+.ok-chip { font: 600 12px var(--body); border-radius: 999px; padding: 2px 9px; background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); white-space: nowrap; }
+.ok-chip.bad { background: color-mix(in srgb, var(--alert) 13%, transparent); color: var(--alert); }
+.ai-close { width: 100%; margin-top: 8px; }
 .actbar button.ai { color: var(--violet); font-weight: 600; background: color-mix(in srgb, var(--violet) 9%, transparent); }
 /* AI-чат партии */
 .ai-count { font: 600 12px var(--body); border-radius: 999px; padding: 3px 9px; background: color-mix(in srgb, var(--violet) 13%, transparent); color: var(--violet); white-space: nowrap; }
@@ -423,6 +435,14 @@ label small { font-size: 13px; }
 .row { display: flex; gap: 8px; align-items: end; }
 .row label { flex: 1; min-width: 0; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+/* Нижняя панель окна настроек: «Закрыть | Сохранить», всегда видна */
+#set-actions { position: sticky; bottom: -22px; margin: 0 -22px -22px; padding: 12px 22px 18px; background: var(--surface); border-top: 1px solid var(--rule); z-index: 2; }
+#set-actions button { flex: 1; }
+@media (max-width: 480px) { #set-actions { bottom: -18px; margin: 0 -16px -18px; padding: 12px 16px 16px; } }
+/* Пока идёт запрос к серверу — всё в окне неактивно, на нажатой кнопке крутится индикатор */
+dialog.busy button, dialog.busy input, dialog.busy select, dialog.busy a { pointer-events: none; }
+dialog.busy button:not(.loading) { opacity: .5; }
+button.loading::before { content: ""; display: inline-block; width: 13px; height: 13px; margin-right: 7px; vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
 .field-row { display: flex; gap: 6px; flex-wrap: wrap; }
 .field-row button { flex: none; }
 .field-row input { flex: 1 1 160px; min-width: 0; width: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
@@ -676,12 +696,12 @@ body.has-install main { padding-bottom: 220px; }
     </div>
 
     <div class="set-page" data-page="stick" hidden>
-      <div class="seg" id="set-seg" role="group">
-        <button type="button" data-seg="batch" data-i18n="seg.batch"></button>
-        <button type="button" data-seg="measure" data-i18n="seg.measure"></button>
-        <button type="button" data-seg="access" data-i18n="seg.access"></button>
-        <button type="button" data-seg="ai" class="seg-icon" data-i18n-label="seg.ai" data-i18n-title="seg.ai"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></button>
-        <button type="button" data-seg="notify" class="seg-icon" data-i18n-label="seg.notify" data-i18n-title="seg.notify"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg></button>
+      <div class="seg seg5" id="set-seg" role="group">
+        <button type="button" data-seg="batch" data-i18n-label="seg.batch" data-i18n-title="seg.batch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 8h10v12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/><path d="M15 11h2a2 2 0 0 1 0 4h-2"/><path d="M5 8a2.5 2.5 0 0 1 2.5-3.5 3 3 0 0 1 5 0A2 2 0 0 1 15 8"/></svg><span data-i18n="seg.batchShort"></span></button>
+        <button type="button" data-seg="measure" data-i18n-label="seg.measure" data-i18n-title="seg.measure"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span data-i18n="seg.measureShort"></span></button>
+        <button type="button" data-seg="access" data-i18n-label="seg.access" data-i18n-title="seg.access"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l2 2M15 8l2 2"/></svg><span data-i18n="seg.accessShort"></span></button>
+        <button type="button" data-seg="ai" data-i18n-label="seg.ai" data-i18n-title="seg.ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg><span data-i18n="seg.aiShort"></span></button>
+        <button type="button" data-seg="notify" data-i18n-label="seg.notify" data-i18n-title="seg.notify"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/></svg><span data-i18n="seg.notifyShort"></span></button>
       </div>
       <div class="set-seg" data-seg-page="batch">
         <div class="row">
@@ -759,10 +779,9 @@ body.has-install main { padding-bottom: 220px; }
           <label><span data-i18n="ai.len"></span>
             <select name="aiLen"><option value="short" data-i18n="ai.lenShort"></option><option value="medium" data-i18n="ai.lenMedium"></option></select>
           </label>
-          <div class="field-row">
-            <button class="primary" type="button" id="ai-save" data-i18n="ai.save"></button>
-            <button class="secondary" type="button" id="ai-test" data-i18n="ai.test"></button>
-            <button class="btn-danger" type="button" id="ai-off" data-i18n="ai.off"></button>
+          <div class="set-list ai-actions" id="ai-actions">
+            <button type="button" class="set-row" id="ai-test"><span class="t"><b data-i18n="ai.test"></b></span><span class="ok-chip" id="ai-test-state"></span><span class="ch">›</span></button>
+            <button type="button" class="set-row danger-row" id="ai-off"><span class="t"><b data-i18n="ai.off"></b></span><span class="ch">›</span></button>
           </div>
           <small class="note" id="ai-msg"></small>
         </div>
@@ -858,6 +877,7 @@ body.has-install main { padding-bottom: 220px; }
     </div>
 
     <div class="dialog-actions" id="set-actions">
+      <button class="secondary" type="button" id="set-done" data-i18n="settings.close"></button>
       <button class="primary" value="save" id="set-save" data-i18n="settings.save"></button>
     </div>
   </form>
@@ -2092,7 +2112,7 @@ body.has-install main { padding-bottom: 220px; }
     setSeg = seg;
     $("set-seg").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.seg === seg)));
     dlg.querySelectorAll(".set-seg").forEach((el) => { el.hidden = el.dataset.segPage !== seg; });
-    $("set-actions").hidden = !(setPage === "server" || (setPage === "stick" && (seg === "batch" || seg === "measure")));
+    $("set-save").hidden = !(setPage === "server" || (setPage === "stick" && (seg === "batch" || seg === "measure" || (seg === "ai" && isAdmin(cur())))));
     if (setPage === "stick" && seg === "access") syncAccess();
     if (setPage === "stick" && seg === "notify") syncPush();
     if (setPage === "stick" && seg === "ai") syncAi();
@@ -2196,14 +2216,24 @@ body.has-install main { padding-bottom: 220px; }
   dlg.querySelectorAll("[data-go]").forEach((b) => { b.onclick = () => showPage(b.dataset.go); });
   $("set-back").onclick = () => { syncForm(); syncServerForm(); showPage("root"); };
   $("set-close").onclick = () => dlg.close();
+  $("set-done").onclick = () => dlg.close();
+  // Запрос к серверу из окна настроек: блокируем окно и крутим индикатор на нажатой кнопке.
+  async function withBusy(btn, fn) {
+    if (dlg.classList.contains("busy")) return;
+    dlg.classList.add("busy");
+    if (btn) btn.classList.add("loading");
+    try { return await fn(); }
+    finally { dlg.classList.remove("busy"); if (btn) btn.classList.remove("loading"); }
+  }
   $("set-seg").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-seg]");
     if (b) showSeg(b.dataset.seg);
   });
   $("set-lang").onclick = () => cycleLang();
   $("set-newbatch").onclick = () => { dlg.close(); openBatchDialog(); };
-  $("history-clear").onclick = () => clearHistory($("history-clear"));
-  $("share-new").onclick = async () => {
+  $("history-clear").onclick = () => withBusy($("history-clear"), () => clearHistory($("history-clear")));
+  $("share-new").onclick = () => withBusy($("share-new"), shareNew);
+  async function shareNew() {
     const x = cur(), btn = $("share-new");
     $("stick-error").textContent = "";
     btn.disabled = true;
@@ -2221,7 +2251,7 @@ body.has-install main { padding-bottom: 220px; }
     } catch (err) {
       $("stick-error").textContent = t("sticks.shareFail", { message: err.message });
     } finally { btn.disabled = false; }
-  };
+  }
   $("stick-remove").onclick = () => {
     const x = cur();
     if (!x || !confirm(t("sticks.removeConfirm", { name: stickName(x) }))) return;
@@ -2328,7 +2358,7 @@ body.has-install main { padding-bottom: 220px; }
       $("token-error").textContent = err.code === "taken" ? t("err.tokenTaken") : t("err.register", { message: err.message });
     } finally { btn.disabled = false; }
   }
-  $("token-add").onclick = onAdd;
+  $("token-add").onclick = () => withBusy($("token-add"), onAdd);
 
   // Ссылка «Поделиться» внутри приложения: на iPhone приложение с экрана «Домой» и браузер
   // хранят данные раздельно, поэтому открытая в браузере ссылка до приложения не доходит.
@@ -2346,7 +2376,7 @@ body.has-install main { padding-bottom: 220px; }
       $("join-error").textContent = t("err.joinFailed", { message: err.message });
     } finally { btn.disabled = false; }
   }
-  $("join-add").onclick = onJoin;
+  $("join-add").onclick = () => withBusy($("join-add"), onJoin);
   form.elements.join.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); onJoin(); } });
   form.elements.join.addEventListener("input", () => { $("join-error").textContent = ""; });
   $("join-paste").hidden = !(navigator.clipboard && navigator.clipboard.readText);
@@ -2385,9 +2415,12 @@ body.has-install main { padding-bottom: 220px; }
   });
 
   // Сохранить: адрес сервера, партия и формула выбранного стика. Стики добавляются и удаляются сразу.
-  form.addEventListener("submit", async (e) => {
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
-    if (e.submitter && e.submitter.value === "cancel") { dlg.close(); return; }
+    if (setPage === "stick" && setSeg === "ai") { if (isAdmin(cur())) withBusy($("set-save"), aiSaveConfig); return; }
+    if (!$("set-save").hidden) withBusy($("set-save"), saveSettings);
+  });
+  async function saveSettings() {
     let api = serverCustom ? form.elements.api.value.trim().replace(/\/+$/, "") : "";
     if (api === DEFAULT_API) api = "";
     if (serverCustom && api && !/^https?:\/\/[^/\s]+/.test(api)) { $("api-error").textContent = t("err.badUrl"); return; }
@@ -2434,7 +2467,7 @@ body.has-install main { padding-bottom: 220px; }
       }
     }
     save(); syncRanges(); dlg.close(); refresh();
-  });
+  }
 
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
     Object.values(charts).forEach((c) => c.destroy()); charts = {}; refresh();
@@ -2574,7 +2607,8 @@ body.has-install main { padding-bottom: 220px; }
       if (state.subscribed && state.lang !== I18N.lang()) pushSave(sub, state.events).catch(() => {});
     } catch { /* нет service worker или сети — останется «включить» */ }
   }
-  $("push-enable").onclick = async () => {
+  $("push-enable").onclick = () => withBusy($("push-enable"), pushEnable);
+  async function pushEnable() {
     const btn = $("push-enable"); btn.disabled = true; $("push-msg").textContent = "";
     try {
       if (await Notification.requestPermission() !== "granted") { syncPush(); return; }
@@ -2584,19 +2618,20 @@ body.has-install main { padding-bottom: 220px; }
     } catch (err) {
       $("push-msg").textContent = t("push.fail", { message: err.message });
     } finally { btn.disabled = false; }
-  };
-  $("push-disable").onclick = async () => {
+  }
+  $("push-disable").onclick = () => withBusy($("push-disable"), async () => {
     try {
       const sub = await pushSub(false);
       if (sub) await post("/api/push/unsubscribe", { endpoint: sub.endpoint }, cur().access);
       showPushState(false);
     } catch (err) { $("push-msg").textContent = t("push.fail", { message: err.message }); }
-  };
+  });
   $("push-events").addEventListener("change", async () => {
     try { const sub = await pushSub(false); if (sub) await pushSave(sub, pushEvents()); }
     catch (err) { $("push-msg").textContent = t("push.fail", { message: err.message }); }
   });
-  $("push-test").onclick = async () => {
+  $("push-test").onclick = () => withBusy($("push-test"), pushTest);
+  async function pushTest() {
     const btn = $("push-test"); btn.disabled = true;
     try {
       const sub = await pushSub(false);
@@ -2605,7 +2640,7 @@ body.has-install main { padding-bottom: 220px; }
     } catch (err) {
       $("push-msg").textContent = t("push.fail", { message: err.message });
     } finally { btn.disabled = false; }
-  };
+  }
 
   // ---------- AI-помощник по партии (DeepSeek) ----------
   // Ключ, движок и лимит хранит сервер (настраивает админ). Счётчик обновляем не чаще раза в 5 минут,
@@ -2674,7 +2709,7 @@ body.has-install main { padding-bottom: 220px; }
     } else if (!c.left) {
       bottom = `<p class="ai-note">${escapeHtml(t("ai.limitReached", { in: resetIn(c.resetAt) }))}</p>`;
     } else {
-      const chips = ["ai.q.ok", "ai.q.bottle", "ai.q.temp"].map((k) => `<button type="button" data-ai-q="${escapeHtml(t(k))}">${escapeHtml(t(k))}</button>`).join("");
+      const chips = ["ai.q.ok", "ai.q.bottle", "ai.q.temp"].map((k) => `<button type="button" data-ai-q="${escapeHtml(t(k))}" ${aiBusy ? "disabled" : ""}>${escapeHtml(t(k))}</button>`).join("");
       bottom = `<div class="ai-chips">${chips}</div>
         <div class="ai-ask"><textarea id="ai-q" rows="1" maxlength="500" placeholder="${escapeHtml(t("ai.placeholder"))}">${escapeHtml(aiDraft)}</textarea>
           <button type="button" id="ai-send" aria-label="${escapeHtml(t("ai.send"))}" ${aiBusy ? "disabled" : ""}>${SEND_ICON}</button></div>
@@ -2682,7 +2717,8 @@ body.has-install main { padding-bottom: 220px; }
     }
     const empty = !rows && !wait && c.enabled ? `<p class="hint">${escapeHtml(t("ai.empty"))}</p>` : "";
     return `<div class="top-line"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${count}${closeBtn}</div>
-      <div class="ai-thread" id="ai-thread">${rows}${wait}</div>${empty}${bottom}`;
+      <div class="ai-thread" id="ai-thread">${rows}${wait}</div>${empty}${bottom}
+      <button type="button" class="secondary ai-close" data-close>${escapeHtml(t("ai.close"))}</button>`;
   }
   function renderAi(pending) {
     $("sheet-body").innerHTML = aiHtml(pending);
@@ -2742,7 +2778,8 @@ body.has-install main { padding-bottom: 220px; }
       form.elements.aiLimit.value = c.limit;
       form.elements.aiLen.value = c.len || "short";
       $("ai-used").textContent = t("ai.usedToday", { n: c.used });
-      $("ai-off").hidden = $("ai-test").hidden = !c.enabled;
+      $("ai-actions").hidden = !c.enabled;
+      $("ai-test-state").textContent = ""; $("ai-test-state").className = "ok-chip";
     } else {
       $("ai-guest-text").textContent = c.enabled ? t("ai.guestOn", { limit: c.limit, left: c.left }) : t("ai.offGuest");
     }
@@ -2753,22 +2790,26 @@ body.has-install main { padding-bottom: 220px; }
     try {
       const res = await post(path, body, st.access);
       if (res.ok === false) throw new Error(res.error || String(res.status));
-      $("ai-msg").textContent = t(okKey);
-      await syncAi();
-      $("ai-msg").textContent = t(okKey);
       if (aiCache[st.id]) aiCache[st.id].at = 0;
-      refresh();
-    } catch (err) { $("ai-msg").textContent = t("ai.fail", { message: err.message }); }
+      await syncAi();
+      $("ai-msg").textContent = okKey ? t(okKey) : "";
+      updateAiButton();
+      return true;
+    } catch (err) { $("ai-msg").textContent = t("ai.fail", { message: err.message }); return false; }
   }
-  $("ai-save").onclick = () => {
+  // «Сохранить» внизу окна на вкладке AI.
+  async function aiSaveConfig() {
     const body = { engine: form.elements.aiEngine.value, limit: Math.round(Number(form.elements.aiLimit.value)) || 10, len: form.elements.aiLen.value };
     const key = form.elements.aiKey.value.trim();
     if (key) body.key = key;
     else if (!(aiCache[cur().id] || {}).key) { $("ai-msg").textContent = t("ai.needKey"); form.elements.aiKey.focus(); return; }
-    aiAdmin("/api/ai/config", body, "ai.saved");
-  };
-  $("ai-test").onclick = () => aiAdmin("/api/ai/test", {}, "ai.keyOk");
-  $("ai-off").onclick = () => { if (confirm(t("ai.offConfirm"))) aiAdmin("/api/ai/config", { off: true }, "ai.offDone"); };
+    await aiAdmin("/api/ai/config", body, "ai.saved");
+  }
+  $("ai-test").onclick = () => withBusy($("ai-test"), async () => {
+    if (await aiAdmin("/api/ai/test", {}, null)) { $("ai-test-state").textContent = t("ai.keyWorks"); }
+    else { $("ai-test-state").textContent = t("ai.keyBad"); $("ai-test-state").className = "ok-chip bad"; }
+  });
+  $("ai-off").onclick = () => { if (confirm(t("ai.offConfirm"))) withBusy($("ai-off"), () => aiAdmin("/api/ai/config", { off: true }, "ai.offDone")); };
 
   // ---------- Установка на телефон ----------
   // Android/Chrome: ловим beforeinstallprompt и показываем свою кнопку.
