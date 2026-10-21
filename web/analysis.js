@@ -99,8 +99,11 @@ const Brew = (() => {
      Возвращает { stages: [{id, from, progress}], stage, alarm: {id, from} | null, checkingLeft }. */
   const STAGE_ORDER = ['lag', 'active', 'slowing', 'checking', 'done', 'ready'];
   const STAGE_HOLD = 3, CONFIRM_H = 48;
-  function stagesOf(series, { batchStart, og, fg, now }) {
+  // marks — стадии, начатые вручную («Завершено» у предыдущей): [{id, at}]. Ручная стадия
+  // наступает в момент нажатия; дальше автоматика может только продвинуть партию вперёд.
+  function stagesOf(series, { batchStart, og, fg, now, marks = [] }) {
     if (!series.length) return {};
+    const pending = marks.filter((m) => STAGE_ORDER.includes(m.id) && m.at >= batchStart).sort((a, b) => a.at - b.at);
     const prog = (v) => Math.min(1, Math.max(0, (og - v) / (og - fg)));
     // Скорость в точке: падение за сутки, а в первые сутки — за сколько есть (не меньше 6 ч), пересчитанное на сутки.
     const rateAt = (i) => {
@@ -149,8 +152,14 @@ const Brew = (() => {
         if (recover >= STAGE_HOLD) { alarm = null; recover = 0; }
       }
 
-      const curStage = stages.at(-1);
-      if (curStage.id === null) { curStage.id = want || 'lag'; continue; }
+      let curStage = stages.at(-1);
+      if (curStage.id === null) curStage.id = want || 'lag';
+      while (pending.length && pending[0].at <= p.t) {
+        const m = pending.shift();
+        if (rank(m.id) > rank(stages.at(-1).id)) { stages.push({ id: m.id, from: m.at, progress: pr, manual: true }); cand = null; alarm = null; }
+      }
+      if (curStage !== stages.at(-1)) { curStage = stages.at(-1); continue; }
+      if (i === 0) continue;
       if (curStage.id === 'done' && p.t - curStage.from >= CONFIRM_H * H) {
         stages.push({ id: 'ready', from: curStage.from + CONFIRM_H * H, progress: curStage.progress });
         continue;
@@ -160,8 +169,14 @@ const Brew = (() => {
       else cand.n++;
       if (cand.n >= STAGE_HOLD) { stages.push({ id: cand.id, from: cand.from, progress: cand.progress }); cand = null; }
     }
+    // Нажато после последнего показания
+    for (const m of pending) {
+      if (rank(m.id) > rank(stages.at(-1).id)) { stages.push({ id: m.id, from: m.at, progress: stages.at(-1).progress, manual: true }); alarm = null; }
+    }
+    const last = stages.at(-1);
+    if (last.id === 'done' && now - last.from >= CONFIRM_H * H) stages.push({ id: 'ready', from: last.from + CONFIRM_H * H, progress: last.progress });
     const stage = stages.at(-1).id;
-    return { stages, stage, alarm, checkingLeft: stage === 'checking' ? lastLeft : null };
+    return { stages, stage, alarm, checkingLeft: stage === 'checking' && !stages.at(-1).manual ? lastLeft : null };
   }
 
   /* Прогноз начала предстоящих стадий: {id: {lo, hi}} — время (ms), диапазон как у «осталось».
@@ -196,7 +211,7 @@ const Brew = (() => {
   /* Разбор партии.
      rows: [{ts, g, temperature}] — g уже в °P и только правдоподобные; temperature в °C.
      batchStart: ms или null; og: начальная плотность или null; fgManual: °P или null; style: объект или null. */
-  function analyze({ rows, now, batchStart, og, fgManual, style }) {
+  function analyze({ rows, now, batchStart, og, fgManual, style, marks }) {
     const res = { temp: { level: 'ok', msgs: [] }, gravity: { level: 'ok', msgs: [] }, abv: { level: 'ok', msgs: [] } };
     const bump = (part, level) => {
       const order = { ok: 0, warn: 1, bad: 2 };
@@ -237,7 +252,7 @@ const Brew = (() => {
 
     // --- Стадии партии (по часовой истории с начала партии)
     if (batchStart && og != null && fg != null && og - fg > 0.5 && gH.length) {
-      Object.assign(res, stagesOf(gH.filter((p) => p.t >= batchStart), { batchStart, og, fg, now }));
+      Object.assign(res, stagesOf(gH.filter((p) => p.t >= batchStart), { batchStart, og, fg, now, marks: marks || [] }));
     }
 
     // --- Статус брожения

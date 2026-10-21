@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS tokens (
   ai_limit  INTEGER,
   ai_len    TEXT,
   recipe    TEXT,                  -- рецепт текущей партии: lib:<id> (библиотека приложения) или my:<id> (recipes)
+  stage_marks TEXT,                -- стадии партии, отмеченные вручную: JSON [{id, at}]
   created   INTEGER NOT NULL,
   last_seen INTEGER
 );

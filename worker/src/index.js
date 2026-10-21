@@ -2,7 +2,7 @@
 //   POST /ingest            — сюда шлёт iSpindel (HTTP или HTTPS Post), JSON с полем token
 //   POST /api/register      — {token}: зарегистрировать токен стика, в ответ — ключ доступа
 //   POST /api/share         — новый ключ доступа к тому же стику (для ссылки «Поделиться»)
-//   POST /api/batch         — {start: ms | null}: начало партии, общее для всех, у кого есть доступ
+//   POST /api/batch         — {start, style, fg, range, recipe, marks}: партия, общая для всех, у кого есть доступ
 //   POST /api/formula       — {formula: "…" | ""}: полином плотности по наклону, тоже общий для стика
 //   POST /api/units         — {units: "auto" | "P" | "SG"}: в чём iSpindel (или формула) считает плотность
 //   GET  /api/devices       — устройства стика с последним показанием
@@ -186,7 +186,7 @@ async function stickByAccess(env, key, request) {
   if (!key) return null;
   const keyHash = await sha256(key);
   const stick = await env.DB.prepare(
-    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, t.t_lo, t.t_hi, t.recipe, a.last_used, a.user_agent, a.kind AS key_kind
+    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, t.t_lo, t.t_hi, t.recipe, t.stage_marks, a.last_used, a.user_agent, a.kind AS key_kind
      FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1`
   ).bind(keyHash).first();
   if (stick && request) {
@@ -307,7 +307,7 @@ async function register(request, env, cors) {
 
 // Миграции выполняются один раз: номер версии схемы лежит в таблице meta, и дальше
 // каждый новый экземпляр воркера тратит на проверку одно чтение, а не обход таблиц.
-const SCHEMA_VERSION = 11;
+const SCHEMA_VERSION = 12;
 let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
@@ -337,7 +337,7 @@ async function ensureSchema(env) {
   if (!tokenCols.includes("fg_target")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN fg_target REAL").run();
   if (!tokenCols.includes("t_lo")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_lo REAL").run();
   if (!tokenCols.includes("t_hi")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_hi REAL").run();
-  for (const [col, type] of [["ai_engine", "TEXT"], ["ai_key", "TEXT"], ["ai_limit", "INTEGER"], ["ai_len", "TEXT"], ["recipe", "TEXT"]]) {
+  for (const [col, type] of [["ai_engine", "TEXT"], ["ai_key", "TEXT"], ["ai_limit", "INTEGER"], ["ai_len", "TEXT"], ["recipe", "TEXT"], ["stage_marks", "TEXT"]]) {
     if (!tokenCols.includes(col)) await env.DB.prepare(`ALTER TABLE tokens ADD COLUMN ${col} ${type}`).run();
   }
   const fixes = [
@@ -475,6 +475,14 @@ async function setBatch(request, env, stick, cors) {
     if (!ok) return json({ error: "bad range" }, 400, cors);
     sets.push("t_lo", "t_hi"); params.push(r ? r[0] : null, r ? r[1] : null);
   }
+  if ("marks" in body || ("start" in body && body.start !== (stick.batch_start ?? null))) {
+    // Стадии, отмеченные вручную («Завершено» в списке стадий): [{id, at}]. Новая партия их сбрасывает.
+    const m = "marks" in body ? body.marks : null;
+    const stages = ["lag", "active", "slowing", "checking", "done", "ready"];
+    const ok = m === null || (Array.isArray(m) && m.length <= 12 && m.every((x) => x && stages.includes(x.id) && Number.isInteger(x.at) && x.at > 1577836800000 && x.at < now + 86400000));
+    if (!ok) return json({ error: "bad marks" }, 400, cors);
+    sets.push("stage_marks"); params.push(m && m.length ? JSON.stringify(m.map((x) => ({ id: x.id, at: x.at }))) : null);
+  }
   if ("recipe" in body) {
     // Рецепт партии: lib:<id> — из библиотеки приложения, my:<id> — свой рецепт стика.
     const r = body.recipe;
@@ -509,7 +517,7 @@ async function devices(env, stick, cors) {
      FROM latest WHERE owner = ?1 ORDER BY device`
   ).bind(owner).all();
   return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", units: stick.units || "auto",
-    style: stick.style ?? null, fg: stick.fg_target ?? null, recipe: stick.recipe ?? null, range: stick.t_lo != null ? [stick.t_lo, stick.t_hi] : null, admin: stick.key_kind === "owner", devices: results }, 200, cors);
+    style: stick.style ?? null, fg: stick.fg_target ?? null, recipe: stick.recipe ?? null, marks: stick.stage_marks ? JSON.parse(stick.stage_marks) : [], range: stick.t_lo != null ? [stick.t_lo, stick.t_hi] : null, admin: stick.key_kind === "owner", devices: results }, 200, cors);
 }
 
 // История. ?after=ts — только новые строки после ts (приложение так догружает раз в минуту).

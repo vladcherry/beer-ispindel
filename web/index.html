@@ -255,6 +255,12 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .stage-list li span { color: var(--muted); text-align: right; }
 .stage-list li.cur { border-color: var(--amber); }
 .stage-list li.cur b { color: var(--amber-deep); }
+.stage-list li { flex-wrap: wrap; }
+.stage-list .sl { min-width: 0; }
+.stage-list .manual { display: block; font-size: 12px; color: var(--muted); }
+.stage-list .manual .link { font-size: 12px; }
+.stage-done { flex-basis: 100%; margin-top: 4px; padding: 9px 10px; border-radius: 9px; border: 0; background: var(--amber); color: #fff; font-size: 14.5px; font-weight: 600; cursor: pointer; }
+.stage-done:disabled { opacity: .7; }
 .stage-list li.next { background: transparent; border-style: dashed; }
 .stage-list li.next b { font-weight: 500; color: var(--muted); }
 @media (max-width: 380px) { .st-labels span:not(.cur) { visibility: hidden !important; } }
@@ -474,6 +480,37 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .bfields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
 #recipe-info:empty { display: none; }
 @media (max-width: 380px) { .facts5 b { font-size: 17px; } .facts5 small { font-size: 10.5px; } }
+
+/* Карточка стиля (вариант A): шапка в цвете пива, шкалы диапазонов */
+.sty-hero { position: relative; margin: 0 -16px 4px; padding: 6px 16px 14px; overflow: hidden; }
+.sty-hero h2 { max-width: calc(100% - 70px); margin-top: 6px !important; color: inherit; }
+.sty-hero .sub { max-width: calc(100% - 70px); }
+.sty-hero .star.big { margin-left: auto; color: rgba(255,255,255,.75); text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.sty-hero .star.big[aria-pressed="true"] { color: #ffcf3a; }
+.sty-hero .pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; max-width: calc(100% - 66px); }
+.sty-hero .pill { font: 600 12px var(--body); border-radius: 999px; padding: 3px 9px; background: rgba(255,255,255,.5); color: #4a3307; }
+.sty-glass { position: absolute; right: 16px; bottom: 12px; width: 50px; height: 70px; }
+.sty-leg { display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
+.sty-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.sty-leg i.z { background: color-mix(in srgb, var(--ok) 30%, transparent); } .sty-leg i.m { background: var(--ok); }
+.sty-bars { display: grid; gap: 10px; margin: 8px 0 4px; }
+.sty-rng .hd { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; color: var(--muted); }
+.sty-rng .hd b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.sty-bar { position: relative; height: 10px; border-radius: 5px; background: var(--bg); margin-top: 3px; }
+.sty-bar.has-m { margin-top: 18px; }
+.sty-bar .z { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: color-mix(in srgb, var(--ok) 30%, transparent); }
+.sty-bar .m { position: absolute; top: -4px; width: 4px; height: 18px; border-radius: 2px; background: var(--ok); transform: translateX(-50%); }
+.sty-bar .m.bad { background: var(--alert); }
+.sty-bar .m em { position: absolute; bottom: 19px; left: 50%; transform: translateX(-50%); font: 600 12px var(--body); font-style: normal; color: var(--ok); white-space: nowrap; }
+.sty-bar .m.bad em { color: var(--alert); }
+.sty-rng .ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: 1px; }
+.sty-tips { display: grid; gap: 8px; }
+.sty-tip { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 9px; font-size: 14px; align-items: start; }
+.sty-tip .ic { width: 26px; height: 26px; border-radius: 8px; background: var(--amber-soft); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+.sty-links { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 14px 0 4px; }
+.sty-links a { display: inline-flex; align-items: center; gap: 4px; color: var(--teal); font-weight: 600; font-size: 14px; text-decoration: none; }
+.sty-links svg { width: 15px; height: 15px; }
+.cat-list .fav-mark { color: var(--amber); }
 
 /* Кто подключён к стику */
 .members { background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; padding: 12px; }
@@ -1237,10 +1274,11 @@ body.has-install main { padding-bottom: 220px; }
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
-    if ("start" in body) st.batchStart = body.start;
+    if ("start" in body) { if (body.start !== st.batchStart) st.marks = []; st.batchStart = body.start; }
     if ("style" in body) st.style = body.style;
     if ("fg" in body) st.fg = body.fg;
     if ("recipe" in body) st.recipe = body.recipe;
+    if ("marks" in body) st.marks = body.marks;
     save();
   }
 
@@ -1338,6 +1376,7 @@ body.has-install main { padding-bottom: 220px; }
       if ("admin" in data && st.admin !== data.admin) { st.admin = data.admin; save(); }
       if ("style" in data) { st.style = data.style; st.fg = data.fg; save(); }
       if ("recipe" in data && st.recipe !== data.recipe) { st.recipe = data.recipe; save(); }
+      if ("marks" in data && JSON.stringify(st.marks || []) !== JSON.stringify(data.marks)) { st.marks = data.marks; save(); }
       const recipe = st.recipe ? await loadRecipe(st.recipe, st).catch(() => null) : null;
       // Норма температуры для оповещений — из рецепта (все шаги плана) или стиля; сервер их не знает.
       if ("range" in data) {
@@ -1585,9 +1624,14 @@ body.has-install main { padding-bottom: 220px; }
     if (!a || !a.stages) return;
     const now = Date.now();
     const dur = (ms) => ms >= 48 * 3600e3 ? t("stage.durD", { n: fmt(ms / 86400e3, 1) }) : t("stage.durH", { n: Math.max(1, Math.round(ms / 3600e3)) });
+    // У текущей стадии — «Завершено»: следующая начинается сейчас (у всех, у кого есть доступ к стику).
+    const next = STAGES_ALL[STAGES_ALL.indexOf(a.stage) + 1];
+    const canMark = !!(cur() && view.st === cur());
     const rows = a.stages.map((x, i) => {
-      const end = i + 1 < a.stages.length ? a.stages[i + 1].from : now;
-      return `<li class="${i === a.stages.length - 1 ? "cur" : ""}"><b>${escapeHtml(t("stage." + x.id))}</b><span>${escapeHtml(dayTime(x.from))} · ${escapeHtml(dur(end - x.from))}</span></li>`;
+      const end = i + 1 < a.stages.length ? a.stages[i + 1].from : now, isCur = i === a.stages.length - 1;
+      const manual = x.manual ? ` <small class="manual">${escapeHtml(t("stage.manual"))}${canMark ? ` · <button type="button" class="link" data-stage-undo="${x.id}">${escapeHtml(t("stage.undo"))}</button>` : ""}</small>` : "";
+      const done = isCur && next && canMark ? `<button type="button" class="stage-done" data-stage-done="${next}">✓ ${escapeHtml(t("stage.doneBtn", { next: t("stage." + next) }))}</button>` : "";
+      return `<li class="${isCur ? "cur" : ""}"><div class="sl"><b>${escapeHtml(t("stage." + x.id))}</b>${manual}</div><span>${escapeHtml(dayTime(x.from))} · ${escapeHtml(dur(end - x.from))}</span>${done}</li>`;
     }).join("");
     // Впереди — оставшиеся стадии шкалы, серым.
     // Прогноз: близкие границы — одной датой со временем, широкий диапазон — днями.
@@ -1599,8 +1643,29 @@ body.has-install main { padding-bottom: 220px; }
       `<li class="next"><b>${escapeHtml(t("stage." + id))}</b><span>${escapeHtml(when(eta[id]))}</span></li>`).join("");
     const note = Object.keys(eta).length ? `<p class="hint">${escapeHtml(t("stage.etaNote"))}</p>` : "";
     const alarm = a.alarm ? `<p class="st-alarm-text ${a.alarm.id === "stalled" ? "bad" : "warn"}">${escapeHtml(t("stage.since", { stage: t("stage." + a.alarm.id), time: dayTime(a.alarm.from) }))}</p>` : "";
-    openSheet(`<div class="top-line"><h2>${escapeHtml(t("stage.listTitle"))}</h2>${closeBtn}</div>${alarm}<ul class="stage-list">${rows}${ahead}</ul>${note}`);
+    const foot = canMark ? `<div class="rc-foot"><button type="button" data-close>${escapeHtml(t("settings.close"))}</button>
+      <button type="button" data-new-batch>${ACT_ICONS.play}${escapeHtml(t("act.newBatch"))}</button></div>` : "";
+    openSheet(`<div class="top-line"><h2>${escapeHtml(t("stage.listTitle"))}</h2>${closeBtn}</div>${alarm}<ul class="stage-list">${rows}${ahead}</ul>${note}
+      <p class="hint">${escapeHtml(t("stage.manualNote"))}</p>${foot}`);
   }
+  async function setStageMarks(marks, btn) {
+    const st = cur();
+    if (btn) { btn.classList.add("loading"); btn.disabled = true; }
+    try { await postBatch(st, { marks }); }
+    catch (e) { notice(escapeHtml(t("err.batch", { message: e.message })), "error"); if (btn) { btn.classList.remove("loading"); btn.disabled = false; } return; }
+    await refresh();
+    if (sheet.open) stagesSheet();
+  }
+  $("sheet").addEventListener("click", (e) => {
+    const st = cur(), rank = (id) => STAGES_ALL.indexOf(id);
+    const done = e.target.closest("[data-stage-done]"), undo = e.target.closest("[data-stage-undo]");
+    if (done && st) {
+      const id = done.dataset.stageDone;
+      setStageMarks((st.marks || []).filter((m) => rank(m.id) < rank(id)).concat({ id, at: Date.now() }), done);
+    } else if (undo && st) {
+      setStageMarks((st.marks || []).filter((m) => rank(m.id) < rank(undo.dataset.stageUndo)));
+    } else if (e.target.closest("[data-new-batch]")) { sheet.close(); openBatchDialog(); }
+  });
   $("batchp").addEventListener("click", (e) => {
     if (e.target.closest("#stages-btn")) stagesSheet();
     if (e.target.closest("[data-open-recipe]") && cur() && cur().recipe) openRecipe(cur().recipe);
@@ -1733,7 +1798,7 @@ body.has-install main { padding-bottom: 220px; }
     if (hasBatch) og = median(valid.filter((r) => r.ts >= st.batchStart).slice(0, 6).map((r) => r.g));
     const input = {
       rows: rows.map((r) => ({ ts: r.ts, g: plausible(r.g) ? r.g : null, temperature: toC(r.temperature, r.temp_units) })),
-      now, batchStart: hasBatch ? st.batchStart : null, og, fgManual: st.fg ?? null,
+      now, batchStart: hasBatch ? st.batchStart : null, og, fgManual: st.fg ?? null, marks: hasBatch ? st.marks || [] : [],
     };
     let a = Brew.analyze({ ...input, style: baseStyle });
     // С рецептом норма температуры — из текущего шага плана брожения, а не из общего диапазона стиля.
@@ -1823,13 +1888,14 @@ body.has-install main { padding-bottom: 220px; }
       if (a.stage === "done" || a.stage === "ready") html += batchPrimingHtml(rows, a, recipe, style, st, now);
       // Пока в калькуляторе сахара что-то вводят, ежеминутное обновление панель не перерисовывает.
       if (!(document.activeElement && bp.contains(document.activeElement) && document.activeElement.closest(".prime"))) {
-        bp.innerHTML = html + actionBar(t("act.newBatch"));
+        bp.innerHTML = html + actionBar(t("act.newBatch"), !!(a.stages && a.stage !== "ready"));
         fitStageLabels(); fillPrimes(bp);
       }
     } else {
       bp.innerHTML = (st.id !== "demo" ? brewBanner(st) : "") + `<p class="hint">${escapeHtml(t("batch.none"))}</p>` + actionBar(t("batch.startNow"));
     }
-    $("new-batch").onclick = () => openBatchDialog();
+    if ($("new-batch")) $("new-batch").onclick = () => openBatchDialog();
+    if ($("next-stage")) $("next-stage").onclick = () => stagesSheet();
     if ($("ai-btn")) $("ai-btn").onclick = () => openAi();
     $("about-style").onclick = () => style ? openStyle(style.id) : openCatalog();
     $("open-catalog").onclick = () => openCatalog();
@@ -1851,6 +1917,7 @@ body.has-install main { padding-bottom: 220px; }
   }
 
   const ACT_ICONS = {
+    next: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12h8M13 8.5l3.5 3.5-3.5 3.5"/></svg>`,
     play: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor"/></svg>`,
     book: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>`,
     list: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>`,
@@ -1858,8 +1925,10 @@ body.has-install main { padding-bottom: 220px; }
   };
   const BREW_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 9h18"/><path d="M9 5.5c0-1 .7-1.5 1.5-1.5M13 5.5c0-1 .7-1.5 1.5-1.5"/></svg>`;
   const BOTTLE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4v4l1.5 3v11a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V9L10 6z"/><path d="M8.5 13h7"/></svg>`;
-  const actionBar = (first) => `<div class="actbar">
-      <button type="button" class="main" id="new-batch">${ACT_ICONS.play}${escapeHtml(first)}</button>
+  // Пока партия идёт — главная кнопка «Следующий этап» (список стадий с «Завершено»), «Новая партия» — в том списке.
+  const actionBar = (first, nextStage) => `<div class="actbar">
+      ${nextStage ? `<button type="button" class="main" id="next-stage">${ACT_ICONS.next}${escapeHtml(t("act.nextStage"))}</button>`
+        : `<button type="button" class="main" id="new-batch">${ACT_ICONS.play}${escapeHtml(first)}</button>`}
       <button type="button" id="about-style">${ACT_ICONS.book}${escapeHtml(t("act.style"))}</button>
       <button type="button" id="open-catalog">${ACT_ICONS.list}${escapeHtml(t("act.catalog"))}</button>
       ${aiButton()}
@@ -1883,6 +1952,13 @@ body.has-install main { padding-bottom: 220px; }
     if (pick) openStyle(pick.dataset.style, true);
     const cat = e.target.closest("[data-cat]");
     if (cat) { catState.cat = cat.dataset.cat; renderCatalog(); }
+    const favStyle = e.target.closest("[data-fav-style]");
+    if (favStyle) {
+      const sid = favStyle.dataset.favStyle, favs = cfg.favStyles || [];
+      cfg.favStyles = favs.includes(sid) ? favs.filter((v) => v !== sid) : favs.concat(sid);
+      save(); favStyle.setAttribute("aria-pressed", String(isFavStyle(sid)));
+    }
+    if (e.target.closest("[data-sty-recipes]")) { const h3 = $("sty-recipes"); if (h3) h3.scrollIntoView({ behavior: "smooth", block: "start" }); }
     const choose = e.target.closest("[data-choose]");
     if (choose) chooseStyle(choose.dataset.choose);
   });
@@ -1907,13 +1983,13 @@ body.has-install main { padding-bottom: 220px; }
     const lang = I18N.lang(), cur0 = cur() && cur().style;
     const q = catState.q.trim().toLowerCase();
     const items = Brew.STYLES
-      .filter((x) => StyleGuide.inCategory(x, catState.cat))
+      .filter((x) => catState.cat === "fav" ? isFavStyle(x.id) : StyleGuide.inCategory(x, catState.cat))
       .filter((x) => !q || (x.name[lang] || x.name.en).toLowerCase().includes(q) || x.name.en.toLowerCase().includes(q))
       .sort((p, q2) => (p.name[lang] || p.name.en).localeCompare(q2.name[lang] || q2.name.en, I18N.locale()));
-    const cats = StyleGuide.CATEGORIES.map((c) =>
-      `<button type="button" data-cat="${c}" aria-pressed="${c === catState.cat}">${escapeHtml(t("catalog.cat." + c))}</button>`).join("");
+    const cats = ((cfg.favStyles || []).length ? ["fav"] : []).concat(StyleGuide.CATEGORIES).map((c) =>
+      `<button type="button" data-cat="${c}" aria-pressed="${c === catState.cat}">${escapeHtml(c === "fav" ? "★ " + t("rc.f.fav") : t("catalog.cat." + c))}</button>`).join("");
     const rows = items.map((x) => `<li><button type="button" data-style="${x.id}">
-        <span><span class="dot" style="background:${COLOURS[StyleGuide.colour(x.id)]}"></span>${escapeHtml(x.name[lang] || x.name.en)}${x.id === cur0 ? ` <span class="cur">✓</span>` : ""}</span>
+        <span><span class="dot" style="background:${COLOURS[StyleGuide.colour(x.id)]}"></span>${escapeHtml(x.name[lang] || x.name.en)}${x.id === cur0 ? ` <span class="cur">✓</span>` : ""}${isFavStyle(x.id) ? ` <span class="fav-mark">★</span>` : ""}</span>
         <small>${rangeText(x.t)} °C · ${rangeText(x.abv)}%</small></button></li>`).join("");
     const tabs = ["styles", "recipes"].map((k) => `<button type="button" data-tab="${k}" aria-pressed="${k === catState.tab}">${escapeHtml(t("catalog.tab." + k))}</button>`).join("");
     const body = catState.tab === "recipes" ? recipesHtml()
@@ -1924,46 +2000,81 @@ body.has-install main { padding-bottom: 220px; }
       <div id="cat-body">${body}</div>`;
   }
 
+  // Карточка стиля: шапка в цвете пива с бокалом, диапазоны стиля шкалами с отметкой партии,
+  // советы, рецепты этого стиля, ссылки; кнопки — внизу.
+  const HERO = {
+    pale: { bg: "linear-gradient(160deg,#f6e3a0,#e8c55c 60%,#d9ad3c)", ink: "#3a2a08", sub: "#6b4a0c", beer: "#e2a733" },
+    amber: { bg: "linear-gradient(160deg,#e7a35a,#c4782a 60%,#9c5a1c)", ink: "#2e1704", sub: "#4f2c0b", beer: "#b8651f" },
+    dark: { bg: "linear-gradient(160deg,#6a3a1c,#3a1e10)", ink: "#fff", sub: "#f3d9b0", beer: "#1c0e08" },
+  };
+  const glassSvg = (beer, dark) => `<svg class="sty-glass" viewBox="0 0 56 78" aria-hidden="true"><path d="M8 4h40l-4 66a5 5 0 0 1-5 4H17a5 5 0 0 1-5-4z" fill="rgba(255,255,255,${dark ? .12 : .35})" stroke="${dark ? "rgba(255,230,190,.6)" : "rgba(90,60,8,.55)"}" stroke-width="2"/><path d="M11 20h34l-3 48a3 3 0 0 1-3 3H17a3 3 0 0 1-3-3z" fill="${beer}"/><path d="M8 4h40v14c-6 4-34 4-40 0z" fill="${dark ? "#efdcb8" : "#fffaf0"}"/></svg>`;
+  const TIP_ICONS = ["🧫", "🌡️", "⏱️", "🍺"];
+  const isFavStyle = (id) => (cfg.favStyles || []).includes(id);
+  // Шкала диапазона стиля: зона нормы и отметка партии (зелёная — в норме с допуском, красная — нет).
+  function styleBar(title, r, pad, unit, mark, markText, tol) {
+    const a = r[0] - pad, b = r[1] + pad, L = (v) => Math.max(1, Math.min(99, (v - a) / (b - a) * 100));
+    const ok = mark == null || (mark >= r[0] - tol && mark <= r[1] + tol);
+    const m = mark == null ? "" : `<i class="m${ok ? "" : " bad"}" style="left:${L(mark)}%"><em>${escapeHtml(markText)}</em></i>`;
+    return `<div class="sty-rng"><div class="hd"><span>${escapeHtml(title)}</span><b>${rangeText(r)}${unit}</b></div>
+      <div class="sty-bar${mark == null ? "" : " has-m"}"><i class="z" style="left:${L(r[0])}%;width:${L(r[1]) - L(r[0])}%"></i>${m}</div>
+      <div class="ends"><span>${fmtMax1(Math.round(a * 10) / 10)}</span><span>${fmtMax1(Math.round(b * 10) / 10)}</span></div></div>`;
+  }
   function openStyle(id, fromCatalog = false) {
     const x = Brew.byId[id];
     if (!x) return;
     const lang = I18N.lang();
     const name = x.name[lang] || x.name.en;
     const st = cur();
-    const isCurrent = st && st.style === id;
-    // Сравнение с текущей партией — по её данным, если партия идёт
-    let cmp = "";
+    const isCurrent = !!(view && view.st && view.st.style === id);
+    const colour = StyleGuide.colour(id), h = HERO[colour] || HERO.pale;
+    // Отметки партии — по её данным, если партия идёт
+    const marks = {};
     if (view && view.hasBatch) {
-      const a = view.a, parts = [];
-      const mark = (ok) => `<span class="${ok ? "okk" : "out"}">${escapeHtml(t(ok ? "sheet.inRange" : "sheet.out"))}</span>`;
-      if (view.og != null) parts.push(`${escapeHtml(t("sheet.ogNow", { og: fmt(view.og, 1) }))} ${mark(view.og >= x.og[0] - 0.5 && view.og <= x.og[1] + 0.5)}`);
-      const fg = view.st.fg ?? (x.fg[0] + x.fg[1]) / 2;
-      if (view.og != null) { const pa = Brew.abv(view.og, fg); parts.push(`${escapeHtml(t("sheet.abvProj", { abv: fmt(pa, 1) }))} ${mark(pa >= x.abv[0] - 0.3 && pa <= x.abv[1] + 0.3)}`); }
+      const a = view.a;
+      if (view.og != null) {
+        marks.og = view.og;
+        const fg = view.st.fg ?? (x.fg[0] + x.fg[1]) / 2;
+        marks.fg = fg; marks.abv = Brew.abv(view.og, fg);
+      }
       const tc = a.temp.stats && a.temp.stats.last;
-      if (tc != null) parts.push(`${escapeHtml(t("sheet.tempNow", { t: fmt(tc, 1) }))} ${mark(tc >= x.t[0] - 0.5 && tc <= x.t[1] + 0.5)}`);
-      if (parts.length) cmp = `<div class="cmp"><span>${escapeHtml(t("sheet.yourBatch"))}:</span>${parts.map((p) => `<span>${p}</span>`).join("")}</div>`;
+      if (tc != null) marks.t = tc;
     }
+    const hasMarks = Object.keys(marks).length > 0;
+    const pills = [t("sheet.yeast." + x.yeast), t("sty.colour." + colour), isCurrent ? "✓ " + t("sty.batchStyle") : null].filter(Boolean)
+      .map((p) => `<span class="pill">${escapeHtml(p)}</span>`).join("");
+    const bars = styleBar(t("sheet.ferment"), x.t, 4, " °C", marks.t, marks.t != null ? fmt(marks.t, 1) : "", 0.5) +
+      styleBar(t("sheet.og"), x.og, 2, " °P", marks.og, marks.og != null ? fmt(marks.og, 1) : "", 0.5) +
+      styleBar(t("sheet.fg"), x.fg, 1.5, " °P", marks.fg, marks.fg != null ? "≈" + fmt(marks.fg, 1) : "", 0.5) +
+      styleBar(t("sheet.abv"), x.abv, 1.5, "%", marks.abv, marks.abv != null ? "→" + fmt(marks.abv, 1) : "", 0.3);
+    const tips = StyleGuide.tips(x.yeast, lang).map((tip, i) => `<div class="sty-tip"><span class="ic">${TIP_ICONS[i % TIP_ICONS.length]}</span><span>${escapeHtml(tip)}</span></div>`).join("");
+    const recs = recipeItems().filter((r) => r.style === id);
+    const recRows = recs.map((r) => `<li class="rc-item">
+        <button type="button" class="rc-open" data-recipe="${r.ref}"><i class="ebc" style="background:${ebcColour(r.ebc)}"></i>
+          <span><b>${escapeHtml(rloc(r.name))}</b>${r.mine ? ` <span class="tag">${escapeHtml(t("rc.mineTag"))}</span>` : ""}
+          <small>${escapeHtml([`${fmt(r.og, 1)} → ${fmt(r.fg, 1)} °P`, r.abv != null ? fmt(r.abv, 1) + " %" : null, r.ibu != null ? r.ibu + " IBU" : null].filter(Boolean).join(" · "))}</small></span></button>
+        <button type="button" class="star" data-fav="${r.ref}" aria-pressed="${isFav(r.ref)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button></li>`).join("");
     let action = "";
     if (st && view && view.hasBatch && !isCurrent) action = `<button type="button" class="main" data-choose="${id}">${escapeHtml(t("sheet.choose"))}</button>`;
     else if (st && view && !view.hasBatch) action = `<button type="button" class="main" data-choose="${id}">${escapeHtml(t("sheet.startWith"))}</button>`;
-    openSheet(`<div class="top-line">${fromCatalog ? `<button class="back" type="button" data-back>← ${escapeHtml(t("act.catalog"))}</button>` : ""}${closeBtn}</div>
-      <h2>${escapeHtml(name)}</h2>
-      <div class="sub">${escapeHtml([x.name.en !== name ? x.name.en : null, t("sheet.yeast." + x.yeast), "BJCP " + StyleGuide.code(id)].filter(Boolean).join(" · "))}</div>
-      ${isCurrent ? `<span class="current-mark">✓ ${escapeHtml(t("sheet.current"))}</span>` : ""}
+    const foot = action || recs.length ? `<div class="rc-foot">${recs.length ? `<button type="button" data-sty-recipes>${escapeHtml(t("sty.recipesN", { n: recs.length }))}</button>` : ""}${action}</div>` : "";
+    openSheet(`<div class="sty-hero" style="background:${h.bg};color:${h.ink}">
+        <div class="top-line">${fromCatalog ? `<button class="back" type="button" data-back style="color:${h.sub}">← ${escapeHtml(t("act.catalog"))}</button>` : ""}
+          <button type="button" class="star big" data-fav-style="${id}" aria-pressed="${isFavStyle(id)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button>
+          <button class="x" type="button" data-close aria-label="${escapeHtml(t("sheet.close"))}" style="color:${h.sub}">×</button></div>
+        <h2>${escapeHtml(name)}</h2>
+        <div class="sub" style="color:${h.sub}">${escapeHtml([x.name.en !== name ? x.name.en : null, "BJCP " + StyleGuide.code(id)].filter(Boolean).join(" · "))}</div>
+        <div class="pills">${pills}</div>${glassSvg(h.beer, colour === "dark")}</div>
       <p>${escapeHtml(StyleGuide.desc(id, lang))}</p>
-      <div class="facts">
-        <div><small>${escapeHtml(t("sheet.ferment"))}</small><b>${rangeText(x.t)} °C</b></div>
-        <div><small>${escapeHtml(t("sheet.abv"))}</small><b>${rangeText(x.abv)}%</b></div>
-        <div><small>${escapeHtml(t("sheet.og"))}</small><b>${rangeText(x.og)} °P</b></div>
-        <div><small>${escapeHtml(t("sheet.fg"))}</small><b>${rangeText(x.fg)} °P</b></div>
-      </div>
-      ${cmp}
+      ${hasMarks ? `<div class="sty-leg"><span><i class="z"></i>${escapeHtml(t("sty.range"))}</span><span><i class="m"></i>${escapeHtml(t("sheet.yourBatch"))}</span></div>` : ""}
+      <div class="sty-bars">${bars}</div>
       <h3>${escapeHtml(t("sheet.tips"))}</h3>
-      <ul class="tips">${StyleGuide.tips(x.yeast, lang).map((tip) => `<li>${escapeHtml(tip)}</li>`).join("")}</ul>
-      <div class="btns">${action}
-        <a href="${StyleGuide.wikiUrl(name, lang)}" target="_blank" rel="noopener">${escapeHtml(t("sheet.wiki"))} ${ACT_ICONS.ext}</a>
-        <a href="${StyleGuide.bjcpUrl(x.name.en)}" target="_blank" rel="noopener">BJCP ${ACT_ICONS.ext}</a>
-      </div>`);
+      <div class="sty-tips">${tips}</div>
+      ${recs.length ? `<h3 id="sty-recipes">${escapeHtml(t("sty.recipes"))}</h3><ul class="rc-list">${recRows}</ul>` : ""}
+      <div class="sty-links"><a href="${StyleGuide.wikiUrl(name, lang)}" target="_blank" rel="noopener">${escapeHtml(t("sheet.wiki"))} ${ACT_ICONS.ext}</a>
+        <a href="${StyleGuide.bjcpUrl(x.name.en)}" target="_blank" rel="noopener">BJCP ${escapeHtml(StyleGuide.code(id))} ${ACT_ICONS.ext}</a></div>
+      ${foot}`);
+    // Рецепты стиля ещё не загружены — догружаем и перерисовываем карточку.
+    if (!recipes.lib) ensureRecipeLists().then(() => { if (sheet.open && sheet.querySelector(`[data-fav-style="${id}"]`)) openStyle(id, fromCatalog); }).catch(() => {});
   }
 
   // Выбрать стиль: для идущей партии — сохранить сразу, без партии — открыть «Новая партия» с этим стилем.
