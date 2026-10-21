@@ -1937,7 +1937,7 @@ body.has-install main { padding-bottom: 220px; }
       const a = view.a, parts = [];
       const mark = (ok) => `<span class="${ok ? "okk" : "out"}">${escapeHtml(t(ok ? "sheet.inRange" : "sheet.out"))}</span>`;
       if (view.og != null) parts.push(`${escapeHtml(t("sheet.ogNow", { og: fmt(view.og, 1) }))} ${mark(view.og >= x.og[0] - 0.5 && view.og <= x.og[1] + 0.5)}`);
-      const fg = st.fg ?? (x.fg[0] + x.fg[1]) / 2;
+      const fg = view.st.fg ?? (x.fg[0] + x.fg[1]) / 2;
       if (view.og != null) { const pa = Brew.abv(view.og, fg); parts.push(`${escapeHtml(t("sheet.abvProj", { abv: fmt(pa, 1) }))} ${mark(pa >= x.abv[0] - 0.3 && pa <= x.abv[1] + 0.3)}`); }
       const tc = a.temp.stats && a.temp.stats.last;
       if (tc != null) parts.push(`${escapeHtml(t("sheet.tempNow", { t: fmt(tc, 1) }))} ${mark(tc >= x.t[0] - 0.5 && tc <= x.t[1] + 0.5)}`);
