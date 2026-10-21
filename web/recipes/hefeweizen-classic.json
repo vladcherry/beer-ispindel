@@ -1,0 +1,30 @@
+{
+  "v": 1,
+  "id": "hefeweizen-classic",
+  "style": "hefeweizen",
+  "name": { "ru": "Хефевайцен классический", "en": "Classic Hefeweizen", "uk": "Хефевайцен класичний", "es": "Hefeweizen clásica" },
+  "source": "authored in Claude chat, 2026-10", "tested": false,
+  "batch_l": 20, "efficiency": 0.72, "boil_min": 60,
+  "og": 12.0, "fg": 2.8, "abv": 4.9, "ibu": 13, "ebc": 8,
+  "water": { "mash_l": 13, "sparge_l": 14, "preboil_l": 25 },
+  "fermentables": [
+    { "name": { "en": "Wheat malt", "ru": "Пшеничный солод", "uk": "Пшеничний солод", "es": "Malta de trigo" }, "kg": 2.6, "type": "grain" },
+    { "name": { "en": "Pilsner malt", "ru": "Пильзнер", "uk": "Пільзнер", "es": "Malta Pilsner" }, "kg": 1.8, "type": "grain" }
+  ],
+  "hops": [
+    { "name": "Hallertauer Mittelfrüh", "g": 25, "alpha": 4.5, "use": "boil", "min": 60 },
+    { "name": "Hallertauer Mittelfrüh", "g": 10, "alpha": 4.5, "use": "boil", "min": 10 }
+  ],
+  "other": [ { "name": { "en": "Rice hulls", "ru": "Рисовая шелуха", "uk": "Рисове лушпиння", "es": "Cascarilla de arroz" }, "g": 150, "use": "mash" } ],
+  "yeast": { "name": "SafAle WB-06", "alt": ["WLP300", "Wyeast 3068"], "form": "dry", "amount": "1 × 11.5 g" },
+  "mash": [
+    { "name": "Ferulic", "temp": 44, "min": 15 }, { "name": "Beta", "temp": 63, "min": 30 },
+    { "name": "Alpha", "temp": 72, "min": 30 }, { "name": "Mash out", "temp": 78, "min": 10 }
+  ],
+  "fermentation": [
+    { "until": { "stage": "slowing" }, "temp": [18, 19], "note": { "ru": "Держи 18–19 °C, не перегревай", "en": "Hold 18–19 °C, don't let it run hot", "uk": "Тримай 18–19 °C, не перегрівай", "es": "Mantén 18–19 °C, sin pasarte" } },
+    { "until": { "stage": "done" }, "temp": [20, 21], "note": { "ru": "Подними до 20–21 °C, чтобы дрожжи доели сахар", "en": "Raise to 20–21 °C so the yeast finishes the sugar", "uk": "Підніми до 20–21 °C, щоб дріжджі доїли цукор", "es": "Sube a 20–21 °C para que la levadura termine el azúcar" } }
+  ],
+  "priming": { "vol_co2": 3.3, "sugar": "sucrose" },
+  "notes": { "ru": "Банан или гвоздика: теплее и без паузы 44 °C — больше банана.", "en": "Banana or clove: warmer and without the 44 °C rest gives more banana." }
+}

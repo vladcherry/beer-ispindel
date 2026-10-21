@@ -1,6 +1,6 @@
 // AI-помощник по партии (DeepSeek). Ключ и настройки — у стика, их задаёт админ; ключ не покидает сервер.
 // Лимит вопросов — общий на стик в сутки (UTC). Журнал чата — по партии: новая партия начинает с чистого листа.
-// В запрос уходит только сжатая сводка партии от приложения (одна строка) и последняя пара вопрос–ответ.
+// В запрос уходит только сжатая сводка партии от приложения (одна строка, с выжимкой рецепта) и последняя пара вопрос–ответ.
 
 const ENGINES = { "deepseek-chat": { max: { short: 220, medium: 450 } }, "deepseek-reasoner": { max: { short: 1600, medium: 2400 } } };
 const LANGS = { en: "English", ru: "Russian", uk: "Ukrainian", es: "Spanish" };
@@ -91,7 +91,7 @@ export async function aiAsk(request, env, stick, json, cors) {
   try { b = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
   const question = String(b.question || "").trim().slice(0, 500);
   if (!question) return json({ error: "empty question" }, 400, cors);
-  const context = String(b.context || "").replace(/\s+/g, " ").slice(0, 400);
+  const context = String(b.context || "").replace(/\s+/g, " ").slice(0, 800);
   const lang = LANGS[b.lang] ? b.lang : "en";
   const c = await config(env, stick), now = Date.now();
   if (!c.ai_key || !ENGINES[c.ai_engine || ""]) return json({ error: "AI is not set up", code: "off" }, 400, cors);

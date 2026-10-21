@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS tokens (
   ai_key    TEXT,
   ai_limit  INTEGER,
   ai_len    TEXT,
+  recipe    TEXT,                  -- рецепт текущей партии: lib:<id> (библиотека приложения) или my:<id> (recipes)
   created   INTEGER NOT NULL,
   last_seen INTEGER
 );
@@ -88,3 +89,13 @@ CREATE TABLE IF NOT EXISTS ai_log (
   key_hash TEXT, user_agent TEXT, question TEXT, answer TEXT, lang TEXT, tokens_in INTEGER, tokens_out INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_ai_log ON ai_log (token_hash, ts);
+
+-- Свои рецепты стика: JSON в формате web/recipe.js, не больше 50 на стик.
+CREATE TABLE IF NOT EXISTS recipes (
+  owner TEXT NOT NULL,        -- tokens.hash стика
+  id TEXT NOT NULL,           -- как в JSON, уникален в пределах стика
+  json TEXT NOT NULL,         -- рецепт целиком, ≤ 32 KB
+  created INTEGER NOT NULL,
+  updated INTEGER NOT NULL,
+  PRIMARY KEY (owner, id)
+);

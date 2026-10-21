@@ -1,0 +1,23 @@
+{
+  "v": 1,
+  "id": "irish-stout-classic",
+  "style": "irish-stout",
+  "name": { "ru": "Ирландский стаут", "en": "Irish Stout", "uk": "Ірландський стаут", "es": "Stout irlandesa" },
+  "source": "authored in Claude chat, 2026-10", "tested": false,
+  "batch_l": 20, "efficiency": 0.72, "boil_min": 60,
+  "og": 10.5, "fg": 2.8, "abv": 4.1, "ibu": 32, "ebc": 70,
+  "water": { "mash_l": 11, "sparge_l": 18, "preboil_l": 25 },
+  "fermentables": [
+    { "name": { "en": "Pale ale malt (Maris Otter)", "ru": "Пейл-эль (Maris Otter)", "uk": "Пейл-ель (Maris Otter)", "es": "Malta Pale Ale (Maris Otter)" }, "kg": 2.8, "type": "grain" },
+    { "name": { "en": "Flaked barley", "ru": "Ячменные хлопья", "uk": "Ячмінні пластівці", "es": "Copos de cebada" }, "kg": 0.5, "type": "adjunct" },
+    { "name": { "en": "Roasted barley", "ru": "Жжёный ячмень", "uk": "Палений ячмінь", "es": "Cebada tostada" }, "kg": 0.4, "type": "grain" }
+  ],
+  "hops": [ { "name": "East Kent Goldings", "g": 60, "alpha": 5.5, "use": "boil", "min": 60 } ],
+  "yeast": { "name": "SafAle S-04", "alt": ["WLP004"], "form": "dry", "amount": "1 × 11.5 g" },
+  "mash": [ { "name": "Saccharification", "temp": 66, "min": 60 }, { "name": "Mash out", "temp": 76, "min": 10 } ],
+  "fermentation": [
+    { "until": { "stage": "done" }, "temp": [18, 20], "note": { "ru": "18–20 °C всё брожение", "en": "18–20 °C for the whole fermentation", "uk": "18–20 °C усе бродіння", "es": "18–20 °C toda la fermentación" } }
+  ],
+  "priming": { "vol_co2": 2.0, "sugar": "sucrose" },
+  "notes": { "ru": "Газация низкая — около 4,5 г сахара на литр при 20 °C.", "en": "Low carbonation — about 4.5 g of sugar per litre at 20 °C." }
+}

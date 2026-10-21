@@ -1,0 +1,28 @@
+{
+  "v": 1,
+  "id": "german-pils-classic",
+  "style": "german-pils",
+  "name": { "ru": "Немецкий пилс", "en": "German Pils", "uk": "Німецький пілс", "es": "Pils alemana" },
+  "source": "authored in Claude chat, 2026-10", "tested": false,
+  "batch_l": 20, "efficiency": 0.72, "boil_min": 70,
+  "og": 11.8, "fg": 2.0, "abv": 5.0, "ibu": 31, "ebc": 6,
+  "water": { "mash_l": 13, "sparge_l": 17, "preboil_l": 26 },
+  "fermentables": [
+    { "name": { "en": "Pilsner malt", "ru": "Пильзнер", "uk": "Пільзнер", "es": "Malta Pilsner" }, "kg": 4.1, "type": "grain" },
+    { "name": { "en": "Carahell", "ru": "Карахелл", "uk": "Карахелл", "es": "Carahell" }, "kg": 0.2, "type": "grain" }
+  ],
+  "hops": [
+    { "name": "Hallertauer Magnum", "g": 18, "alpha": 12, "use": "boil", "min": 60 },
+    { "name": "Hallertauer Mittelfrüh", "g": 30, "alpha": 4.5, "use": "boil", "min": 20 },
+    { "name": "Hallertauer Mittelfrüh", "g": 30, "alpha": 4.5, "use": "boil", "min": 5 }
+  ],
+  "yeast": { "name": "SafLager W-34/70", "form": "dry", "amount": "2 × 11.5 g" },
+  "mash": [ { "name": "Beta", "temp": 63, "min": 45 }, { "name": "Alpha", "temp": 72, "min": 20 }, { "name": "Mash out", "temp": 78, "min": 10 } ],
+  "fermentation": [
+    { "until": { "plato": 5 }, "temp": [10, 12], "note": { "ru": "Лагер: 10–12 °C, нужна камера", "en": "Lager: 10–12 °C, needs a fridge", "uk": "Лагер: 10–12 °C, потрібна камера", "es": "Lager: 10–12 °C, necesita nevera" } },
+    { "until": { "stage": "done" }, "temp": [16, 18], "note": { "ru": "Диацетиловая пауза 16–18 °C на 2–3 дня", "en": "Diacetyl rest at 16–18 °C for 2–3 days", "uk": "Діацетилова пауза 16–18 °C на 2–3 дні", "es": "Reposo de diacetilo a 16–18 °C durante 2–3 días" } },
+    { "until": { "days": 35 }, "temp": [1, 2], "note": { "ru": "Охлаждай по 2 °C в сутки до 1–2 °C, лагеризация 3–4 недели", "en": "Cool 2 °C a day down to 1–2 °C, lager for 3–4 weeks", "uk": "Охолоджуй на 2 °C на добу до 1–2 °C, лагеризація 3–4 тижні", "es": "Enfría 2 °C al día hasta 1–2 °C y madura 3–4 semanas" } }
+  ],
+  "priming": { "vol_co2": 2.6, "sugar": "sucrose" },
+  "notes": { "ru": "Сахар для розлива считать по температуре диацетиловой паузы, а не холодной выдержки. Дрожжей — 2 пакета.", "en": "Work out priming sugar from the diacetyl rest temperature, not the cold lagering one. Use 2 packs of yeast." }
+}

@@ -1,0 +1,92 @@
+[
+ {
+  "id": "american-pale-ale-classic",
+  "style": "american-pale-ale",
+  "name": {
+   "ru": "Американский пейл-эль",
+   "en": "American Pale Ale",
+   "uk": "Американський пейл-ель",
+   "es": "American Pale Ale"
+  },
+  "og": 12.5,
+  "fg": 2.6,
+  "abv": 5.2,
+  "ibu": 34,
+  "ebc": 15
+ },
+ {
+  "id": "german-pils-classic",
+  "style": "german-pils",
+  "name": {
+   "ru": "Немецкий пилс",
+   "en": "German Pils",
+   "uk": "Німецький пілс",
+   "es": "Pils alemana"
+  },
+  "og": 11.8,
+  "fg": 2,
+  "abv": 5,
+  "ibu": 31,
+  "ebc": 6
+ },
+ {
+  "id": "hefeweizen-classic",
+  "style": "hefeweizen",
+  "name": {
+   "ru": "Хефевайцен классический",
+   "en": "Classic Hefeweizen",
+   "uk": "Хефевайцен класичний",
+   "es": "Hefeweizen clásica"
+  },
+  "og": 12,
+  "fg": 2.8,
+  "abv": 4.9,
+  "ibu": 13,
+  "ebc": 8
+ },
+ {
+  "id": "irish-stout-classic",
+  "style": "irish-stout",
+  "name": {
+   "ru": "Ирландский стаут",
+   "en": "Irish Stout",
+   "uk": "Ірландський стаут",
+   "es": "Stout irlandesa"
+  },
+  "og": 10.5,
+  "fg": 2.8,
+  "abv": 4.1,
+  "ibu": 32,
+  "ebc": 70
+ },
+ {
+  "id": "saison-classic",
+  "style": "saison",
+  "name": {
+   "ru": "Сезон",
+   "en": "Saison",
+   "uk": "Сезон",
+   "es": "Saison"
+  },
+  "og": 13,
+  "fg": 1,
+  "abv": 6.4,
+  "ibu": 27,
+  "ebc": 8
+ },
+ {
+  "id": "witbier-classic",
+  "style": "witbier",
+  "name": {
+   "ru": "Витбир классический",
+   "en": "Classic Witbier",
+   "uk": "Вітбір класичний",
+   "es": "Witbier clásica"
+  },
+  "og": 11.5,
+  "fg": 2.3,
+  "abv": 4.9,
+  "ibu": 12,
+  "ebc": 6
+ }
+]

@@ -10,7 +10,7 @@ name: Worker
 on:
   push:
     branches: [main]
-    paths: ["worker/**", ".github/workflows/worker.yml"]
+    paths: ["worker/**", "web/recipe.js", ".github/workflows/worker.yml"]
   workflow_dispatch:
 
 permissions:

@@ -1,0 +1,29 @@
+{
+  "v": 1,
+  "id": "witbier-classic",
+  "style": "witbier",
+  "name": { "ru": "Витбир классический", "en": "Classic Witbier", "uk": "Вітбір класичний", "es": "Witbier clásica" },
+  "source": "authored in Claude chat, 2026-10", "tested": false,
+  "batch_l": 20, "efficiency": 0.72, "boil_min": 60,
+  "og": 11.5, "fg": 2.3, "abv": 4.9, "ibu": 12, "ebc": 6,
+  "water": { "mash_l": 13, "sparge_l": 16, "preboil_l": 25 },
+  "fermentables": [
+    { "name": { "en": "Pilsner malt", "ru": "Пильзнер", "uk": "Пільзнер", "es": "Malta Pilsner" }, "kg": 2.1, "type": "grain" },
+    { "name": { "en": "Flaked wheat (unmalted)", "ru": "Хлопья пшеничные (несоложёные)", "uk": "Пластівці пшеничні (несолоджені)", "es": "Copos de trigo (sin maltear)" }, "kg": 1.7, "type": "adjunct" },
+    { "name": { "en": "Flaked oats", "ru": "Хлопья овсяные", "uk": "Пластівці вівсяні", "es": "Copos de avena" }, "kg": 0.3, "type": "adjunct" }
+  ],
+  "hops": [ { "name": "Hallertauer", "g": 25, "alpha": 4.5, "use": "boil", "min": 60 } ],
+  "other": [
+    { "name": { "en": "Rice hulls", "ru": "Рисовая шелуха", "uk": "Рисове лушпиння", "es": "Cascarilla de arroz" }, "g": 200, "use": "mash" },
+    { "name": { "en": "Coriander, freshly ground", "ru": "Кориандр, свежемолотый", "uk": "Коріандр, свіжомелений", "es": "Cilantro recién molido" }, "g": 15, "use": "boil", "min": 5 },
+    { "name": { "en": "Bitter orange peel", "ru": "Горькая апельсиновая корка", "uk": "Гірка апельсинова шкірка", "es": "Piel de naranja amarga" }, "g": 15, "use": "boil", "min": 5 }
+  ],
+  "yeast": { "name": "LalBrew Wit", "alt": ["WLP400", "Wyeast 3944"], "form": "dry", "amount": "1 × 11 g" },
+  "mash": [ { "name": "Protein", "temp": 50, "min": 15 }, { "name": "Saccharification", "temp": 65, "min": 60 }, { "name": "Mash out", "temp": 76, "min": 10 } ],
+  "fermentation": [
+    { "until": { "stage": "slowing" }, "temp": [19, 20], "note": { "ru": "19–20 °C — пряность без сивушных тонов", "en": "19–20 °C keeps it spicy without solvent notes", "uk": "19–20 °C — пряність без сивушних тонів", "es": "19–20 °C: especiado sin notas a disolvente" } },
+    { "until": { "stage": "done" }, "temp": [21, 22], "note": { "ru": "Подними до 21–22 °C до конца брожения", "en": "Raise to 21–22 °C until fermentation ends", "uk": "Підніми до 21–22 °C до кінця бродіння", "es": "Sube a 21–22 °C hasta el final" } }
+  ],
+  "priming": { "vol_co2": 3.0, "sugar": "sucrose" },
+  "notes": { "ru": "Специи — за 5 минут до конца кипячения. Кориандр молоть прямо перед варкой.", "en": "Spices go in 5 minutes before the end of the boil. Grind the coriander right before brewing." }
+}

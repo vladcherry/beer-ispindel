@@ -1,0 +1,28 @@
+{
+  "v": 1,
+  "id": "saison-classic",
+  "style": "saison",
+  "name": { "ru": "Сезон", "en": "Saison", "uk": "Сезон", "es": "Saison" },
+  "source": "authored in Claude chat, 2026-10", "tested": false,
+  "batch_l": 20, "efficiency": 0.72, "boil_min": 60,
+  "og": 13.0, "fg": 1.0, "abv": 6.4, "ibu": 27, "ebc": 8,
+  "water": { "mash_l": 13, "sparge_l": 16, "preboil_l": 25 },
+  "fermentables": [
+    { "name": { "en": "Pilsner malt", "ru": "Пильзнер", "uk": "Пільзнер", "es": "Malta Pilsner" }, "kg": 3.5, "type": "grain" },
+    { "name": { "en": "Wheat malt", "ru": "Пшеничный солод", "uk": "Пшеничний солод", "es": "Malta de trigo" }, "kg": 0.45, "type": "grain" },
+    { "name": { "en": "Munich malt", "ru": "Мюнхенский", "uk": "Мюнхенський", "es": "Malta Múnich" }, "kg": 0.3, "type": "grain" },
+    { "name": { "en": "Sugar (last 10 min of the boil)", "ru": "Сахар (последние 10 мин кипячения)", "uk": "Цукор (останні 10 хв кипіння)", "es": "Azúcar (últimos 10 min de hervor)" }, "kg": 0.3, "type": "sugar", "use": "boil", "min": 10 }
+  ],
+  "hops": [
+    { "name": "East Kent Goldings", "g": 45, "alpha": 5.5, "use": "boil", "min": 60 },
+    { "name": "Saaz", "g": 30, "alpha": 3.5, "use": "boil", "min": 10 }
+  ],
+  "yeast": { "name": "LalBrew Belle Saison", "alt": ["WLP565", "Wyeast 3724"], "form": "dry", "amount": "1 × 11 g" },
+  "mash": [ { "name": "Saccharification", "temp": 64, "min": 60 }, { "name": "Mash out", "temp": 76, "min": 10 } ],
+  "fermentation": [
+    { "until": { "stage": "active" }, "temp": [20, 20], "note": { "ru": "Старт при 20 °C", "en": "Start at 20 °C", "uk": "Старт при 20 °C", "es": "Empieza a 20 °C" } },
+    { "until": { "stage": "done" }, "temp": [25, 28], "note": { "ru": "Дай подняться до 25–28 °C — сезону это на пользу", "en": "Let it rise freely to 25–28 °C — saison likes it", "uk": "Дай піднятися до 25–28 °C — сезону це на користь", "es": "Deja que suba a 25–28 °C: a la saison le sienta bien" } }
+  ],
+  "priming": { "vol_co2": 3.0, "sugar": "sucrose" },
+  "notes": { "ru": "Сахар в кипячение — для сухости стиля.", "en": "Sugar in the boil keeps the beer dry, as the style wants." }
+}

@@ -1,0 +1,29 @@
+{
+  "v": 1,
+  "id": "american-pale-ale-classic",
+  "style": "american-pale-ale",
+  "name": { "ru": "Американский пейл-эль", "en": "American Pale Ale", "uk": "Американський пейл-ель", "es": "American Pale Ale" },
+  "source": "authored in Claude chat, 2026-10", "tested": false,
+  "batch_l": 20, "efficiency": 0.72, "boil_min": 60,
+  "og": 12.5, "fg": 2.6, "abv": 5.2, "ibu": 34, "ebc": 15,
+  "water": { "mash_l": 14, "sparge_l": 16, "preboil_l": 25 },
+  "fermentables": [
+    { "name": { "en": "Pale ale malt", "ru": "Пейл-эль", "uk": "Пейл-ель", "es": "Malta Pale Ale" }, "kg": 4.1, "type": "grain" },
+    { "name": { "en": "Caramel malt ~80 EBC (Caramunich I)", "ru": "Карамельный ~80 EBC (Caramunich I)", "uk": "Карамельний ~80 EBC (Caramunich I)", "es": "Malta caramelo ~80 EBC (Caramunich I)" }, "kg": 0.35, "type": "grain" },
+    { "name": { "en": "Carapils", "ru": "Карапилс", "uk": "Карапілс", "es": "Carapils" }, "kg": 0.15, "type": "grain" }
+  ],
+  "hops": [
+    { "name": "Centennial", "g": 25, "alpha": 9, "use": "boil", "min": 60 },
+    { "name": "Cascade", "g": 30, "alpha": 6, "use": "boil", "min": 15 },
+    { "name": "Cascade", "g": 40, "alpha": 6, "use": "whirlpool", "min": 15, "temp": 80 },
+    { "name": "Cascade", "g": 50, "alpha": 6, "use": "dry", "days": 3, "at_plato": 4 }
+  ],
+  "yeast": { "name": "SafAle US-05", "form": "dry", "amount": "1 × 11.5 g" },
+  "mash": [ { "name": "Saccharification", "temp": 66, "min": 60 }, { "name": "Mash out", "temp": 76, "min": 10 } ],
+  "fermentation": [
+    { "until": { "stage": "slowing" }, "temp": [18, 19], "note": { "ru": "18–19 °C — чистый вкус. Сухое охмеление — на ~4 °P", "en": "18–19 °C for a clean profile. Dry hop at about 4 °P", "uk": "18–19 °C — чистий смак. Сухе охмелення — на ~4 °P", "es": "18–19 °C para un perfil limpio. Dry hop hacia 4 °P" } },
+    { "until": { "stage": "done" }, "temp": [20, 20], "note": { "ru": "Подними до 20 °C, чтобы добродило", "en": "Raise to 20 °C to finish", "uk": "Підніми до 20 °C, щоб добродило", "es": "Sube a 20 °C para terminar" } }
+  ],
+  "priming": { "vol_co2": 2.5, "sugar": "sucrose" },
+  "notes": { "ru": "Хмель на выключении: вирпул 15 мин при ~80 °C. Сухое охмеление Cascade 50 г на 3 дня, когда плотность около 4 °P.", "en": "Flameout hops: 15 min whirlpool at about 80 °C. Dry hop 50 g Cascade for 3 days at about 4 °P." }
+}

@@ -23,6 +23,7 @@
 <script src="i18n.js"></script>
 <script src="analysis.js"></script>
 <script src="styles.js"></script>
+<script src="recipe.js"></script>
 <style>
 :root {
   color-scheme: light;
@@ -357,6 +358,123 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .cat-list .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
 .cat-list .cur { color: var(--ok); font-weight: 600; }
 
+/* Справочник: вкладки «Стили | Рецепты», список рецептов, карточка, день варки, розлив */
+.tabs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; background: var(--bg); border-radius: 10px; margin: 8px 0 2px; }
+.tabs2 button { border: 0; border-radius: 8px; padding: 7px 6px; background: transparent; color: var(--muted); font-size: 14.5px; font-weight: 600; cursor: pointer; }
+.tabs2 button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.rc-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; }
+.rc-item { display: flex; align-items: stretch; background: var(--bg); border-radius: 12px; border: 1px solid var(--rule); }
+.rc-open { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: stretch; border: 0; background: none; padding: 10px 4px 10px 10px; text-align: left; color: var(--ink); cursor: pointer; font-size: 15px; }
+.rc-open > span { min-width: 0; }
+.rc-open b { font-weight: 600; }
+.rc-open small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.35; margin-top: 2px; }
+.rc-open .cur { color: var(--ok); font-weight: 600; }
+.ebc { flex: none; width: 8px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.star { flex: none; border: 0; background: none; font-size: 21px; line-height: 1; padding: 6px 12px; color: var(--rule); cursor: pointer; }
+.star[aria-pressed="true"] { color: var(--amber); }
+.star.big { font-size: 26px; margin-left: auto; padding: 2px 6px; }
+.sheet .star.big + .x { margin-left: 6px; }
+.rc-tools { margin-top: 10px; }
+.rc-note { font-size: 12.5px; color: var(--muted); }
+.facts5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
+.facts5 div { background: var(--bg); border-radius: 10px; padding: 6px 4px; text-align: center; min-width: 0; }
+.facts5 small { display: block; font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.facts5 b { font: 600 19px/1.15 var(--display); font-variant-numeric: tabular-nums; }
+.rc-vol { margin: 4px 0 6px; color: var(--muted); }
+.rc-vol > span { display: flex; justify-content: space-between; }
+.rc-vol b { color: var(--ink); }
+.rc-vol input[type=range] { accent-color: var(--amber); padding: 0; border: 0; background: none; }
+.rc-sec { border-top: 1px solid var(--rule); padding: 8px 0 6px; }
+.rc-sec h4 { margin: 0 0 2px; font: 600 13px/1.4 var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; }
+.rc-sec h4 span { color: var(--ink); text-transform: none; letter-spacing: 0; font-size: 13.5px; text-align: right; }
+.rc-sec .li { display: flex; justify-content: space-between; gap: 10px; font-size: 14.5px; }
+.rc-sec .li span:last-child { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+.rc-notes { margin: 0 0 6px; padding-left: 18px; font-size: 13.5px; color: var(--muted); }
+.rc-notes:empty { display: none; }
+.rc-text { font-size: 14px !important; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 8px; }
+.rc-links { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 10px 0 4px; }
+.sheet .link.danger, .link.danger { color: var(--alert); }
+.rc-foot { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom, 0px)); z-index: 2; display: flex; flex-wrap: wrap; gap: 8px; margin: 10px -16px calc(-18px - env(safe-area-inset-bottom, 0px));
+  padding: 10px 16px calc(14px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--rule); }
+.rc-foot button { flex: 1 1 0; min-width: 0; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 8px; border-radius: 10px;
+  border: 1px solid var(--rule); background: var(--surface); color: var(--ink); font-size: 15px; font-weight: 600; cursor: pointer; }
+.rc-foot button.wide { flex-basis: 100%; }
+.rc-foot button.main { background: var(--amber); border-color: var(--amber); color: #fff; }
+.rc-foot button.main.teal { background: var(--teal); border-color: var(--teal); }
+.rc-foot button:disabled { opacity: .6; }
+.rc-foot svg, .brew-banner svg, .bottling h4 svg, .rc-line svg { width: 18px; height: 18px; flex: none; }
+/* Розлив: сахар */
+.prime { display: grid; gap: 8px; }
+.pr-big { text-align: center; background: var(--bg); border-radius: 12px; padding: 8px; }
+.pr-big small { display: block; font-size: 12.5px; color: var(--muted); }
+.pr-big b { display: block; font: 600 44px/1.05 var(--display); color: var(--amber-deep); font-variant-numeric: tabular-nums; }
+.pr-bottles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pr-bottles div { border: 1px solid var(--rule); border-radius: 10px; text-align: center; padding: 4px; }
+.pr-bottles b { display: block; font: 600 19px/1.2 var(--display); }
+.pr-bottles small { font-size: 11.5px; color: var(--muted); }
+.pr-in { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 10px; }
+.pr-in label { font-size: 12.5px; gap: 2px; }
+.pr-in input, .pr-in select { padding: 6px 8px; font-size: 15px; }
+.pr-warn { margin: 0 !important; font-size: 13px !important; color: var(--amber-deep); }
+.pr-warn.bad { background: var(--amber-soft); border-radius: 8px; padding: 6px 8px; }
+.pr-warn:empty { display: none; }
+.pr-note { margin: 0 !important; font-size: 12px !important; color: var(--muted); }
+.bottling { margin-top: 12px; border-top: 1px solid var(--rule); padding-top: 10px; }
+.bottling h4 { margin: 0 0 8px; display: flex; align-items: center; gap: 6px; font: 600 18px/1.2 var(--display); }
+.bottling h4 small { margin-left: auto; font: 400 12.5px var(--body); color: var(--muted); }
+/* Рецепт партии и идущая варка в панели партии */
+.rc-line { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; border: 0; background: none; padding: 0; margin-top: 2px; color: var(--amber-deep); cursor: pointer; text-align: left; font-size: 14px; }
+.rc-line svg { align-self: center; }
+.rc-line small { color: var(--muted); font-size: 12.5px; }
+.brew-banner { width: 100%; display: flex; align-items: center; gap: 10px; text-align: left; margin: 0 0 10px; padding: 9px 12px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--amber); background: var(--amber-soft); color: var(--ink); font-size: 14px; }
+.brew-banner > span:first-of-type { flex: 1; min-width: 0; }
+.brew-banner small { display: block; color: var(--muted); font-size: 12.5px; }
+.brew-banner [data-bt] { font: 600 17px var(--display); color: var(--amber-deep); font-variant-numeric: tabular-nums; }
+.brew-banner i { font-style: normal; font-size: 20px; color: var(--amber-deep); }
+.brew-banner svg { color: var(--amber-deep); }
+/* День варки */
+.brew { list-style: none; margin: 10px 0 6px; padding: 0; display: grid; gap: 8px; }
+.brew li { display: flex; gap: 10px; align-items: flex-start; background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; padding: 9px 10px; }
+.brew li.cur { border-color: var(--amber); background: var(--amber-soft); }
+.brew li.done .bs { opacity: .62; }
+.brew .chk { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid var(--rule); background: var(--surface); color: var(--muted); font-weight: 600; cursor: pointer; }
+.brew li.cur .chk { border-color: var(--amber); background: var(--amber); color: #fff; }
+.brew li.done .chk { border-color: var(--ok); background: var(--ok); color: #fff; }
+.brew .bs { flex: 1; min-width: 0; }
+.brew .bt { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.brew .bt b { font-size: 15px; }
+.brew small { display: block; font-size: 13px; color: var(--muted); line-height: 1.35; }
+.brew small.next { color: var(--amber-deep); font-weight: 600; margin-top: 3px; }
+.brew .tm { display: inline-flex; align-items: center; gap: 4px; }
+.brew .tm b { font: 600 20px var(--display); font-variant-numeric: tabular-nums; color: var(--muted); }
+.brew .tm.run b { color: var(--amber-deep); }
+.brew .tm button { width: 32px; height: 32px; border-radius: 8px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer; font-size: 13px; }
+.brew .tm.run button[data-timer] { background: var(--amber); border-color: var(--amber); color: #fff; }
+.brew-top h2 { font-size: 24px !important; }
+/* Свой рецепт: форма */
+.sheet form.rc-edit { padding: 0; gap: 12px; margin-top: 8px; }
+.rc-edit textarea { border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 15px; color: var(--ink); width: 100%; font-family: inherit; }
+.rc-edit [name=json] { font: 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; }
+.ed3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ferm-ed { border: 1px solid var(--rule); border-radius: 10px; padding: 6px 10px 8px; margin: 0; min-width: 0; }
+.ferm-ed legend { font-size: 14px; color: var(--muted); padding: 0 4px; }
+.frow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; padding: 5px 0; border-bottom: 1px dashed var(--rule); font-size: 14px; color: var(--muted); }
+.frow input, .frow select { border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 6px 6px; font-size: 15px; color: var(--ink); min-width: 0; }
+.frow input[name=lo], .frow input[name=hi] { width: 58px; }
+.frow input[name=uv] { width: 70px; }
+.frow select { flex: 1 1 110px; }
+.frow .x-row { border: 0; background: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 0 4px; }
+.ed-json summary { cursor: pointer; font-size: 14px; color: var(--teal); font-weight: 600; }
+.ed-json small { display: block; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+/* Новая партия: рецепт и «Варим сейчас | Уже сварено» */
+.seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; background: var(--bg); border-radius: 10px; }
+.seg2 button { border: 0; border-radius: 8px; padding: 8px 6px; background: transparent; color: var(--muted); font-size: 14.5px; font-weight: 600; cursor: pointer; }
+.seg2 button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.bfields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+#recipe-info:empty { display: none; }
+@media (max-width: 380px) { .facts5 b { font-size: 17px; } .facts5 small { font-size: 10.5px; } }
+
 /* Кто подключён к стику */
 .members { background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; padding: 12px; }
 .members h4 { margin: 0 0 6px; font: 600 16px/1.2 var(--display); }
@@ -636,21 +754,31 @@ body.has-install main { padding-bottom: 220px; }
 <dialog id="batch-dlg">
   <form method="dialog" id="batch-form">
     <h2 data-i18n="batchdlg.title"></h2>
-    <label><span data-i18n="batchdlg.style"></span>
-      <select name="style" class="style-select"></select>
-      <small id="style-info"></small>
+    <label><span data-i18n="batchdlg.recipe"></span>
+      <select name="recipe"></select>
+      <small id="recipe-info"></small>
     </label>
-    <label><span data-i18n="batchdlg.fg"></span>
-      <input name="fg" type="number" step="0.1" min="-5" max="30" inputmode="decimal">
-      <small data-i18n="batchdlg.fgHint"></small>
-    </label>
-    <label><span data-i18n="batchdlg.start"></span>
-      <input name="start" type="datetime-local">
-    </label>
+    <div class="seg2" id="bmode" role="group" hidden>
+      <button type="button" data-mode="brew" data-i18n="batchdlg.brewNow"></button>
+      <button type="button" data-mode="ferm" data-i18n="batchdlg.brewed"></button>
+    </div>
+    <div class="bfields" id="bfields">
+      <label><span data-i18n="batchdlg.style"></span>
+        <select name="style" class="style-select"></select>
+        <small id="style-info"></small>
+      </label>
+      <label><span data-i18n="batchdlg.fg"></span>
+        <input name="fg" type="number" step="0.1" min="-5" max="30" inputmode="decimal">
+        <small data-i18n="batchdlg.fgHint"></small>
+      </label>
+      <label><span data-i18n="batchdlg.start"></span>
+        <input name="start" type="datetime-local">
+      </label>
+    </div>
     <small class="field-error" id="batchdlg-error"></small>
     <div class="dialog-actions">
       <button class="secondary" value="cancel" formnovalidate data-i18n="settings.cancel"></button>
-      <button class="primary" value="go" data-i18n="batchdlg.go"></button>
+      <button class="primary" value="go" id="batch-go" data-i18n="batchdlg.go"></button>
     </div>
   </form>
 </dialog>
@@ -1112,6 +1240,7 @@ body.has-install main { padding-bottom: 220px; }
     if ("start" in body) st.batchStart = body.start;
     if ("style" in body) st.style = body.style;
     if ("fg" in body) st.fg = body.fg;
+    if ("recipe" in body) st.recipe = body.recipe;
     save();
   }
 
@@ -1208,10 +1337,12 @@ body.has-install main { padding-bottom: 220px; }
       // Админ ли этот браузер — решает сервер по ключу доступа.
       if ("admin" in data && st.admin !== data.admin) { st.admin = data.admin; save(); }
       if ("style" in data) { st.style = data.style; st.fg = data.fg; save(); }
-      // Норма температуры для оповещений — из стиля; сервер стилей не знает, поэтому передаём её сами.
+      if ("recipe" in data && st.recipe !== data.recipe) { st.recipe = data.recipe; save(); }
+      const recipe = st.recipe ? await loadRecipe(st.recipe, st).catch(() => null) : null;
+      // Норма температуры для оповещений — из рецепта (все шаги плана) или стиля; сервер их не знает.
       if ("range" in data) {
         const style = st.style ? Brew.byId[st.style] : null;
-        const want = style ? style.t : null;
+        const want = recipe ? Recipe.range(recipe) : style ? style.t : null;
         if (JSON.stringify(want) !== JSON.stringify(data.range)) postBatch(st, { range: want }).catch(() => {});
       }
       loadAlerts(st).catch(() => {});
@@ -1433,7 +1564,7 @@ body.has-install main { padding-bottom: 220px; }
     }
   }
   addEventListener("resize", fitStageLabels);
-  function stageNow(a, style) {
+  function stageNow(a, style, rstep) {
     if (!a.stage) return "";
     const cur = (a.stages || []).at(-1);
     let line = escapeHtml(t("stage.since", { stage: t("stage." + a.stage), time: dayTime(cur.from) }));
@@ -1445,7 +1576,9 @@ body.has-install main { padding-bottom: 220px; }
     }
     const r = style && style.t;
     const tip = r ? t(`stage.tip.${a.stage}`, { lo: fmtMax1(r[0]), hi: fmtMax1(r[1]), mid: Math.round((r[0] + r[1]) / 2) }) : t(`stage.tip.${a.stage}NoStyle`);
-    return html + `<p class="st-tip">${escapeHtml(tip)}</p>`;
+    html += `<p class="st-tip">${escapeHtml(tip)}</p>`;
+    if (rstep) html += `<p class="st-tip rc-step">${escapeHtml(t("batch.recipeStep", { t: tempText(rstep.step.temp), note: rstep.step.note ? rloc(rstep.step.note) : untilText(rstep.step.until) }))}</p>`;
+    return html;
   }
   function stagesSheet() {
     const a = view && view.a;
@@ -1468,7 +1601,11 @@ body.has-install main { padding-bottom: 220px; }
     const alarm = a.alarm ? `<p class="st-alarm-text ${a.alarm.id === "stalled" ? "bad" : "warn"}">${escapeHtml(t("stage.since", { stage: t("stage." + a.alarm.id), time: dayTime(a.alarm.from) }))}</p>` : "";
     openSheet(`<div class="top-line"><h2>${escapeHtml(t("stage.listTitle"))}</h2>${closeBtn}</div>${alarm}<ul class="stage-list">${rows}${ahead}</ul>${note}`);
   }
-  $("batchp").addEventListener("click", (e) => { if (e.target.closest("#stages-btn")) stagesSheet(); });
+  $("batchp").addEventListener("click", (e) => {
+    if (e.target.closest("#stages-btn")) stagesSheet();
+    if (e.target.closest("[data-open-recipe]") && cur() && cur().recipe) openRecipe(cur().recipe);
+    if (e.target.closest("#brew-banner")) openBrew();
+  });
 
   // Стрелка тенденции на плитке: up / down / flat; подпись — в title и aria-label.
   const TREND_SVG = {
@@ -1590,17 +1727,23 @@ body.has-install main { padding-bottom: 220px; }
   function renderMain(rows, valid, last, hasBatch, batt, now) {
     $("hero").hidden = false;
     const st = cur() || demoStick;
-    const style = st.style ? Brew.byId[st.style] || null : null;
+    const baseStyle = st.style ? Brew.byId[st.style] || null : null;
     const current = median(valid.slice(-5).map((r) => r.g));
     let og = null;
     if (hasBatch) og = median(valid.filter((r) => r.ts >= st.batchStart).slice(0, 6).map((r) => r.g));
-    const a = Brew.analyze({
+    const input = {
       rows: rows.map((r) => ({ ts: r.ts, g: plausible(r.g) ? r.g : null, temperature: toC(r.temperature, r.temp_units) })),
-      now, batchStart: hasBatch ? st.batchStart : null, og, fgManual: st.fg ?? null, style,
-    });
+      now, batchStart: hasBatch ? st.batchStart : null, og, fgManual: st.fg ?? null,
+    };
+    let a = Brew.analyze({ ...input, style: baseStyle });
+    // С рецептом норма температуры — из текущего шага плана брожения, а не из общего диапазона стиля.
+    const recipe = st.recipe && st.id !== "demo" ? recipes.full[recipeKey(st.recipe, st)] || null : null;
+    const rstep = hasBatch && recipe ? recipeStep(recipe, a, current, st, now) : null;
+    const style = rstep && baseStyle ? { ...baseStyle, t: rstep.t } : baseStyle;
+    if (style !== baseStyle) a = Brew.analyze({ ...input, style });
     const pct = batteryPct(last.battery);
     const fc = batteryForecast(batt);
-    view = { st, style, a, og, current, last, pct, fc, hasBatch };
+    view = { st, style, a, og, current, last, pct, fc, hasBatch, recipe, rstep };
 
     // Плашка
     $("g-icon").innerHTML = icons.gravity();
@@ -1652,12 +1795,19 @@ body.has-install main { padding-bottom: 220px; }
     if (hasBatch) {
       const days = (now - st.batchStart) / 86400e3;
       const basis = { manual: t("batch.basis.manual"), style: t("batch.basis.style", { style: styleName(style) }), default: t("batch.basis.default") }[a.fgSource] || "";
-      let html = `<h3>${escapeHtml(t("batch.title"))}<small>${escapeHtml(t("batch.since", { days: fmt(days, 1), date: dayTime(st.batchStart) }))}</small></h3>
-        <div class="style">${escapeHtml(style ? styleName(style) : t("batch.noStyle"))}</div>`;
+      let html = brewBanner(st) + `<h3>${escapeHtml(t("batch.title"))}<small>${escapeHtml(t("batch.since", { days: fmt(days, 1), date: dayTime(st.batchStart) }))}</small></h3>` +
+        (recipe ? `<button type="button" class="rc-line" data-open-recipe>${ACT_ICONS.book}<b>${escapeHtml(rloc(recipe.name))}</b><small>${escapeHtml(style ? styleName(style) : "")}</small></button>`
+          : `<div class="style">${escapeHtml(style ? styleName(style) : t("batch.noStyle"))}</div>`);
       if (a.progress != null) {
         html += stageScale(a, style) +
           `<div class="scale"><span>${escapeHtml(t("batch.ogShort", { og: fmt(og, 1) }))}</span><span>${escapeHtml(t("batch.now", { g: fmt(current, 1) }))}</span><span>${escapeHtml(t("batch.target", { fg: fmt(a.fg, 1) }))}</span></div>` +
-          stageNow(a, style);
+          stageNow(a, style, rstep);
+      }
+      // НП по рецепту и фактическая: при разнице больше 1 °P прогноз алкоголя — от фактической.
+      if (recipe && og != null) {
+        const d = og - recipe.og;
+        html += `<p class="eta">${escapeHtml(t("batch.ogPlan", { og: fmt(og, 1), plan: fmt(recipe.og, 1), d: (d >= 0 ? "+" : "−") + fmt(Math.abs(d), 1) }))}` +
+          (Math.abs(d) > 1 ? ` · ${escapeHtml(t("batch.ogPlanHint"))}` : "") + `</p>`;
       }
       const left = a.eta ? (a.eta.hi === 0 ? t("batch.ready") : t("batch.leftDays", { lo: fmt(a.eta.lo, a.eta.lo < 2 ? 1 : 0), hi: fmt(a.eta.hi, a.eta.hi < 2 ? 1 : 0) })) : "–";
       html += `<div class="kv">
@@ -1670,10 +1820,14 @@ body.has-install main { padding-bottom: 220px; }
       } else if (og == null) {
         html += `<p class="eta">${escapeHtml(t("batch.waiting", { date: dayTime(st.batchStart) }))}</p>`;
       }
-      bp.innerHTML = html + actionBar(t("act.newBatch"));
-      fitStageLabels();
+      if (a.stage === "done" || a.stage === "ready") html += batchPrimingHtml(rows, a, recipe, style, st, now);
+      // Пока в калькуляторе сахара что-то вводят, ежеминутное обновление панель не перерисовывает.
+      if (!(document.activeElement && bp.contains(document.activeElement) && document.activeElement.closest(".prime"))) {
+        bp.innerHTML = html + actionBar(t("act.newBatch"));
+        fitStageLabels(); fillPrimes(bp);
+      }
     } else {
-      bp.innerHTML = `<p class="hint">${escapeHtml(t("batch.none"))}</p>` + actionBar(t("batch.startNow"));
+      bp.innerHTML = (st.id !== "demo" ? brewBanner(st) : "") + `<p class="hint">${escapeHtml(t("batch.none"))}</p>` + actionBar(t("batch.startNow"));
     }
     $("new-batch").onclick = () => openBatchDialog();
     if ($("ai-btn")) $("ai-btn").onclick = () => openAi();
@@ -1702,6 +1856,8 @@ body.has-install main { padding-bottom: 220px; }
     list: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>`,
     ext: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>`,
   };
+  const BREW_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 9h18"/><path d="M9 5.5c0-1 .7-1.5 1.5-1.5M13 5.5c0-1 .7-1.5 1.5-1.5"/></svg>`;
+  const BOTTLE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4v4l1.5 3v11a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V9L10 6z"/><path d="M8.5 13h7"/></svg>`;
   const actionBar = (first) => `<div class="actbar">
       <button type="button" class="main" id="new-batch">${ACT_ICONS.play}${escapeHtml(first)}</button>
       <button type="button" id="about-style">${ACT_ICONS.book}${escapeHtml(t("act.style"))}</button>
@@ -1711,7 +1867,7 @@ body.has-install main { padding-bottom: 220px; }
 
   // ---------- Справочник стилей и карточка стиля (лист снизу) ----------
   const sheet = $("sheet");
-  let catState = { cat: "all", q: "" };
+  let catState = { cat: "all", q: "", tab: "styles", rf: null };
   const COLOURS = { pale: "#e8c55c", amber: "#c4782a", dark: "#4a2c1d" };
   const closeBtn = `<button class="x" type="button" data-close aria-label="${escapeHtml(t("sheet.close"))}">×</button>`;
   function openSheet(html) {
@@ -1731,7 +1887,11 @@ body.has-install main { padding-bottom: 220px; }
     if (choose) chooseStyle(choose.dataset.choose);
   });
 
-  function openCatalog() { openSheet(catalogHtml()); bindSearch(); }
+  function openCatalog() {
+    openSheet(catalogHtml()); bindSearch();
+    if (catState.tab === "recipes") ensureRecipeLists().then(() => { if (sheet.open && sheet.querySelector(".tabs2")) renderCatalog(); })
+      .catch((e) => { if (sheet.open) $("cat-body").innerHTML = `<p class="hint">${escapeHtml(t("rc.loadError", { message: e.message }))}</p>`; });
+  }
   function renderCatalog() {
     const keep = sheet.querySelector(".cat-search");
     const pos = keep ? keep.selectionStart : null;
@@ -1755,10 +1915,13 @@ body.has-install main { padding-bottom: 220px; }
     const rows = items.map((x) => `<li><button type="button" data-style="${x.id}">
         <span><span class="dot" style="background:${COLOURS[StyleGuide.colour(x.id)]}"></span>${escapeHtml(x.name[lang] || x.name.en)}${x.id === cur0 ? ` <span class="cur">✓</span>` : ""}</span>
         <small>${rangeText(x.t)} °C · ${rangeText(x.abv)}%</small></button></li>`).join("");
-    return `<div class="top-line"><h2>${escapeHtml(t("catalog.title"))}</h2>${closeBtn}</div>
-      <input class="cat-search" type="search" value="${escapeHtml(catState.q)}" placeholder="${escapeHtml(t("catalog.search"))}" autocomplete="off">
-      <div class="cats">${cats}</div>
-      ${rows ? `<ul class="cat-list">${rows}</ul>` : `<p class="hint">${escapeHtml(t("catalog.empty"))}</p>`}`;
+    const tabs = ["styles", "recipes"].map((k) => `<button type="button" data-tab="${k}" aria-pressed="${k === catState.tab}">${escapeHtml(t("catalog.tab." + k))}</button>`).join("");
+    const body = catState.tab === "recipes" ? recipesHtml()
+      : `<div class="cats">${cats}</div>${rows ? `<ul class="cat-list">${rows}</ul>` : `<p class="hint">${escapeHtml(t("catalog.empty"))}</p>`}`;
+    return `<div class="top-line"><h2>${escapeHtml(t("catalog.guide"))}</h2>${closeBtn}</div>
+      <div class="tabs2" role="group">${tabs}</div>
+      <input class="cat-search" type="search" value="${escapeHtml(catState.q)}" placeholder="${escapeHtml(t(catState.tab === "recipes" ? "rc.search" : "catalog.search"))}" autocomplete="off">
+      <div id="cat-body">${body}</div>`;
   }
 
   function openStyle(id, fromCatalog = false) {
@@ -1814,6 +1977,588 @@ body.has-install main { padding-bottom: 220px; }
     } else {
       sheet.close(); openBatchDialog(id);
     }
+  }
+
+  // ---------- Рецепты ----------
+  // Библиотека — файлы recipes/ (их кэширует service worker, работают офлайн), свои — на сервере у стика.
+  // Ссылка на рецепт: lib:<id> или my:<id>. Избранное хранится в этом браузере.
+  const recipes = { lib: null, my: {}, full: {} };
+  const rloc = (v) => Recipe.loc(v, I18N.lang());
+  const recipeKey = (ref, st = cur()) => ref.startsWith("my:") ? `${st ? st.id : ""}|${ref}` : ref;
+  async function loadLib() {
+    if (!recipes.lib) {
+      const res = await fetch("recipes/index.json");
+      if (!res.ok) throw new Error(String(res.status));
+      recipes.lib = await res.json();
+    }
+    return recipes.lib;
+  }
+  async function loadMine(st, force = false) {
+    if (!st || !apiBase()) return [];
+    if (!force && recipes.my[st.id]) return recipes.my[st.id];
+    const data = await api("/api/recipes", {}, st.access);
+    recipes.my[st.id] = data.recipes || [];
+    return recipes.my[st.id];
+  }
+  async function loadRecipe(ref, st = cur()) {
+    const key = recipeKey(ref, st);
+    if (recipes.full[key]) return recipes.full[key];
+    const [src, id] = ref.split(":");
+    let r;
+    if (src === "lib") {
+      const res = await fetch(`recipes/${id}.json`);
+      if (!res.ok) throw new Error(String(res.status));
+      r = await res.json();
+    } else {
+      r = await api("/api/recipes/" + encodeURIComponent(id), {}, st.access);
+    }
+    recipes.full[key] = r;
+    return r;
+  }
+  async function apiSend(method, path, body, st = cur()) {
+    const res = await fetch(apiBase() + path, {
+      method, headers: { "Content-Type": "application/json", "X-Access": st.access },
+      body: body == null ? undefined : JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || String(res.status));
+    return data;
+  }
+  // Привязать рецепт к партии: стиль, цель КП и норма температуры — из рецепта.
+  const recipeBatch = (ref, r) => ({ recipe: ref, style: Brew.byId[r.style] ? r.style : null, fg: r.fg, range: Recipe.range(r) });
+
+  // Избранное: свои рецепты — отдельно для каждого стика.
+  const favKey = (ref) => ref.startsWith("my:") ? `${ref}@${cur() ? cur().id : ""}` : ref;
+  const isFav = (ref) => (cfg.favs || []).includes(favKey(ref));
+  function toggleFav(ref) {
+    const k = favKey(ref), favs = cfg.favs || [];
+    cfg.favs = favs.includes(k) ? favs.filter((x) => x !== k) : favs.concat(k);
+    save();
+  }
+
+  // Цвет пива по EBC — для полоски в списке.
+  function ebcColour(ebc) {
+    const stops = [[5, "#f1dc7c"], [9, "#e8c55c"], [14, "#dca443"], [22, "#c9862e"], [35, "#a45a22"], [55, "#6b3419"], [Infinity, "#2b1810"]];
+    return stops.find(([e]) => (ebc ?? 10) <= e)[1];
+  }
+  const fmtKg = (kg) => kg < 1 ? `${fmtMax1(Math.round(kg * 1000))} ${t("u.g")}` : `${(Math.round(kg * 100) / 100).toLocaleString(I18N.locale())} ${t("u.kg")}`;
+  const fmtG = (g) => g >= 1000 ? fmtKg(g / 1000) : `${fmtMax1(g >= 20 ? Math.round(g) : Math.round(g * 10) / 10)} ${t("u.g")}`;
+  const fmtL = (l) => `${fmtMax1(Math.round(l * 2) / 2)} ${t("u.l")}`;
+  const untilText = (u) => u.stage ? t("rc.until.stage", { stage: t("stage." + u.stage) })
+    : u.plato != null ? t("rc.until.plato", { p: fmtMax1(u.plato) }) : t("rc.until.days", { n: u.days });
+  const tempText = (r) => r[0] === r[1] ? `${fmtMax1(r[0])} °C` : `${fmtMax1(r[0])}–${fmtMax1(r[1])} °C`;
+  function hopUse(h) {
+    if (h.use === "boil") return t("rc.hop.boil", { min: h.min ?? 0 });
+    if (h.use === "whirlpool") return t("rc.hop.whirlpool", { min: h.min ?? 0, temp: h.temp ?? 80 });
+    if (h.use === "dry") return t("rc.hop.dry", { n: h.days ?? 3 });
+    return t("rc.hop." + h.use);
+  }
+  // Текущий шаг плана брожения и его норма (одна точка — ±0,5 °C, чтобы было куда попасть).
+  function recipeStep(r, a, current, st, now) {
+    if (!r || !r.fermentation || !r.fermentation.length) return null;
+    const i = Recipe.stepIndex(r, { stage: a.stage, gravity: current, days: st.batchStart ? (now - st.batchStart) / 86400e3 : null });
+    const s = r.fermentation[i], [lo, hi] = s.temp;
+    return { i, step: s, t: lo === hi ? [lo - 0.5, hi + 0.5] : [lo, hi] };
+  }
+
+  // ----- Справочник: вкладка «Рецепты» -----
+  function recipeItems() {
+    const st = cur(), mine = (st && recipes.my[st.id]) || [];
+    return (recipes.lib || []).map((x) => ({ ...x, ref: "lib:" + x.id, mine: false }))
+      .concat(mine.map((x) => ({ ...x, ref: "my:" + x.id, mine: true })));
+  }
+  function recipesHtml() {
+    const st = cur(), lang = I18N.lang();
+    if (!recipes.lib) return `<p class="hint">${escapeHtml(t("rc.loading"))}</p>`;
+    const all = recipeItems();
+    const batchStyle = st && st.style;
+    if (!catState.rf) catState.rf = all.some((x) => isFav(x.ref)) ? "fav" : batchStyle && all.some((x) => x.style === batchStyle) ? "style" : "all";
+    const q = catState.q.trim().toLowerCase();
+    const items = all
+      .filter((x) => catState.rf === "fav" ? isFav(x.ref) : catState.rf === "style" ? x.style === batchStyle : catState.rf === "mine" ? x.mine : true)
+      .filter((x) => !q || [rloc(x.name), Recipe.loc(x.name, "en"), styleName(Brew.byId[x.style])].some((s) => s && s.toLowerCase().includes(q)));
+    const chips = [["fav", "★ " + t("rc.f.fav")], ["style", t("rc.f.style")], ["mine", t("rc.f.mine")], ["all", t("rc.f.all")]]
+      .filter(([k]) => k !== "style" || batchStyle)
+      .map(([k, label]) => `<button type="button" data-rf="${k}" aria-pressed="${k === catState.rf}">${escapeHtml(label)}</button>`).join("");
+    const nums = (x) => [styleName(Brew.byId[x.style]) || x.style, `${fmt(x.og, 1)} → ${fmt(x.fg, 1)} °P`, x.abv != null ? fmt(x.abv, 1) + " %" : null, x.ibu != null ? x.ibu + " IBU" : null].filter(Boolean).join(" · ");
+    const rows = items.map((x) => `<li class="rc-item">
+        <button type="button" class="rc-open" data-recipe="${x.ref}"><i class="ebc" style="background:${ebcColour(x.ebc)}"></i>
+          <span><b>${escapeHtml(rloc(x.name))}</b>${x.mine ? ` <span class="tag">${escapeHtml(t("rc.mineTag"))}</span>` : ""}${st && st.recipe === x.ref ? ` <span class="cur">✓</span>` : ""}
+          <small>${escapeHtml(nums(x))}</small></span></button>
+        <button type="button" class="star" data-fav="${x.ref}" aria-pressed="${isFav(x.ref)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button></li>`).join("");
+    const empty = catState.rf === "fav" ? t("rc.emptyFav") : catState.rf === "mine" ? t(isAdmin(st) ? "rc.emptyMine" : "rc.emptyMineGuest") : t("catalog.empty");
+    const tools = catState.rf === "mine" && isAdmin(st) ? `<div class="rc-tools"><button type="button" class="link" data-import>${escapeHtml(t("rc.import"))}</button></div>` : "";
+    return `<div class="cats">${chips}</div>
+      ${rows ? `<ul class="rc-list">${rows}</ul>` : `<p class="hint">${escapeHtml(empty)}</p>`}${tools}
+      <p class="hint rc-note">${escapeHtml(t("rc.libNote"))}</p>`;
+  }
+  async function ensureRecipeLists() {
+    const st = cur();
+    await Promise.all([loadLib(), st ? loadMine(st).catch(() => []) : null]);
+  }
+
+  // ----- Карточка рецепта -----
+  let rcView = null; // { ref, r, liters }
+  async function openRecipe(ref, liters) {
+    let r;
+    try { r = await loadRecipe(ref); } catch (e) { notice(escapeHtml(t("rc.loadError", { message: e.message })), "error"); return; }
+    rcView = { ref, r, liters: liters || r.batch_l };
+    openSheet(recipeHtml());
+  }
+  function recipeBody() {
+    const { r, liters } = rcView, k = liters / r.batch_l;
+    const sec = (title, total, items) => `<div class="rc-sec"><h4>${escapeHtml(title)}${total ? `<span>${escapeHtml(total)}</span>` : ""}</h4>${items.map(([a, b]) => `<div class="li"><span>${escapeHtml(a)}</span><span>${escapeHtml(b || "")}</span></div>`).join("")}</div>`;
+    let html = "";
+    const ferm = r.fermentables || [];
+    if (ferm.length) html += sec(t("rc.grist"), fmtKg(ferm.reduce((s, x) => s + x.kg, 0) * k), ferm.map((x) => [rloc(x.name), fmtKg(x.kg * k)]));
+    const hops = r.hops || [];
+    if (hops.length) html += sec(t("rc.hops"), fmtG(hops.reduce((s, x) => s + x.g, 0) * k),
+      hops.map((x) => [`${x.name}${x.alpha != null ? ` ${fmtMax1(x.alpha)} %` : ""} · ${hopUse(x)}`, fmtG(x.g * k)]));
+    if ((r.other || []).length) html += sec(t("rc.other"), "", r.other.map((x) => [rloc(x.name) + (x.use === "boil" && x.min != null ? ` · ${t("rc.hop.boil", { min: x.min })}` : ""), x.g != null ? fmtG(x.g * k) : ""]));
+    if (r.yeast) html += sec(t("rc.yeast"), r.yeast.name, [[[r.yeast.amount, (r.yeast.alt || []).length ? t("rc.yeastAlt", { alt: r.yeast.alt.join(", ") }) : ""].filter(Boolean).join(" · "), ""]]);
+    const w = r.water || {};
+    if (w.mash_l || w.sparge_l || w.preboil_l) html += sec(t("rc.water"), "", [
+      [t("rc.waterMash"), w.mash_l ? fmtL(w.mash_l * k) : ""], [t("rc.waterSparge"), w.sparge_l ? fmtL(w.sparge_l * k) : ""], [t("rc.waterPreboil"), w.preboil_l ? fmtL(w.preboil_l * k) : ""],
+    ].filter(([, v]) => v));
+    const mash = r.mash || [];
+    if (mash.length) html += sec(t("rc.mash"), t("rc.mashTotal", { n: mash.length, min: mash.reduce((s, x) => s + x.min, 0) }),
+      [[mash.map((x) => `${fmtMax1(x.temp)} °C ${x.min} ${t("unit.min")}`).join(" → "), ""]]);
+    if (r.boil_min) html += sec(t("rc.boil"), `${r.boil_min} ${t("unit.min")}`, []);
+    html += sec(t("rc.plan"), "", r.fermentation.map((x) => [`${tempText(x.temp)} · ${untilText(x.until)}`, ""]).concat([]));
+    html += `<ul class="rc-notes">${r.fermentation.filter((x) => x.note).map((x) => `<li>${escapeHtml(rloc(x.note))}</li>`).join("")}</ul>`;
+    if (r.priming) {
+      html += `<div class="rc-sec"><h4>${escapeHtml(t("rc.carb"))}<span>${escapeHtml(t("prime.vol", { v: fmtMax1(r.priming.vol_co2) }))}</span></h4></div>` +
+        primingHtml("rc", { liters: Math.max(1, liters - 1), vol: r.priming.vol_co2, tc: 20, sugar: r.priming.sugar || "sucrose" }, t("prime.tcRecipe"));
+    }
+    if (r.notes) html += `<p class="rc-text">${escapeHtml(rloc(r.notes))}</p>`;
+    return html;
+  }
+  function recipeHtml() {
+    const { ref, r, liters } = rcView, st = cur();
+    const style = Brew.byId[r.style];
+    const mine = ref.startsWith("my:"), admin = isAdmin(st);
+    const isCur = st && st.recipe === ref;
+    const sub = [style ? styleName(style) : r.style, fmtL(r.batch_l), r.efficiency ? t("rc.eff", { p: Math.round(r.efficiency * 100) }) : null, r.tested === false ? t("rc.untested") : null].filter(Boolean).join(" · ");
+    const facts = [["rc.og", fmt(r.og, 1)], ["rc.fg", fmt(r.fg, 1)], ["rc.abv", r.abv != null ? fmt(r.abv, 1) + "%" : "–"], ["IBU", r.ibu ?? "–"], ["EBC", r.ebc ?? "–"]]
+      .map(([k, v]) => `<div><small>${escapeHtml(k.startsWith("rc.") ? t(k) : k)}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
+    const lo = Math.max(1, Math.round(r.batch_l / 4)), hi = Math.round(r.batch_l * 3);
+    const links = [
+      !mine && admin ? `<button type="button" class="link" data-rc-copy>${escapeHtml(t("rc.copy"))}</button>` : "",
+      mine && admin ? `<button type="button" class="link" data-rc-edit>${escapeHtml(t("rc.edit"))}</button>` : "",
+      `<button type="button" class="link" data-rc-export>${escapeHtml(t("rc.export"))}</button>`,
+      mine && admin ? `<button type="button" class="link danger" data-rc-delete>${escapeHtml(t("rc.delete"))}</button>` : "",
+      isCur ? `<button type="button" class="link" data-rc-unbind>${escapeHtml(t("rc.unbind"))}</button>` : "",
+    ].join("");
+    const hasBatch = view && view.hasBatch && st;
+    const main = st ? `<div class="rc-foot">
+        ${hasBatch && !isCur ? `<button type="button" class="wide" data-rc-use>${escapeHtml(t("rc.useNow"))}</button>` : ""}
+        <button type="button" data-rc-ferment>${escapeHtml(t("rc.fermentNow"))}</button>
+        <button type="button" class="main" data-rc-brew>${BREW_ICON}${escapeHtml(t("rc.brew"))}</button></div>` : "";
+    return `<div class="top-line"><button class="back" type="button" data-back>← ${escapeHtml(t("act.catalog"))}</button>
+        <button type="button" class="star big" data-fav="${ref}" aria-pressed="${isFav(ref)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button>${closeBtn}</div>
+      <h2>${escapeHtml(rloc(r.name))}</h2>
+      <div class="sub">${escapeHtml(sub)}</div>
+      ${isCur ? `<span class="current-mark">✓ ${escapeHtml(t("rc.current"))}</span>` : ""}
+      <div class="facts5">${facts}</div>
+      <label class="rc-vol"><span>${escapeHtml(t("rc.volume"))}<b id="rc-l">${escapeHtml(fmtL(liters))}</b></span>
+        <input type="range" id="rc-liters" min="${lo}" max="${hi}" step="1" value="${Math.round(liters)}"></label>
+      <div id="rc-body">${recipeBody()}</div>
+      <div class="rc-links">${links}</div>
+      ${main}`;
+  }
+  function exportRecipe(r) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(r, null, 2) + "\n"], { type: "application/json" }));
+    a.download = r.id + ".json";
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  }
+  async function useRecipe(ref, r) {
+    const st = cur();
+    try { await postBatch(st, recipeBatch(ref, r)); }
+    catch (e) { notice(escapeHtml(t("err.batch", { message: e.message })), "error"); return; }
+    sheet.close(); refresh();
+  }
+
+  // ----- Сахар для розлива -----
+  // Газация по умолчанию, если рецепта нет: по типу дрожжей стиля.
+  const CO2_BY_YEAST = { wheat: 3.3, belgian: 3.0, sour: 3.0, lager: 2.6, hybrid: 2.6, ale: 2.4, cider: 2.5 };
+  function primingHtml(id, p, tcNote) {
+    const num = (name, v, step, min, max) => `<input name="${name}" type="number" inputmode="decimal" step="${step}" min="${min}" max="${max}" value="${v}">`;
+    return `<div class="prime" data-prime="${id}">
+      <div class="pr-big"><small data-pr="what"></small><b data-pr="total"></b><small data-pr="basis"></small></div>
+      <div class="pr-bottles">${[0.33, 0.5, 0.75].map((l) => `<div><b data-pr-b="${l}"></b><small>${fmt(l, l === 0.5 ? 1 : 2)} ${escapeHtml(t("u.l"))}</small></div>`).join("")}</div>
+      <div class="pr-in">
+        <label>${escapeHtml(t("prime.liters"))}${num("liters", Math.round(p.liters * 2) / 2, 0.5, 0.5, 500)}</label>
+        <label>${escapeHtml(t("prime.co2"))}${num("vol", p.vol, 0.1, 1, 5)}</label>
+        <label>${escapeHtml(t("prime.tc"))}${num("tc", Math.round(p.tc * 10) / 10, 0.5, -2, 35)}</label>
+        <label>${escapeHtml(t("prime.sugar"))}<select name="sugar">${["sucrose", "dextrose"].map((s) => `<option value="${s}"${s === p.sugar ? " selected" : ""}>${escapeHtml(t("prime." + s))}</option>`).join("")}</select></label>
+      </div>
+      <p class="pr-warn" data-pr="warn"></p>
+      <p class="pr-note">${escapeHtml(tcNote)}</p></div>`;
+  }
+  function updatePrime(box) {
+    const v = (n) => parseFloat(String(box.querySelector(`[name=${n}]`).value).replace(",", "."));
+    const liters = v("liters"), vol = v("vol"), tc = v("tc"), sugar = box.querySelector("[name=sugar]").value;
+    const ok = [liters, vol, tc].every(Number.isFinite);
+    const p = ok ? Recipe.priming({ vol, tc, liters, sugar }) : null;
+    const other = ok ? Recipe.priming({ vol, tc, liters, sugar: sugar === "dextrose" ? "sucrose" : "dextrose" }) : null;
+    const set = (k, s) => { box.querySelector(`[data-pr="${k}"]`).textContent = s; };
+    set("what", t("prime.what", { sugar: t("prime." + sugar).toLowerCase() }));
+    set("total", p ? `${Math.round(p.total)} ${t("u.g")}` : "–");
+    set("basis", p ? t("prime.basis", { l: fmtMax1(liters), v: fmtMax1(vol), tc: fmtMax1(tc), perL: fmt(p.perL, 1) }) : "");
+    box.querySelectorAll("[data-pr-b]").forEach((el) => { el.textContent = p ? `${fmt(p.bottle(Number(el.dataset.prB)), 1)} ${t("u.g")}` : "–"; });
+    const warn = [];
+    if (p && p.thick) warn.push(t("prime.thick"));
+    if (p && p.perL === 0) warn.push(t("prime.none"));
+    if (other && other.total > 0) warn.push(t(sugar === "dextrose" ? "prime.altSucrose" : "prime.altDextrose", { g: Math.round(other.total) }));
+    set("warn", warn.join(" "));
+    box.querySelector('[data-pr="warn"]').classList.toggle("bad", !!(p && p.thick));
+    if (box.dataset.prime === "batch" && cur()) {
+      try { localStorage.setItem(`ispindel.prime.${cur().id}`, JSON.stringify({ liters, vol, sugar, batch: cur().batchStart })); } catch { /* приватный режим */ }
+    }
+  }
+  document.addEventListener("input", (e) => { const box = e.target.closest("[data-prime]"); if (box) updatePrime(box); });
+  document.addEventListener("change", (e) => { const box = e.target.closest("[data-prime]"); if (box) updatePrime(box); });
+  const fillPrimes = (root) => root.querySelectorAll("[data-prime]").forEach(updatePrime);
+  // Карточка «Розлив» на главной: объём — из рецепта (минус литр на осадок), газация — из рецепта или
+  // по стилю, температура — максимальная с начала «Проверки», но не меньше чем за последние 48 ч.
+  function batchPrimingHtml(rows, a, recipe, style, st, now) {
+    const checking = (a.stages || []).find((x) => x.id === "checking");
+    const from = Math.min(now - 48 * 3600e3, checking ? checking.from : Infinity);
+    const temps = rows.filter((r) => r.ts >= from && r.temperature != null).map((r) => toC(r.temperature, r.temp_units));
+    const tc = temps.length ? Math.max(...temps) : 20;
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(`ispindel.prime.${st.id}`) || "null"); } catch { /* нет */ }
+    if (saved && saved.batch !== st.batchStart) saved = null;
+    const p = {
+      liters: saved ? saved.liters : recipe ? recipe.batch_l - 1 : 19,
+      vol: saved ? saved.vol : recipe && recipe.priming ? recipe.priming.vol_co2 : style ? CO2_BY_YEAST[style.yeast] || 2.5 : 2.5,
+      sugar: saved ? saved.sugar : recipe && recipe.priming && recipe.priming.sugar || "sucrose", tc,
+    };
+    return `<div class="bottling"><h4>${BOTTLE_ICON}${escapeHtml(t("prime.title"))}<small>${escapeHtml(t("stage." + a.stage))}</small></h4>
+      ${primingHtml("batch", p, t("prime.tcBatch", { tc: fmtMax1(Math.round(tc * 10) / 10) }))}</div>`;
+  }
+
+  // ----- День варки -----
+  // Состояние — в этом браузере: рецепт, объём, отмеченные шаги и таймер {i, end | left}.
+  const brewKey = (st) => `ispindel.brew.${st.id}`;
+  const getBrew = (st) => { try { return st ? JSON.parse(localStorage.getItem(brewKey(st)) || "null") : null; } catch { return null; } };
+  const setBrew = (st, b) => { try { b ? localStorage.setItem(brewKey(st), JSON.stringify(b)) : localStorage.removeItem(brewKey(st)); } catch { /* приватный режим */ } };
+  function brewSteps(r, liters) {
+    const k = liters / r.batch_l, w = r.water || {}, S = [];
+    const mash = r.mash || [];
+    if (w.mash_l || w.sparge_l) S.push({ title: t("brew.water"), sub: [w.mash_l && t("brew.waterMash", { l: fmtL(w.mash_l * k) }), w.sparge_l && t("brew.waterSparge", { l: fmtL(w.sparge_l * k) })].filter(Boolean).join(", ") });
+    const grist = (r.fermentables || []).filter((x) => !x.use || x.use === "mash").map((x) => `${rloc(x.name)} ${fmtKg(x.kg * k)}`)
+      .concat((r.other || []).filter((x) => x.use === "mash").map((x) => `${rloc(x.name)} ${fmtG(x.g * k)}`));
+    if (grist.length) S.push({ title: mash.length ? t("brew.mashIn", { temp: fmtMax1(mash[0].temp) }) : t("brew.mashInPlain"), sub: grist.join(", ") });
+    mash.forEach((m) => S.push({ title: t("brew.rest", { temp: fmtMax1(m.temp), min: m.min }), sub: "", min: m.min }));
+    if (mash.length || w.sparge_l) S.push({ title: t("brew.sparge"), sub: w.preboil_l ? t("brew.preboil", { l: fmtL(w.preboil_l * k) }) : "" });
+    const adds = (r.hops || []).filter((x) => x.use === "boil" || x.use === "first_wort").map((x) => ({ min: x.use === "first_wort" ? r.boil_min || 60 : x.min ?? 0, text: `${x.name} ${fmtG(x.g * k)}` }))
+      .concat((r.fermentables || []).filter((x) => x.use === "boil").map((x) => ({ min: x.min ?? 0, text: `${rloc(x.name)} ${fmtKg(x.kg * k)}` })))
+      .concat((r.other || []).filter((x) => x.use === "boil").map((x) => ({ min: x.min ?? 0, text: `${rloc(x.name)}${x.g != null ? " " + fmtG(x.g * k) : ""}` })))
+      .sort((p, q) => q.min - p.min);
+    const boil = r.boil_min || 60;
+    S.push({ title: t("brew.boil", { min: boil }), sub: adds.map((x) => t("brew.add", { min: x.min, what: x.text })).join("; "), min: boil, adds });
+    const wp = (r.hops || []).filter((x) => x.use === "whirlpool");
+    if (wp.length) S.push({ title: t("brew.whirlpool", { min: wp[0].min ?? 15, temp: wp[0].temp ?? 80 }), sub: wp.map((x) => `${x.name} ${fmtG(x.g * k)}`).join(", "), min: wp[0].min ?? 15 });
+    S.push({ title: t("brew.cool", { temp: fmtMax1(r.fermentation[0].temp[0]) }), sub: t("brew.coolSub") });
+    if (r.yeast) S.push({ title: t("brew.yeast"), sub: [r.yeast.name, r.yeast.amount].filter(Boolean).join(" · ") });
+    return S;
+  }
+  const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60; return `${h ? h + ":" + String(m).padStart(2, "0") : m}:${String(s % 60).padStart(2, "0")}`; };
+  const timerLeft = (tm) => tm.end ? tm.end - Date.now() : tm.left;
+  async function startBrew(ref, liters) {
+    const st = cur();
+    if (!st) return;
+    let r;
+    try { r = await loadRecipe(ref); } catch (e) { notice(escapeHtml(t("rc.loadError", { message: e.message })), "error"); return; }
+    const old = getBrew(st);
+    if (old && (old.ref !== ref || old.liters !== liters) && old.done.length && !confirm(t("brew.replace", { name: old.name }))) { openBrew(); return; }
+    if (!old || old.ref !== ref || old.liters !== liters) setBrew(st, { ref, liters: liters || r.batch_l, name: rloc(r.name), done: [], timer: null, started: Date.now() });
+    openBrew();
+  }
+  let brewView = null; // { b, r, steps }
+  async function openBrew() {
+    const st = cur(), b = getBrew(st);
+    if (!b) return;
+    let r;
+    try { r = await loadRecipe(b.ref); } catch (e) { notice(escapeHtml(t("rc.loadError", { message: e.message })), "error"); return; }
+    brewView = { b, r, steps: brewSteps(r, b.liters) };
+    openSheet(brewHtml());
+  }
+  function brewHtml() {
+    const { b, steps } = brewView;
+    const curI = steps.findIndex((_, i) => !b.done.includes(i));
+    const items = steps.map((s, i) => {
+      const done = b.done.includes(i), isCur = i === curI;
+      const tm = b.timer && b.timer.i === i ? b.timer : null;
+      let timer = "";
+      if (s.min && !done) {
+        const left = tm ? timerLeft(tm) : s.min * 60e3, run = tm && tm.end;
+        timer = `<span class="tm${run ? " run" : ""}"><b data-left="${i}">${mmss(left)}</b>
+          <button type="button" data-timer="${i}" aria-label="${escapeHtml(t(run ? "brew.pause" : "brew.start"))}">${run ? "❚❚" : "▶"}</button>
+          ${tm ? `<button type="button" data-timer-reset="${i}" aria-label="${escapeHtml(t("brew.reset"))}">↺</button>` : ""}</span>`;
+      }
+      const next = s.adds && tm ? `<small class="next" data-next="${i}">${escapeHtml(nextAdd(s, tm))}</small>` : "";
+      return `<li class="${done ? "done" : isCur ? "cur" : ""}"><button type="button" class="chk" data-step="${i}" aria-pressed="${done}" aria-label="${escapeHtml(t("brew.mark"))}">${done ? "✓" : i + 1}</button>
+        <div class="bs"><div class="bt"><b>${escapeHtml(s.title)}</b>${timer}</div>${s.sub ? `<small>${escapeHtml(s.sub)}</small>` : ""}${next}</div></li>`;
+    }).join("");
+    return `<div class="top-line brew-top"><h2>${escapeHtml(t("brew.title", { name: b.name }))}</h2>${closeBtn}</div>
+      <div class="sub">${escapeHtml(fmtL(b.liters))} · ${escapeHtml(curI < 0 ? t("brew.allDone") : t("brew.stepOf", { i: curI + 1, n: steps.length }))}</div>
+      <ol class="brew">${items}</ol>
+      <p class="hint">${escapeHtml(t("brew.hint"))}</p>
+      <div class="rc-links"><button type="button" class="link" data-recipe="${b.ref}" data-liters="${b.liters}">${escapeHtml(t("brew.recipe"))}</button>
+        <button type="button" class="link danger" data-brew-cancel>${escapeHtml(t("brew.cancel"))}</button></div>
+      <div class="rc-foot"><button type="button" data-close>${escapeHtml(t("settings.close"))}</button>
+        <button type="button" class="main teal" data-brew-go>${escapeHtml(t("brew.go"))}</button></div>`;
+  }
+  // Кипячение: что и когда закладывать дальше (минуты в рецепте — до конца кипячения;
+  // закладки «на всё время» идут сразу при старте и в подсказку не попадают).
+  function nextAdd(s, tm) {
+    const leftMin = timerLeft(tm) / 60e3;
+    const nx = s.adds.find((x) => x.min < s.min && x.min < leftMin);
+    return nx ? t("brew.next", { what: nx.text, in: mmss((leftMin - nx.min) * 60e3) }) : "";
+  }
+  function brewSave() { setBrew(cur(), brewView.b); }
+  function brewRerender() { const y = sheet.scrollTop; $("sheet-body").innerHTML = brewHtml(); sheet.scrollTop = y; }
+  // Раз в секунду: время на таймере, «что дальше»; конец таймера — шаг отмечен, вибрация и уведомление.
+  setInterval(() => {
+    const st = cur(), b = st && getBrew(st);
+    if (b && b.timer && b.timer.end && b.timer.end <= Date.now()) {
+      const i = b.timer.i;
+      b.timer = null; if (!b.done.includes(i)) b.done.push(i);
+      setBrew(st, b);
+      try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch { /* нет вибрации */ }
+      if ("Notification" in window && Notification.permission === "granted" && navigator.serviceWorker) {
+        navigator.serviceWorker.ready.then((reg) => reg.showNotification(t("brew.timerDone"), { body: b.name, tag: "brew", icon: "icons/icon-192.png" })).catch(() => {});
+      }
+      if (brewView && sheet.open && sheet.querySelector(".brew")) { brewView.b = b; brewRerender(); }
+      const banner = $("brew-banner"); if (banner) banner.outerHTML = brewBanner(st);
+      return;
+    }
+    if (brewView && sheet.open && sheet.querySelector(".brew") && b && b.timer) {
+      const el = sheet.querySelector(`[data-left="${b.timer.i}"]`);
+      if (el) el.textContent = mmss(timerLeft(b.timer));
+      const nx = sheet.querySelector(`[data-next="${b.timer.i}"]`);
+      if (nx) nx.textContent = nextAdd(brewView.steps[b.timer.i], b.timer);
+    }
+    const bt = document.querySelector("#brew-banner [data-bt]");
+    if (bt && b && b.timer) bt.textContent = "⏱ " + mmss(timerLeft(b.timer));
+  }, 1000);
+  function brewBanner(st) {
+    const b = getBrew(st);
+    if (!b) return "";
+    const tm = b.timer ? `<span data-bt>⏱ ${mmss(timerLeft(b.timer))}</span>` : "";
+    return `<button type="button" class="brew-banner" id="brew-banner">${BREW_ICON}<span><b>${escapeHtml(t("brew.banner", { name: b.name }))}</b>
+      <small>${escapeHtml(t("brew.bannerSub", { n: b.done.length }))}</small></span>${tm}<i>›</i></button>`;
+  }
+  // Плашка «Идёт варка» в панели партии — после закрытия листа варки или отмены.
+  function syncBrewBanner() {
+    const st = cur(), bp = $("batchp");
+    if (!st || !bp) return;
+    const old = $("brew-banner"), html = brewBanner(st);
+    if (old) old.outerHTML = html; else if (html) bp.insertAdjacentHTML("afterbegin", html);
+  }
+  sheet.addEventListener("close", () => { brewView = null; syncBrewBanner(); });
+  async function brewGo(btn) {
+    const st = cur(), { b, r } = brewView;
+    const start = Date.now();
+    if (!confirmReset(st, start)) return;
+    btn.classList.add("loading"); btn.disabled = true;
+    try { await postBatch(st, { start, ...recipeBatch(b.ref, r) }); }
+    catch (e) { notice(escapeHtml(t("err.batch", { message: e.message })), "error"); btn.classList.remove("loading"); btn.disabled = false; return; }
+    setBrew(st, null); brewView = null;
+    cfg.range = "batch"; rangePicked = false;
+    sheet.close(); syncRanges(); refresh();
+  }
+
+  // ----- Свои рецепты: простая форма и JSON -----
+  const STAGE_IDS = ["lag", "active", "slowing", "checking", "done", "ready"];
+  function fermRow(s, i) {
+    const u = s.until || { stage: "done" }, type = u.stage ? "stage" : u.plato != null ? "plato" : "days";
+    return `<div class="frow" data-frow="${i}">
+      <input name="lo" type="number" step="0.5" value="${s.temp[0]}" aria-label="${escapeHtml(t("ed.lo"))}"><span>–</span>
+      <input name="hi" type="number" step="0.5" value="${s.temp[1]}" aria-label="${escapeHtml(t("ed.hi"))}"><span>°C</span>
+      <select name="ut">${["stage", "plato", "days"].map((k) => `<option value="${k}"${k === type ? " selected" : ""}>${escapeHtml(t("ed.until." + k))}</option>`).join("")}</select>
+      <select name="us"${type === "stage" ? "" : " hidden"}>${STAGE_IDS.map((k) => `<option value="${k}"${k === u.stage ? " selected" : ""}>${escapeHtml(t("stage." + k))}</option>`).join("")}</select>
+      <input name="uv" type="number" step="0.5"${type === "stage" ? " hidden" : ""} value="${type === "plato" ? u.plato : type === "days" ? u.days : ""}" aria-label="${escapeHtml(t("ed.value"))}">
+      <button type="button" class="x-row" data-frow-del="${i}" aria-label="${escapeHtml(t("ed.delStep"))}">×</button></div>`;
+  }
+  let edView = null; // { r, isNew }
+  function openEditor(r, isNew) {
+    edView = { r: JSON.parse(JSON.stringify(r)), isNew };
+    const st = cur(), lang = I18N.lang();
+    const styles = Brew.STYLES.map((x) => [x.id, x.name[lang] || x.name.en]).sort((p, q) => p[1].localeCompare(q[1], I18N.locale()))
+      .map(([id, name]) => `<option value="${id}"${id === r.style ? " selected" : ""}>${escapeHtml(name)}</option>`).join("");
+    const num = (name, v, step) => `<input name="${name}" type="number" inputmode="decimal" step="${step}" value="${v ?? ""}" required>`;
+    openSheet(`<div class="top-line"><h2>${escapeHtml(t(isNew ? "ed.new" : "ed.title"))}</h2>${closeBtn}</div>
+      <form class="rc-edit" id="rc-edit" novalidate>
+        <label>${escapeHtml(t("ed.name"))}<input name="name" maxlength="80" required value="${escapeHtml(rloc(r.name))}"></label>
+        <label>${escapeHtml(t("batchdlg.style"))}<select name="style">${styles}</select></label>
+        <div class="ed3"><label>${escapeHtml(t("rc.og"))}, °P${num("og", r.og, 0.1)}</label><label>${escapeHtml(t("rc.fg"))}, °P${num("fg", r.fg, 0.1)}</label>
+          <label>${escapeHtml(t("rc.volume"))}, ${escapeHtml(t("u.l"))}${num("batch_l", r.batch_l, 1)}</label></div>
+        <label>${escapeHtml(t("prime.co2"))}${num("vol", r.priming ? r.priming.vol_co2 : 2.5, 0.1)}</label>
+        <fieldset class="ferm-ed"><legend>${escapeHtml(t("rc.plan"))}</legend><div id="frows">${r.fermentation.map(fermRow).join("")}</div>
+          <button type="button" class="link" data-frow-add>${escapeHtml(t("ed.addStep"))}</button></fieldset>
+        <label>${escapeHtml(t("ed.notes"))}<textarea name="notes" rows="3" maxlength="2000">${escapeHtml(r.notes ? rloc(r.notes) : "")}</textarea></label>
+        <details class="ed-json"><summary>${escapeHtml(t("ed.json"))}</summary>
+          <textarea name="json" rows="12" spellcheck="false" autocapitalize="off">${escapeHtml(JSON.stringify(r, null, 2))}</textarea>
+          <small>${escapeHtml(t("ed.jsonHint"))}</small></details>
+        <small class="field-error" id="ed-err"></small>
+        <div class="rc-foot"><button type="button" data-close>${escapeHtml(t("settings.close"))}</button>
+          <button type="submit" class="main">${escapeHtml(t("settings.save"))}</button></div>
+      </form>`);
+    $("rc-edit").addEventListener("submit", (e) => { e.preventDefault(); saveEditor(e.submitter || e.target.querySelector("[type=submit]")); });
+    $("rc-edit").addEventListener("change", (e) => {
+      if (e.target.name !== "ut") return;
+      const row = e.target.closest(".frow"), k = e.target.value;
+      row.querySelector("[name=us]").hidden = k !== "stage";
+      row.querySelector("[name=uv]").hidden = k === "stage";
+    });
+  }
+  function editorRecipe() {
+    const f = $("rc-edit"), lang = I18N.lang();
+    let base;
+    try { base = JSON.parse(f.elements.json.value); } catch (e) { throw new Error(t("ed.badJson", { message: e.message })); }
+    if (!base || typeof base !== "object") throw new Error(t("ed.badJson", { message: "—" }));
+    const n = (v) => { const x = parseFloat(String(v).replace(",", ".")); return Number.isFinite(x) ? x : NaN; };
+    // Изменённое название или заметки заменяют все переводы: старые были бы про другой рецепт.
+    const text = (old, v) => {
+      if (!v) return undefined;
+      if (rloc(old) === v) return old;
+      return lang === "en" || lang === "ru" ? { [lang]: v } : { [lang]: v, en: v };
+    };
+    const r = { ...base, v: 1 };
+    r.name = text(base.name, f.elements.name.value.trim());
+    r.style = f.elements.style.value;
+    r.og = n(f.elements.og.value); r.fg = n(f.elements.fg.value); r.batch_l = n(f.elements.batch_l.value);
+    if (Number.isFinite(r.og) && Number.isFinite(r.fg) && r.og > r.fg) r.abv = Math.round(Brew.abv(r.og, r.fg) * 10) / 10;
+    r.priming = { ...(base.priming || {}), vol_co2: n(f.elements.vol.value) };
+    r.fermentation = [...f.querySelectorAll(".frow")].map((row, i) => {
+      const old = (base.fermentation || [])[Number(row.dataset.frow)] || {};
+      const ut = row.querySelector("[name=ut]").value, uv = n(row.querySelector("[name=uv]").value);
+      return { ...old, until: ut === "stage" ? { stage: row.querySelector("[name=us]").value } : { [ut]: uv },
+        temp: [n(row.querySelector("[name=lo]").value), n(row.querySelector("[name=hi]").value)] };
+    });
+    const notes = text(base.notes, f.elements.notes.value.trim());
+    if (notes) r.notes = notes; else delete r.notes;
+    return r;
+  }
+  async function saveEditor(btn) {
+    const st = cur();
+    let r;
+    try { r = editorRecipe(); } catch (e) { $("ed-err").textContent = e.message; return; }
+    const mine = await loadMine(st).catch(() => []);
+    // Новому рецепту — свободный id (копия библиотечного получает приставку -my).
+    if (edView.isNew) {
+      const base = (String(r.id || "recipe").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "recipe").slice(0, 34);
+      let id = base, k = 2;
+      while (mine.some((x) => x.id === id)) id = `${base}-${k++}`;
+      r.id = id;
+    }
+    const err = Recipe.check(r, Brew.STYLES.map((x) => x.id));
+    if (err.length) { $("ed-err").textContent = t("ed.invalid", { errors: err.slice(0, 4).join("; ") }); return; }
+    btn.classList.add("loading"); btn.disabled = true;
+    try { await apiSend("PUT", "/api/recipes/" + r.id, r); }
+    catch (e) { $("ed-err").textContent = t("ed.saveError", { message: e.message }); btn.classList.remove("loading"); btn.disabled = false; return; }
+    recipes.full[recipeKey("my:" + r.id, st)] = r;
+    await loadMine(st, true).catch(() => {});
+    if (st.recipe === "my:" + r.id) refresh();
+    openRecipe("my:" + r.id);
+  }
+  function importRecipe() {
+    const inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".json,application/json";
+    inp.onchange = async () => {
+      const file = inp.files && inp.files[0];
+      if (!file) return;
+      let r;
+      try { r = JSON.parse(await file.text()); } catch (e) { alert(t("ed.badJson", { message: e.message })); return; }
+      if (!r || typeof r !== "object" || !Array.isArray(r.fermentation)) { alert(t("ed.badFile")); return; }
+      openEditor(r, true);
+    };
+    inp.click();
+  }
+
+  // Клики в листе, относящиеся к рецептам.
+  sheet.addEventListener("click", async (e) => {
+    const el = (sel) => e.target.closest(sel);
+    if (el("[data-tab]")) { catState.tab = el("[data-tab]").dataset.tab; openCatalog(); return; }
+    if (el("[data-rf]")) { catState.rf = el("[data-rf]").dataset.rf; renderCatalog(); return; }
+    if (el("[data-fav]")) {
+      const b = el("[data-fav]"); toggleFav(b.dataset.fav); b.setAttribute("aria-pressed", String(isFav(b.dataset.fav)));
+      if (catState.rf === "fav" && sheet.querySelector(".rc-list")) renderCatalog();
+      return;
+    }
+    if (el("[data-recipe]")) { const b = el("[data-recipe]"); openRecipe(b.dataset.recipe, Number(b.dataset.liters) || undefined); return; }
+    if (el("[data-import]")) { importRecipe(); return; }
+    if (el("[data-frow-add]")) {
+      const box = $("frows"), last = box.lastElementChild, lo = last ? last.querySelector("[name=hi]").value : 18;
+      box.insertAdjacentHTML("beforeend", fermRow({ temp: [Number(lo), Number(lo)], until: { stage: "done" } }, 1000 + box.children.length));
+      return;
+    }
+    if (el("[data-frow-del]")) { const box = $("frows"); if (box.children.length > 1) el("[data-frow-del]").closest(".frow").remove(); return; }
+    // День варки
+    if (el("[data-step]") && brewView) {
+      const i = Number(el("[data-step]").dataset.step), b = brewView.b;
+      b.done = b.done.includes(i) ? b.done.filter((x) => x !== i) : b.done.concat(i);
+      if (b.timer && b.timer.i === i && b.done.includes(i)) b.timer = null;
+      brewSave(); brewRerender(); return;
+    }
+    if (el("[data-timer]") && brewView) {
+      const i = Number(el("[data-timer]").dataset.timer), b = brewView.b, s = brewView.steps[i];
+      if (b.timer && b.timer.i === i) b.timer = b.timer.end ? { i, end: null, left: b.timer.end - Date.now() } : { i, end: Date.now() + b.timer.left };
+      else b.timer = { i, end: Date.now() + s.min * 60e3 };
+      brewSave(); brewRerender(); return;
+    }
+    if (el("[data-timer-reset]") && brewView) { brewView.b.timer = null; brewSave(); brewRerender(); return; }
+    if (el("[data-brew-cancel]")) {
+      if (!confirm(t("brew.cancelConfirm"))) return;
+      setBrew(cur(), null); brewView = null; sheet.close(); refresh(); return;
+    }
+    if (el("[data-brew-go]") && brewView) { brewGo(el("[data-brew-go]")); return; }
+    // Карточка рецепта
+    if (!rcView || !sheet.querySelector("#rc-body")) return;
+    const { ref, r } = rcView;
+    if (el("[data-rc-brew]")) startBrew(ref, rcView.liters);
+    else if (el("[data-rc-ferment]")) { sheet.close(); openBatchDialog(r.style, ref, "ferm"); }
+    else if (el("[data-rc-use]")) useRecipe(ref, r);
+    else if (el("[data-rc-unbind]")) {
+      try { await postBatch(cur(), { recipe: null }); } catch (err) { notice(escapeHtml(t("err.batch", { message: err.message })), "error"); return; }
+      sheet.close(); refresh();
+    }
+    else if (el("[data-rc-export]")) exportRecipe(r);
+    else if (el("[data-rc-copy]")) openEditor({ ...r, id: r.id + "-my", source: `copy of lib:${r.id}`, tested: r.tested }, true);
+    else if (el("[data-rc-edit]")) openEditor(r, false);
+    else if (el("[data-rc-delete]")) {
+      if (!confirm(t("rc.confirmDelete", { name: rloc(r.name) }))) return;
+      const st = cur();
+      try { await apiSend("DELETE", "/api/recipes/" + r.id); } catch (err) { notice(escapeHtml(t("rc.deleteError", { message: err.message })), "error"); return; }
+      delete recipes.full[recipeKey(ref, st)];
+      if (st.recipe === ref) { st.recipe = null; save(); }
+      await loadMine(st, true).catch(() => {});
+      catState.tab = "recipes"; catState.rf = "mine"; openCatalog(); refresh();
+    }
+  });
+  sheet.addEventListener("input", (e) => {
+    if (e.target.id !== "rc-liters" || !rcView) return;
+    rcView.liters = Number(e.target.value);
+    $("rc-l").textContent = fmtL(rcView.liters);
+    $("rc-body").innerHTML = recipeBody();
+    fillPrimes($("rc-body"));
+  });
+  new MutationObserver(() => fillPrimes($("sheet-body"))).observe($("sheet-body"), { childList: true });
+
+  // Выжимка рецепта для AI: НП/КП, засыпь, хмель, дрожжи, план брожения (текущий шаг), газация.
+  function recipeBrief(r, stepI) {
+    const en = (v) => Recipe.loc(v, "en");
+    const r1 = (x) => String(Math.round(x * 10) / 10);
+    const plan = r.fermentation.map((x, i) => `${i === stepI ? "*" : ""}${r1(x.temp[0])}-${r1(x.temp[1])}C>${x.until.stage || (x.until.plato != null ? x.until.plato + "P" : "d" + x.until.days)}`).join(",");
+    return [`recipe ${en(r.name)} OG${r1(r.og)}/FG${r1(r.fg)} ${r.batch_l}L`,
+      "malt " + (r.fermentables || []).map((x) => `${en(x.name).replace(/\s*\(.*\)/, "")} ${x.kg}`).join(","),
+      "hops " + (r.hops || []).map((x) => `${x.name} ${x.g}g@${x.use === "dry" ? "dry" : x.use === "whirlpool" ? "wp" : x.min}`).join(","),
+      r.yeast ? "yeast " + r.yeast.name : "", "plan " + plan, r.priming ? "co2 " + r.priming.vol_co2 : ""].filter(Boolean).join("; ");
   }
 
   // ---------- Всплывающие подсказки ----------
@@ -1954,7 +2699,10 @@ body.has-install main { padding-bottom: 220px; }
   const parseFg = (v) => { const n = parseFloat(String(v).replace(",", ".")); return Number.isFinite(n) ? Math.round(n * 10) / 10 : null; };
 
   const bdlg = $("batch-dlg"), bform = $("batch-form");
-  function openBatchDialog(preStyle) {
+  // Рецепт (избранные первыми) и режим: «Варим сейчас» — день варки по шагам, партия начнётся
+  // с «Начать брожение»; «Уже сварено» — сразу партия с целями из рецепта.
+  let bmode = "brew";
+  async function openBatchDialog(preStyle, preRecipe, mode) {
     const st = cur();
     if (!st) { $("open-settings").click(); return; }
     fillStyles(bform.elements.style, preStyle || st.style);
@@ -1963,8 +2711,41 @@ body.has-install main { padding-bottom: 220px; }
     bform.elements.start.value = toLocalInput(Date.now());
     $("style-info").textContent = styleInfo(preStyle || st.style);
     $("batchdlg-error").textContent = "";
+    const sel = bform.elements.recipe;
+    sel.innerHTML = `<option value="">${escapeHtml(t("batchdlg.noRecipe"))}</option>`;
+    $("recipe-info").textContent = "";
+    bmode = mode || "brew";
+    syncBatchMode();
     bdlg.showModal();
+    await ensureRecipeLists().catch(() => {});
+    const items = recipeItems(), opt = (x) => `<option value="${x.ref}">${escapeHtml(rloc(x.name))}</option>`;
+    const group = (label, list) => list.length ? `<optgroup label="${escapeHtml(label)}">${list.map(opt).join("")}</optgroup>` : "";
+    sel.innerHTML = `<option value="">${escapeHtml(t("batchdlg.noRecipe"))}</option>` +
+      group("★ " + t("rc.f.fav"), items.filter((x) => isFav(x.ref))) + group(t("rc.f.mine"), items.filter((x) => x.mine)) + group(t("rc.lib"), items.filter((x) => !x.mine));
+    sel.value = preRecipe || "";
+    if (preRecipe) await applyRecipeChoice(); else syncBatchMode();
   }
+  function syncBatchMode() {
+    const ref = bform.elements.recipe.value, brew = !!ref && bmode === "brew";
+    $("bmode").hidden = !ref;
+    $("bmode").querySelectorAll("[data-mode]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.mode === bmode)));
+    $("bfields").hidden = brew;
+    $("batch-go").textContent = t(brew ? "batchdlg.goBrew" : "batchdlg.go");
+  }
+  async function applyRecipeChoice() {
+    const ref = bform.elements.recipe.value;
+    syncBatchMode();
+    if (!ref) { $("recipe-info").textContent = ""; return; }
+    let r;
+    try { r = await loadRecipe(ref); } catch (e) { $("recipe-info").textContent = t("rc.loadError", { message: e.message }); return; }
+    if (bform.elements.recipe.value !== ref) return;
+    bform.elements.style.value = Brew.byId[r.style] ? r.style : "";
+    bform.elements.fg.value = r.fg;
+    $("style-info").textContent = styleInfo(r.style);
+    $("recipe-info").textContent = t("batchdlg.recipeInfo", { fg: fmt(r.fg, 1), t: tempText(Recipe.range(r)), co2: r.priming ? fmtMax1(r.priming.vol_co2) : "–", l: fmtMax1(r.batch_l) });
+  }
+  bform.elements.recipe.addEventListener("change", applyRecipeChoice);
+  $("bmode").addEventListener("click", (e) => { const b = e.target.closest("[data-mode]"); if (b) { bmode = b.dataset.mode; syncBatchMode(); } });
   bform.elements.style.addEventListener("change", (e) => {
     $("style-info").textContent = styleInfo(e.target.value);
     bform.elements.fg.placeholder = fgPlaceholder(e.target.value);
@@ -1972,10 +2753,15 @@ body.has-install main { padding-bottom: 220px; }
   bform.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (e.submitter && e.submitter.value === "cancel") { bdlg.close(); return; }
-    const st = cur();
+    const st = cur(), ref = bform.elements.recipe.value;
+    const r = ref ? await loadRecipe(ref).catch(() => null) : null;
+    if (ref && !r) { $("batchdlg-error").textContent = t("rc.loadError", { message: "" }); return; }
+    if (r && bmode === "brew") { bdlg.close(); startBrew(ref, r.batch_l); return; }
     const start = bform.elements.start.value ? new Date(bform.elements.start.value).getTime() : Date.now();
     if (!confirmReset(st, start)) return;
-    try { await postBatch(st, { start, style: bform.elements.style.value || null, fg: parseFg(bform.elements.fg.value) }); }
+    const body = { start, style: bform.elements.style.value || null, fg: parseFg(bform.elements.fg.value), recipe: ref || null };
+    if (r) body.range = Recipe.range(r);
+    try { await postBatch(st, body); }
     catch (err) { $("batchdlg-error").textContent = t("err.batch", { message: err.message }); return; }
     cfg.range = "batch"; rangePicked = false;
     bdlg.close(); syncRanges(); refresh();
@@ -2693,6 +3479,7 @@ body.has-install main { padding-bottom: 220px; }
     const ts = a.temp.stats || {};
     if (ts.min != null) p.push(`T24 ${r1(ts.min)}-${r1(ts.max)}`);
     if (a.abvNow != null) p.push(`abv${r1(a.abvNow)}${a.projAbv != null ? ">" + r1(a.projAbv) : ""}`);
+    if (view.recipe) p.push("| " + recipeBrief(view.recipe, view.rstep ? view.rstep.i : -1));
     return p.join(" ");
   }
   const resetIn = (ts) => { const m = Math.max(0, Math.round((ts - Date.now()) / 60e3)); return t("ai.resetIn", { h: Math.floor(m / 60), m: m % 60 }); };

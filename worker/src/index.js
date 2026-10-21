@@ -18,6 +18,8 @@
 //   GET  /api/ai            — AI-помощник: включён ли, лимит на сегодня, чат текущей партии
 //   POST /api/ai/ask        — {question, context, lang}: вопрос AI (лимит в сутки на стик)
 //   POST /api/ai/config|test — админ: движок, ключ, лимит, длина ответа; проверка ключа
+//   GET  /api/recipes       — свои рецепты стика (краткий список); /api/recipes/<id> — рецепт целиком
+//   PUT|DELETE /api/recipes/<id> — админ: сохранить или удалить свой рецепт (не больше 50 на стик)
 //   GET  /api/health        — проверка
 //
 // Токен стика знают iSpindel и тот, кто его зарегистрировал; зарегистрировать токен можно
@@ -39,6 +41,7 @@ const TOKEN_MAX = 64;
 
 import { onReading, onSchedule, pushApi, alertsList, vapidKeys } from "./push.js";
 import { aiState, aiConfig, aiTest, aiAsk } from "./ai.js";
+import { recipesApi } from "./recipes.js";
 
 export default {
   async scheduled(event, env, ctx) {
@@ -93,6 +96,11 @@ export default {
         if (url.pathname === "/api/ai/ask") return await aiAsk(request, env, stick, json, cors);
         if (url.pathname === "/api/ai/config") return await aiConfig(request, env, stick, json, cors);
         if (url.pathname === "/api/ai/test") return await aiTest(env, stick, json, cors);
+      }
+      if (url.pathname === "/api/recipes" || url.pathname.startsWith("/api/recipes/")) {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        return await recipesApi(request, env, stick, url, json, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/batch") {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
@@ -178,7 +186,7 @@ async function stickByAccess(env, key, request) {
   if (!key) return null;
   const keyHash = await sha256(key);
   const stick = await env.DB.prepare(
-    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, t.t_lo, t.t_hi, a.last_used, a.user_agent, a.kind AS key_kind
+    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, t.t_lo, t.t_hi, t.recipe, a.last_used, a.user_agent, a.kind AS key_kind
      FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1`
   ).bind(keyHash).first();
   if (stick && request) {
@@ -299,7 +307,7 @@ async function register(request, env, cors) {
 
 // Миграции выполняются один раз: номер версии схемы лежит в таблице meta, и дальше
 // каждый новый экземпляр воркера тратит на проверку одно чтение, а не обход таблиц.
-const SCHEMA_VERSION = 10;
+const SCHEMA_VERSION = 11;
 let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
@@ -329,7 +337,7 @@ async function ensureSchema(env) {
   if (!tokenCols.includes("fg_target")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN fg_target REAL").run();
   if (!tokenCols.includes("t_lo")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_lo REAL").run();
   if (!tokenCols.includes("t_hi")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_hi REAL").run();
-  for (const [col, type] of [["ai_engine", "TEXT"], ["ai_key", "TEXT"], ["ai_limit", "INTEGER"], ["ai_len", "TEXT"]]) {
+  for (const [col, type] of [["ai_engine", "TEXT"], ["ai_key", "TEXT"], ["ai_limit", "INTEGER"], ["ai_len", "TEXT"], ["recipe", "TEXT"]]) {
     if (!tokenCols.includes(col)) await env.DB.prepare(`ALTER TABLE tokens ADD COLUMN ${col} ${type}`).run();
   }
   const fixes = [
@@ -369,6 +377,9 @@ async function ensureSchema(env) {
       id INTEGER PRIMARY KEY AUTOINCREMENT, token_hash TEXT NOT NULL, batch_start INTEGER, ts INTEGER NOT NULL,
       key_hash TEXT, user_agent TEXT, question TEXT, answer TEXT, lang TEXT, tokens_in INTEGER, tokens_out INTEGER)`),
     env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_ai_log ON ai_log (token_hash, ts)"),
+    // Свои рецепты стика (JSON в формате web/recipe.js).
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS recipes (
+      owner TEXT NOT NULL, id TEXT NOT NULL, json TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY (owner, id))`),
     env.DB.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('schema', ?1)").bind(String(SCHEMA_VERSION)),
   );
   await env.DB.batch(fixes);
@@ -464,6 +475,12 @@ async function setBatch(request, env, stick, cors) {
     if (!ok) return json({ error: "bad range" }, 400, cors);
     sets.push("t_lo", "t_hi"); params.push(r ? r[0] : null, r ? r[1] : null);
   }
+  if ("recipe" in body) {
+    // Рецепт партии: lib:<id> — из библиотеки приложения, my:<id> — свой рецепт стика.
+    const r = body.recipe;
+    if (r !== null && !(typeof r === "string" && /^(lib|my):[a-z0-9-]{1,40}$/.test(r))) return json({ error: "bad recipe" }, 400, cors);
+    sets.push("recipe"); params.push(r);
+  }
   if (!sets.length) return json({ error: "nothing to update" }, 400, cors);
   const sql = `UPDATE tokens SET ${sets.map((c, i) => `${c} = ?${i + 1}`).join(", ")} WHERE hash = ?${sets.length + 1}`;
   await env.DB.prepare(sql).bind(...params, stick.hash).run();
@@ -492,7 +509,7 @@ async function devices(env, stick, cors) {
      FROM latest WHERE owner = ?1 ORDER BY device`
   ).bind(owner).all();
   return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", units: stick.units || "auto",
-    style: stick.style ?? null, fg: stick.fg_target ?? null, range: stick.t_lo != null ? [stick.t_lo, stick.t_hi] : null, admin: stick.key_kind === "owner", devices: results }, 200, cors);
+    style: stick.style ?? null, fg: stick.fg_target ?? null, recipe: stick.recipe ?? null, range: stick.t_lo != null ? [stick.t_lo, stick.t_hi] : null, admin: stick.key_kind === "owner", devices: results }, 200, cors);
 }
 
 // История. ?after=ts — только новые строки после ts (приложение так догружает раз в минуту).
@@ -553,7 +570,7 @@ function corsHeaders(request, env) {
   if (!allowed.includes("*")) value = origin && allowed.includes(origin) ? origin : allowed[0];
   return {
     "Access-Control-Allow-Origin": value,
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, X-Access",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",

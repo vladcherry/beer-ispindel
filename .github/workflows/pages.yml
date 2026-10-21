@@ -3,7 +3,7 @@ name: Pages
 on:
   push:
     branches: [main]
-    paths: ["web/**", ".github/workflows/pages.yml"]
+    paths: ["web/**", "scripts/check-recipes.mjs", ".github/workflows/pages.yml"]
   workflow_dispatch:
 
 permissions:
@@ -23,6 +23,10 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+
+      # Встроенные рецепты: формат, стиль, НП > КП, index.json совпадает с файлами.
+      - name: Check recipes
+        run: node scripts/check-recipes.mjs
 
       # Новая версия кэша service worker'а на каждый деплой — телефоны подтянут обновление сами.
       - name: Stamp service worker version
