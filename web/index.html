@@ -899,6 +899,12 @@ body.has-install main { padding-bottom: 220px; }
           <small data-i18n="settings.unitsHint"></small>
           <small class="field-error" id="units-error"></small>
         </label>
+        <label><span data-i18n="settings.tcal"></span>
+          <input name="tcal" type="number" step="0.1" min="-10" max="10" inputmode="decimal" placeholder="0">
+          <small id="tcal-now"></small>
+          <small data-i18n="settings.tcalHint"></small>
+          <small class="field-error" id="tcal-error"></small>
+        </label>
         <label><span data-i18n="settings.formula"></span>
           <input name="formula" type="text" placeholder="-0.0322987*tilt^2+2.643882645*tilt-38.64180015" autocomplete="off" spellcheck="false">
           <small data-i18n="settings.formulaHint"></small>
@@ -1372,6 +1378,7 @@ body.has-install main { padding-bottom: 220px; }
         st.formulaSynced = true; save();
       }
       if ("units" in data && st.units !== data.units) { st.units = data.units; save(); }
+      if ("t_offset" in data && (st.tOffset || 0) !== data.t_offset) { st.tOffset = data.t_offset; save(); }
       // Админ ли этот браузер — решает сервер по ключу доступа.
       if ("admin" in data && st.admin !== data.admin) { st.admin = data.admin; save(); }
       if ("style" in data) { st.style = data.style; st.fg = data.fg; save(); }
@@ -1410,9 +1417,11 @@ body.has-install main { padding-bottom: 220px; }
       const from = Math.min(rangeFrom, hasBatch ? st.batchStart : rangeFrom, now - 26 * 3600e3);
       const readings = await loadHistory(st, from, now);
 
+      // Калибровка температуры (°C) — сразу при загрузке: дальше плитка, графики, анализ и сахар видят поправленную.
       const rows = readings.map((r) => ({
         ...r,
         g: formula && r.angle != null ? formula(r.angle) : r.gravity,
+        temperature: calTemp(r.temperature, r.temp_units, st),
       }));
       // Плотность в SG (у iSpindel или у формулы) переводим в °P до всех расчётов.
       const sample = hasBatch ? rows.filter((r) => r.ts >= st.batchStart).slice(0, 12) : rows;
@@ -1420,7 +1429,8 @@ body.has-install main { padding-bottom: 220px; }
       const units = st.units === "SG" || st.units === "P" ? st.units : detectedUnits;
       if (units === "SG") rows.forEach((r) => { if (r.g != null) r.g = platoFromSG(r.g); });
       const valid = rows.filter((r) => plausible(r.g));
-      const last = devices.find((d) => d.device === cfg.device);
+      const last0 = devices.find((d) => d.device === cfg.device);
+      const last = { ...last0, temperature: calTemp(last0.temperature, last0.temp_units, st) };
 
       const batt = await loadBattery(st);
       renderMain(rows, valid, last, hasBatch, batt, now);
@@ -1541,6 +1551,8 @@ body.has-install main { padding-bottom: 220px; }
   let view = null;   // всё, что нужно всплывающим подсказкам
   const toC = (v, u) => v == null ? null : u === "F" ? (v - 32) * 5 / 9 : u === "K" ? v - 273.15 : v;
   const tUnit = (u) => u === "F" ? "°F" : u === "K" ? "K" : "°C";
+  // Поправка к температуре задаётся в °C; в °F градус в 1,8 раза меньше.
+  const calTemp = (v, u, st) => v == null || !st || !st.tOffset ? v : Math.round((v + st.tOffset * (u === "F" ? 1.8 : 1)) * 100) / 100;
   const styleName = (st) => st ? (st.name[I18N.lang()] || st.name.en) : "";
   // Числа в текстах: измеренные значения — с одним знаком, границы и счётчики — как есть.
   const fmtMax1 = (v) => v.toLocaleString(I18N.locale(), { maximumFractionDigits: 1 });
@@ -2685,7 +2697,9 @@ body.has-install main { padding-bottom: 220px; }
     }
     if (id === "band-t") {
       const s = a.temp.stats || {};
+      const off = view.st && view.st.tOffset;
       return `<h4>${escapeHtml(t("device.temperature"))} ${fmt(last.temperature, 1)} ${u}</h4>` + dl([
+        ["pop.temp.cal", off ? (off > 0 ? "+" : "−") + fmt(Math.abs(off), 1) + " °C" : null],
         ["pop.temp.mean", s.mean != null ? fmt(s.mean, 1) + " °C" : null],
         ["pop.temp.range", s.min != null ? `${fmt(s.min, 1)} – ${fmt(s.max, 1)} °C` : null],
         ["pop.temp.swing", s.swing != null ? fmt(s.swing, 1) + " °C" : null],
@@ -3186,6 +3200,14 @@ body.has-install main { padding-bottom: 220px; }
     try { host = new URL(base).hostname; } catch { /* ещё не адрес */ }
     $("guide-fallback").textContent = t("guide.fallback", { host });
   }
+  // Под полем калибровки: что показывает iSpindel и что получится с поправкой.
+  function syncTcalNow() {
+    const st = cur(), d = devices.find((x) => x.device === cfg.device);
+    const raw = d && st === cur() ? toC(d.temperature, d.temp_units) : null;
+    const off = parseFloat(String(form.elements.tcal.value).replace(",", "."));
+    $("tcal-now").textContent = raw == null ? "" : t("settings.tcalNow", { raw: fmt(raw, 1), cal: fmt(raw + (Number.isFinite(off) ? off : 0), 1) });
+  }
+  form.elements.tcal.addEventListener("input", syncTcalNow);
   // Партия и формула — у каждого стика свои.
   function syncForm() {
     const st = cur();
@@ -3199,6 +3221,10 @@ body.has-install main { padding-bottom: 220px; }
     $("profile-error").textContent = "";
     form.elements.units.value = (st && st.units) || "auto";
     form.elements.units.disabled = !st;
+    form.elements.tcal.value = st && st.tOffset ? st.tOffset : "";
+    form.elements.tcal.disabled = !st;
+    $("tcal-error").textContent = "";
+    syncTcalNow();
     $("units-detected").textContent = detectedUnits ? t("units.detected", { units: t("units." + detectedUnits) }) : "";
     $("units-error").textContent = "";
     form.elements.batchStart.disabled = form.elements.formula.disabled = $("batch-now").disabled = !st;
@@ -3344,6 +3370,20 @@ body.has-install main { padding-bottom: 220px; }
           if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
         } catch (err) { $("units-error").textContent = t("err.unitsSave", { message: err.message }); return; }
         st.units = units;
+        save();
+      }
+      // Калибровка температуры — общая для стика (и для push-оповещений о температуре).
+      const tcalRaw = form.elements.tcal.value.trim().replace(",", ".");
+      const tcal = tcalRaw === "" ? 0 : Math.round(parseFloat(tcalRaw) * 100) / 100;
+      if (!Number.isFinite(tcal) || Math.abs(tcal) > 10) { $("tcal-error").textContent = t("err.tcal"); form.elements.tcal.focus(); return; }
+      if (tcal !== (st.tOffset || 0)) {
+        try {
+          const res = await fetch(apiBase() + "/api/tcal", {
+            method: "POST", headers: { "Content-Type": "application/json", "X-Access": st.access }, body: JSON.stringify({ offset: tcal }),
+          });
+          if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+        } catch (err) { $("tcal-error").textContent = t("err.tcalSave", { message: err.message }); return; }
+        st.tOffset = tcal;
         save();
       }
       const formula = form.elements.formula.value.trim();

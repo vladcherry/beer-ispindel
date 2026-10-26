@@ -5,6 +5,7 @@
 //   POST /api/batch         — {start, style, fg, range, recipe, marks}: партия, общая для всех, у кого есть доступ
 //   POST /api/formula       — {formula: "…" | ""}: полином плотности по наклону, тоже общий для стика
 //   POST /api/units         — {units: "auto" | "P" | "SG"}: в чём iSpindel (или формула) считает плотность
+//   POST /api/tcal          — {offset: °C}: поправка к температуре iSpindel, общая для стика (−10…10)
 //   GET  /api/devices       — устройства стика с последним показанием
 //   GET  /api/readings      — история: ?device=&from=&to= (ms UTC)
 //   GET  /api/battery       — среднее напряжение по часам для прогноза батареи: ?device=&days=14
@@ -112,6 +113,17 @@ export default {
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await setFormula(request, env, stick, cors);
       }
+      if (request.method === "POST" && url.pathname === "/api/tcal") {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        let body;
+        try { body = await request.json(); } catch { return json({ error: "bad json" }, 400, cors); }
+        const off = body && body.offset;
+        if (!(typeof off === "number" && Number.isFinite(off) && off >= -10 && off <= 10)) return json({ error: "bad offset" }, 400, cors);
+        const v = Math.round(off * 100) / 100;
+        await env.DB.prepare("UPDATE tokens SET t_offset = ?1 WHERE hash = ?2").bind(v || null, stick.hash).run();
+        return json({ offset: v }, 200, cors);
+      }
       if (request.method === "POST" && url.pathname === "/api/units") {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
@@ -176,7 +188,7 @@ function randomKey() {
 // Стик по токену (для приёма показаний).
 async function stickByToken(env, token) {
   if (!token) return null;
-  return await env.DB.prepare("SELECT hash, id, batch_start, t_lo, t_hi FROM tokens WHERE hash = ?1").bind(await sha256(token)).first();
+  return await env.DB.prepare("SELECT hash, id, batch_start, t_lo, t_hi, t_offset FROM tokens WHERE hash = ?1").bind(await sha256(token)).first();
 }
 
 // Стик по ключу доступа (для чтения). Заодно отмечаем, когда и с какого браузера ключом пользовались —
@@ -186,7 +198,7 @@ async function stickByAccess(env, key, request) {
   if (!key) return null;
   const keyHash = await sha256(key);
   const stick = await env.DB.prepare(
-    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, t.t_lo, t.t_hi, t.recipe, t.stage_marks, a.last_used, a.user_agent, a.kind AS key_kind
+    `SELECT t.hash, t.id, t.batch_start, t.formula, t.units, t.style, t.fg_target, t.t_lo, t.t_hi, t.recipe, t.stage_marks, t.t_offset, a.last_used, a.user_agent, a.kind AS key_kind
      FROM access_keys a JOIN tokens t ON t.hash = a.token_hash WHERE a.hash = ?1`
   ).bind(keyHash).first();
   if (stick && request) {
@@ -307,7 +319,7 @@ async function register(request, env, cors) {
 
 // Миграции выполняются один раз: номер версии схемы лежит в таблице meta, и дальше
 // каждый новый экземпляр воркера тратит на проверку одно чтение, а не обход таблиц.
-const SCHEMA_VERSION = 12;
+const SCHEMA_VERSION = 13;
 let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
@@ -337,7 +349,7 @@ async function ensureSchema(env) {
   if (!tokenCols.includes("fg_target")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN fg_target REAL").run();
   if (!tokenCols.includes("t_lo")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_lo REAL").run();
   if (!tokenCols.includes("t_hi")) await env.DB.prepare("ALTER TABLE tokens ADD COLUMN t_hi REAL").run();
-  for (const [col, type] of [["ai_engine", "TEXT"], ["ai_key", "TEXT"], ["ai_limit", "INTEGER"], ["ai_len", "TEXT"], ["recipe", "TEXT"], ["stage_marks", "TEXT"]]) {
+  for (const [col, type] of [["ai_engine", "TEXT"], ["ai_key", "TEXT"], ["ai_limit", "INTEGER"], ["ai_len", "TEXT"], ["recipe", "TEXT"], ["stage_marks", "TEXT"], ["t_offset", "REAL"]]) {
     if (!tokenCols.includes(col)) await env.DB.prepare(`ALTER TABLE tokens ADD COLUMN ${col} ${type}`).run();
   }
   const fixes = [
@@ -516,7 +528,7 @@ async function devices(env, stick, cors) {
     `SELECT ts, device, chip_id, angle, temperature, temp_units, battery, gravity, interval_s, rssi
      FROM latest WHERE owner = ?1 ORDER BY device`
   ).bind(owner).all();
-  return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", units: stick.units || "auto",
+  return json({ stick: stick.id, batch_start: stick.batch_start ?? null, formula: stick.formula ?? "", units: stick.units || "auto", t_offset: stick.t_offset ?? 0,
     style: stick.style ?? null, fg: stick.fg_target ?? null, recipe: stick.recipe ?? null, marks: stick.stage_marks ? JSON.parse(stick.stage_marks) : [], range: stick.t_lo != null ? [stick.t_lo, stick.t_hi] : null, admin: stick.key_kind === "owner", devices: results }, 200, cors);
 }
 

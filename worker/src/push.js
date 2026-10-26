@@ -193,7 +193,7 @@ const setState = (env, hash, kind, active, at, ref = null) => env.DB.prepare(
 ).bind(hash, kind, active ? 1 : 0, at, ref).run();
 
 // После приёма показания. prev — предыдущее показание этого устройства (из latest) или null.
-// stick: hash, id, batch_start, t_lo, t_hi.
+// stick: hash, id, batch_start, t_lo, t_hi, t_offset (поправка к температуре, °C).
 export async function onReading(env, stick, row, prev) {
   const state = await getState(env, stick.hash);
   const now = row.ts, name = row.device;
@@ -207,9 +207,10 @@ export async function onReading(env, stick, row, prev) {
   // Температура — пока идёт партия и известна норма
   if (stick.batch_start && stick.batch_start < now && stick.t_lo != null && stick.t_hi != null) {
     const lo = stick.t_lo, hi = stick.t_hi;
-    const tc = toC(row.temperature, row.temp_units);
+    const off = stick.t_offset || 0, cal = (v, u) => { const c = toC(v, u); return c == null ? null : Math.round((c + off) * 100) / 100; };
+    const tc = cal(row.temperature, row.temp_units);
     const out = outside(tc, lo, hi);
-    const prevOut = prev ? outside(toC(prev.temperature, prev.temp_units), lo, hi) : null;
+    const prevOut = prev ? outside(cal(prev.temperature, prev.temp_units), lo, hi) : null;
     const st = state.temp;
     const params = { name, t: tc, lo, hi };
     if (out && prevOut && (!st || !st.active || now - st.at > TEMP_REPEAT_MS)) {
