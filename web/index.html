@@ -521,23 +521,25 @@ dialog.sheet.full .top-line { padding-top: calc(14px + env(safe-area-inset-top, 
 .sty-links svg { width: 15px; height: 15px; }
 .cat-list .fav-mark { color: var(--amber); }
 
-/* Рецепт в AI-чате */
-.ai-mode { display: flex; align-items: center; gap: 7px; flex: 0 0 calc(100% + 32px); margin: 6px -16px -8px; padding: 6px 16px; background: color-mix(in srgb, var(--violet) 11%, transparent); color: var(--violet); font: 600 13px var(--body); }
-.ai-mode svg { width: 16px; height: 16px; flex: none; }
-.ai-mode span { flex: 1; min-width: 0; }
-.ai-mode .link { color: var(--muted); text-decoration: none; font-size: 12.5px; }
-.sheet .ai-head { flex-wrap: wrap; }
-.ai-chips button.v, .ai-chips button.opt { border-color: var(--violet); color: var(--violet); }
-.ai-chips button.v { font-weight: 600; }
-.ai-chips button.def { border-style: dashed; }
-.ai-chips button[aria-pressed="true"] { background: var(--violet); color: #fff; border-color: var(--violet); }
-.rs-q { display: grid; gap: 2px; margin: 2px 0 6px; }
-.prog2 { font: 600 11.5px var(--body); color: var(--muted); }
+/* Рецепты из файла */
+.imp-file { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px dashed var(--rule); border-radius: 12px; margin: 4px 0 10px; font-size: 14px; }
+.imp-file > span:first-child { font-size: 24px; line-height: 1; }
+.imp-file > span:nth-child(2) { flex: 1; min-width: 0; }
+.imp-file b { display: block; overflow-wrap: anywhere; }
+.imp-file small { color: var(--muted); }
+.imp-wait { display: flex; gap: 10px; align-items: center; color: var(--muted); padding: 14px 2px; font-size: 14.5px; }
+.imp-wait::before { content: ""; flex: none; width: 18px; height: 18px; border: 2px solid var(--rule); border-top-color: var(--violet); border-radius: 50%; animation: spin .8s linear infinite; }
+.imp-err { color: var(--alert); background: color-mix(in srgb, var(--alert) 9%, transparent); border-radius: 10px; padding: 9px 11px; font-size: 14px; }
+.imp-tools { display: flex; justify-content: flex-start; margin: 2px 0 8px; }
 .rcard { border: 1.5px solid var(--violet); border-radius: 14px; background: var(--surface); overflow: hidden; margin: 4px 0 10px; }
-.rcard .hd { display: flex; gap: 9px; padding: 9px 11px; align-items: center; color: #2b1d05; }
+.rcard.off { border-color: var(--rule); }
+.rcard.off .bd, .rcard.off .hd { opacity: .6; }
+.rcard .hd { display: flex; gap: 9px; padding: 9px 11px; align-items: center; color: #2b1d05; cursor: pointer; }
+.rcard .hd input { flex: none; width: 20px; height: 20px; accent-color: var(--violet); margin: 0; }
 .rcard .hd b { font: 600 18px/1.1 var(--display); }
 .rcard .hd small { display: block; font-size: 11.5px; opacity: .8; }
-.rcard .hd i { margin-left: auto; flex: none; font-style: normal; font: 600 11px var(--body); background: rgba(255,255,255,.65); color: #5c3a8c; border-radius: 999px; padding: 2px 8px; }
+.rcard.bad { border-color: color-mix(in srgb, var(--alert) 50%, transparent); }
+.rcard.bad .hd { color: var(--ink); cursor: default; }
 .rcard .bd { padding: 8px 11px; display: grid; gap: 4px; font-size: 13.5px; }
 .n5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; text-align: center; margin-bottom: 4px; }
 .n5 div { background: var(--bg); border-radius: 8px; padding: 4px 1px; }
@@ -545,22 +547,12 @@ dialog.sheet.full .top-line { padding-top: calc(14px + env(safe-area-inset-top, 
 .n5 b { font: 600 16px var(--display); }
 .rcard .ln { display: flex; justify-content: space-between; gap: 8px; }
 .rcard .ln span:last-child { color: var(--muted); white-space: nowrap; text-align: right; }
-.rcard .ln.chg { background: color-mix(in srgb, var(--violet) 10%, transparent); border-radius: 6px; padding: 2px 6px; color: var(--violet); font-weight: 600; }
-.rcard .chg-h { font: 600 12px var(--body); color: var(--violet); margin-top: 2px; }
-.rcard .own { color: var(--ok); font-weight: 600; }
+.rcard .bd .link { justify-self: start; }
 .rcard .err { background: color-mix(in srgb, var(--alert) 11%, transparent); color: var(--alert); border-radius: 8px; padding: 6px 8px; font-size: 12.5px; }
-.rcard .rbtn { display: flex; gap: 6px; padding: 8px 11px; border-top: 1px solid var(--rule); }
-.rcard .rbtn button { flex: 1; border-radius: 9px; padding: 8px 6px; font: 600 13.5px var(--body); border: 1px solid var(--rule); background: var(--surface); color: var(--ink); cursor: pointer; }
-.rcard .rbtn button.p { background: var(--violet); border-color: var(--violet); color: #fff; }
-.rcard .naming { border-top: 1px solid var(--rule); padding: 8px 11px 0; display: grid; gap: 6px; font-size: 13px; }
-.rcard .naming input { border: 1px solid var(--rule); background: var(--bg); border-radius: 8px; padding: 7px 9px; font-size: 15px; color: var(--ink); }
-.rcard .naming .rbtn { margin: 0 -11px; }
-.rcard .saved { border-top: 1px solid var(--rule); padding: 8px 11px; display: grid; gap: 4px; font-size: 13px; background: color-mix(in srgb, var(--ok) 8%, transparent); }
+.rcard .saved { border-top: 1px solid var(--rule); padding: 8px 11px; display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 13.5px; background: color-mix(in srgb, var(--ok) 8%, transparent); }
 .rcard .saved b { color: var(--ok); }
 .tag.ai { background: color-mix(in srgb, var(--violet) 14%, transparent); color: var(--violet); }
 .rc-origin { font-size: 13px !important; color: var(--violet); background: color-mix(in srgb, var(--violet) 9%, transparent); border-radius: 9px; padding: 7px 10px; }
-.link.ai { color: var(--violet); }
-.ai-err { color: var(--alert) !important; border-color: color-mix(in srgb, var(--alert) 40%, transparent) !important; margin: 4px 0 8px; }
 
 /* Заголовок всплывающих окон с «Закрыть» — закреплён сверху; «Закрыть» — кнопкой, а не крестиком */
 /* Единый заголовок листа: ручка, назад, название, развернуть, «Закрыть». Прилипает к самому верху. */
@@ -2346,13 +2338,13 @@ body.has-install main { padding-bottom: 220px; }
     const nums = (x) => [styleName(Brew.byId[x.style]) || x.style, `${fmt(x.og, 1)} → ${fmt(x.fg, 1)} °P`, x.abv != null ? fmt(x.abv, 1) + " %" : null, x.ibu != null ? x.ibu + " IBU" : null].filter(Boolean).join(" · ");
     const rows = items.map((x) => `<li class="rc-item">
         <button type="button" class="rc-open" data-recipe="${x.ref}"><i class="ebc" style="background:${ebcColour(x.ebc)}"></i>
-          <span><b>${escapeHtml(rloc(x.name))}</b>${(x.tags || []).includes("authored") ? ` <span class="tag ai">${escapeHtml(t("rc.aiTag"))}</span>` : x.mine ? ` <span class="tag">${escapeHtml(t("rc.mineTag"))}</span>` : ""}${st && st.recipe === x.ref ? ` <span class="cur">✓</span>` : ""}
+          <span><b>${escapeHtml(rloc(x.name))}</b>${(x.tags || []).includes("file") ? ` <span class="tag ai">${escapeHtml(t("rc.fileTag"))}</span>` : (x.tags || []).includes("authored") ? ` <span class="tag ai">${escapeHtml(t("rc.aiTag"))}</span>` : x.mine ? ` <span class="tag">${escapeHtml(t("rc.mineTag"))}</span>` : ""}${st && st.recipe === x.ref ? ` <span class="cur">✓</span>` : ""}
           <small>${escapeHtml(nums(x) + (x.ua ? " · " + t("rc.savedBy", { who: (parseUA(x.ua) || {}).label || "" }) : ""))}</small></span></button>
         <button type="button" class="star" data-fav="${x.ref}" aria-pressed="${isFav(x.ref)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button></li>`).join("");
     const empty = catState.rf === "fav" ? t("rc.emptyFav") : catState.rf === "authored" ? t("rc.emptyAuthored") : catState.rf === "mine" ? t(isAdmin(st) ? "rc.emptyMine" : "rc.emptyMineGuest") : t("catalog.empty");
-    const tools = catState.rf === "mine" && isAdmin(st) ? `<div class="rc-tools"><button type="button" class="link" data-import>${escapeHtml(t("rc.import"))}</button></div>` : "";
-    return `<div class="cats">${chips}</div>
-      ${rows ? `<ul class="rc-list">${rows}</ul>` : `<p class="hint">${escapeHtml(empty)}</p>`}${tools}
+    const tools = st ? `<div class="imp-tools"><button type="button" class="link" data-import>${escapeHtml(t("rc.import"))}</button></div>` : "";
+    return `<div class="cats">${chips}</div>${tools}
+      ${rows ? `<ul class="rc-list">${rows}</ul>` : `<p class="hint">${escapeHtml(empty)}</p>`}
       <p class="hint rc-note">${escapeHtml(t("rc.libNote"))}</p>`;
   }
   async function ensureRecipeLists() {
@@ -2408,7 +2400,6 @@ body.has-install main { padding-bottom: 220px; }
     const links = [
       !mine && admin ? `<button type="button" class="link" data-rc-copy>${escapeHtml(t("rc.copy"))}</button>` : "",
       mine && admin ? `<button type="button" class="link" data-rc-edit>${escapeHtml(t("rc.edit"))}</button>` : "",
-      st ? `<button type="button" class="link ai" data-rc-chat>${escapeHtml(t("rc.editChat"))}</button>` : "",
       `<button type="button" class="link" data-rc-export>${escapeHtml(t("rc.export"))}</button>`,
       mine && admin ? `<button type="button" class="link danger" data-rc-delete>${escapeHtml(t("rc.delete"))}</button>` : "",
       isCur ? `<button type="button" class="link" data-rc-unbind>${escapeHtml(t("rc.unbind"))}</button>` : "",
@@ -2422,7 +2413,8 @@ body.has-install main { padding-bottom: 220px; }
         <button type="button" class="star big" data-fav="${ref}" aria-pressed="${isFav(ref)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button>${closeBtn()}</div>
       <div class="sub">${escapeHtml(sub)}</div>
       ${isCur ? `<span class="current-mark">✓ ${escapeHtml(t("rc.current"))}</span>` : ""}
-      ${r.origin && r.origin.by === "ai" ? `<p class="rc-origin">${escapeHtml([t("rc.origin", { wish: r.origin.wish || "" }), (r.origin.own || []).length ? t("rc.originOwn", { list: r.origin.own.join(", ") }) : null,
+      ${r.origin && (r.origin.by === "ai" || r.origin.by === "file") ? `<p class="rc-origin">${escapeHtml([r.origin.by === "file" ? t("rc.originFile", { file: r.origin.file || "" }) : t("rc.origin", { wish: r.origin.wish || "" }),
+        (r.origin.own || []).length ? t("rc.originOwn", { list: r.origin.own.join(", ") }) : null,
         r.origin.saved_ua ? t("rc.savedBy", { who: (parseUA(r.origin.saved_ua) || {}).label || "" }) : null].filter(Boolean).join("; "))}</p>` : ""}
       <div class="facts5">${facts}</div>
       <label class="rc-vol"><span>${escapeHtml(t("rc.volume"))}<b id="rc-l">${escapeHtml(fmtL(liters))}</b></span>
@@ -2732,19 +2724,148 @@ body.has-install main { padding-bottom: 220px; }
     if (st.recipe === "my:" + r.id) refresh();
     openRecipe("my:" + r.id);
   }
-  function importRecipe() {
+  // ----- Рецепты из файла -----
+  // md, txt, pdf (текст из pdf достаёт pdf.js из vendor/, грузится только при первом pdf) и json. AI находит в тексте рецепты и переводит их в формат
+  // приложения; пользователь отмечает нужные и сохраняет в «Авторские»: сохранить может любой, удалить — админ.
+  const PDFJS = "vendor/";
+  const IMPORT_TEXT = 40000;
+  let impView = null; // { file, size, busy, error, say, cut, items: [{ title, recipe?, errors?, on, open, saved?, saveError? }] }
+  const styleIds = () => Brew.STYLES.map((x) => x.id);
+  function pickRecipeFile() {
     const inp = document.createElement("input");
-    inp.type = "file"; inp.accept = ".json,application/json";
-    inp.onchange = async () => {
-      const file = inp.files && inp.files[0];
-      if (!file) return;
-      let r;
-      try { r = JSON.parse(await file.text()); } catch (e) { alert(t("ed.badJson", { message: e.message })); return; }
-      if (!r || typeof r !== "object" || !Array.isArray(r.fermentation)) { alert(t("ed.badFile")); return; }
-      openEditor(r, true);
-    };
+    inp.type = "file"; inp.accept = ".md,.markdown,.txt,.text,.pdf,.json,text/plain,text/markdown,application/pdf,application/json";
+    inp.onchange = () => { const f = inp.files && inp.files[0]; if (f) importFile(f); };
     inp.click();
   }
+  const loadScript = (src) => new Promise((ok, fail) => {
+    const el = document.createElement("script");
+    el.src = src; el.onload = ok; el.onerror = () => { el.remove(); fail(new Error(t("imp.pdfLib"))); };
+    document.head.appendChild(el);
+  });
+  async function pdfText(file) {
+    if (!window.pdfjsLib) await loadScript(PDFJS + "pdf-3.11.174.min.js");
+    pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS + "pdf.worker-3.11.174.min.js";
+    const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    const pages = [];
+    for (let i = 1; i <= Math.min(doc.numPages, 40); i++) {
+      const c = await (await doc.getPage(i)).getTextContent();
+      pages.push(c.items.map((x) => x.str + (x.hasEOL ? "\n" : " ")).join(""));
+    }
+    return pages.join("\n\n");
+  }
+  const renderImport = () => { if (sheet.open && $("imp")) setSheet(importHtml(), true); };
+  async function importFile(file) {
+    const st = cur();
+    if (!st) return;
+    impView = { file: file.name, size: file.size, busy: t("imp.reading"), items: null };
+    openSheet(importHtml());
+    try {
+      if (file.size > 20e6) throw new Error(t("imp.tooBig"));
+      const ext = (file.name.split(".").pop() || "").toLowerCase(), pdf = ext === "pdf" || file.type === "application/pdf";
+      const text = pdf ? await pdfText(file) : await file.text();
+      let json = null;
+      if (ext === "json" || /^\s*[[{]/.test(text)) { try { json = JSON.parse(text); } catch { /* обычный текст */ } }
+      if (json && typeof json === "object") {
+        // Рецепт (или список) в формате приложения — без AI.
+        impView.items = (Array.isArray(json) ? json : [json]).slice(0, 20).map((r) => {
+          const errors = Recipe.check(r, styleIds());
+          return errors.length ? { title: rloc(r && r.name) || file.name, errors: errors.slice(0, 4) } : { title: rloc(r.name), recipe: r, on: true };
+        });
+      } else {
+        if (text.replace(/\s/g, "").length < 30) throw new Error(t(pdf ? "imp.noTextPdf" : "imp.noText"));
+        impView.busy = t("imp.ai"); renderImport();
+        const res = await post("/api/ai/import", { text: text.slice(0, IMPORT_TEXT), file: file.name, lang: I18N.lang(), styles: styleIds() }, st.access);
+        const c = aiCache[st.id];
+        if (c) { c.left = res.left; c.limit = res.limit; c.at = 0; }
+        impView.items = (res.recipes || []).map((x) => x.recipe ? { title: x.title, recipe: x.recipe, on: true } : { title: x.title, errors: x.errors || [] });
+        impView.say = res.say || ""; impView.cut = text.length > IMPORT_TEXT;
+      }
+    } catch (err) {
+      impView.error = err.code === "off" ? t(isAdmin(st) ? "imp.offAdmin" : "imp.offGuest") : err.code === "limit" ? t("imp.limit")
+        : err.status ? t("imp.fail", { message: err.message }) : err.message;
+    } finally {
+      impView.busy = null;
+      renderImport();
+      updateAiButton();
+    }
+  }
+  function importCard(x, i) {
+    if (!x.recipe) {
+      return `<div class="rcard bad"><div class="hd"><span><b>${escapeHtml(x.title || t("imp.untitled"))}</b><small>${escapeHtml(t("imp.failed"))}</small></span></div>
+        <div class="bd"><div class="err">${escapeHtml((x.errors || []).join("; "))}</div></div></div>`;
+    }
+    const r = x.recipe, style = Brew.byId[r.style];
+    const n5 = [["rc.og", fmt(r.og, 1)], ["rc.fg", fmt(r.fg, 1)], ["rc.abv", r.abv != null ? fmt(r.abv, 1) + "%" : "–"], ["IBU", r.ibu ?? "–"], ["EBC", r.ebc ?? "–"]]
+      .map(([k, v]) => `<div><small>${escapeHtml(k.startsWith("rc.") ? t(k) : k)}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
+    const ln = (a, b) => `<div class="ln"><span>${escapeHtml(a)}</span><span>${escapeHtml(b)}</span></div>`;
+    const lines = x.open ? (r.fermentables || []).map((y) => ln(rloc(y.name), fmtKg(y.kg)))
+      .concat((r.hops || []).map((y) => ln(`${y.name} · ${hopUse(y)}`, fmtG(y.g))))
+      .concat((r.other || []).map((y) => ln(rloc(y.name), y.g != null ? fmtG(y.g) : "")))
+      .concat(r.yeast ? [ln(t("rc.yeast"), r.yeast.name)] : [])
+      .concat((r.mash || []).length ? [ln(t("rc.mash"), r.mash.map((y) => `${fmtMax1(y.temp)}° ${y.min}′`).join(" → "))] : [])
+      .concat(r.fermentation.map((y) => ln(untilText(y.until), tempText(y.temp)))).join("") : "";
+    const n = (r.fermentables || []).length + (r.hops || []).length + (r.other || []).length + (r.yeast ? 1 : 0);
+    const more = `<button type="button" class="link" data-imp-more="${i}">${escapeHtml(x.open ? t("imp.less") : t("imp.more", { n, steps: r.fermentation.length }))}</button>`;
+    const foot = x.saved ? `<div class="saved"><b>✓ ${escapeHtml(t("imp.saved"))}</b><button type="button" class="link" data-recipe="${x.saved}">${escapeHtml(t("imp.open"))}</button></div>`
+      : x.saveError ? `<div class="bd"><div class="err">${escapeHtml(t("ed.saveError", { message: x.saveError }))}</div></div>` : "";
+    return `<div class="rcard${x.on || x.saved ? "" : " off"}"><label class="hd" style="background:linear-gradient(90deg,${ebcColour(r.ebc)},${ebcColour((r.ebc || 10) + 6)})${r.ebc > 30 ? ";color:#fff8ec" : ""}">
+        <input type="checkbox" data-imp-on="${i}" ${x.on || x.saved ? "checked" : ""} ${x.saved ? "disabled" : ""}>
+        <span><b>${escapeHtml(rloc(r.name))}</b><small>${escapeHtml([style ? styleName(style) : r.style, fmtL(r.batch_l)].join(" · "))}</small></span></label>
+      <div class="bd"><div class="n5">${n5}</div>${lines}${more}</div>${foot}</div>`;
+  }
+  function importHtml() {
+    const v = impView;
+    const size = v.size < 1024 ? `${v.size} B` : v.size < 1048576 ? `${Math.round(v.size / 1024)} KB` : `${fmt(v.size / 1048576, 1)} MB`;
+    let html = `<div class="top-line">${backBtn()}<h2>${escapeHtml(t("imp.title"))}</h2>${closeBtn()}</div>
+      <div class="imp-file" id="imp"><span>📄</span><span><b>${escapeHtml(v.file)}</b><small>${escapeHtml(size)}</small></span>
+        ${v.busy ? "" : `<button type="button" class="link" data-import>${escapeHtml(t("imp.other"))}</button>`}</div>`;
+    if (v.busy) return html + `<div class="imp-wait">${escapeHtml(v.busy)}</div>${v.busy === t("imp.ai") ? `<p class="hint">${escapeHtml(t("imp.aiWait"))}</p>` : ""}`;
+    if (v.error) return html + `<p class="imp-err">${escapeHtml(v.error)}</p>`;
+    const items = v.items || [];
+    if (!items.length) return html + `<p class="hint">${escapeHtml(v.say || t("imp.none"))}</p>`;
+    const ok = items.filter((x) => x.recipe), left = ok.filter((x) => !x.saved), n = left.filter((x) => x.on).length;
+    html += `<p class="hint">${escapeHtml(t("imp.found", { n: ok.length }) + " " + t("imp.check"))}</p>` +
+      (v.cut ? `<p class="hint">${escapeHtml(t("imp.cut"))}</p>` : "") + items.map(importCard).join("");
+    html += left.length
+      ? `<div class="rc-foot"><button type="button" class="main" data-imp-save ${n ? "" : "disabled"}>${escapeHtml(t("imp.save", { n }))}</button></div>`
+      : ok.length ? `<div class="rc-foot"><button type="button" class="main" data-imp-done>${escapeHtml(t("imp.done"))}</button></div>` : "";
+    return html;
+  }
+  async function importSave(btn) {
+    const st = cur(), v = impView;
+    btn.classList.add("loading"); btn.disabled = true;
+    const mine = await loadMine(st, true).catch(() => []);
+    const ids = new Set(mine.map((x) => x.id));
+    for (const x of v.items.filter((y) => y.recipe && y.on && !y.saved)) {
+      const r = JSON.parse(JSON.stringify(x.recipe));
+      r.tags = [...new Set((Array.isArray(r.tags) ? r.tags : []).concat("authored", "file"))];
+      r.origin = { by: "file", file: v.file.slice(0, 80), at: Date.now() };
+      const base = (String(r.id || "recipe").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "recipe").slice(0, 34);
+      let id = base, k = 2;
+      while (ids.has(id)) id = `${base}-${k++}`;
+      r.id = id;
+      x.saveError = null;
+      try { await apiSend("PUT", "/api/recipes/" + id, r, st); }
+      catch (e) { x.saveError = e.message; continue; }
+      ids.add(id); x.saved = "my:" + id; x.recipe = r;
+      recipes.full[recipeKey(x.saved, st)] = r;
+    }
+    await loadMine(st, true).catch(() => {});
+    renderImport();
+  }
+  sheet.addEventListener("click", (e) => {
+    if (!impView || !$("imp")) return;
+    const el = (sel) => e.target.closest(sel);
+    if (el("[data-imp-more]")) { const x = impView.items[Number(el("[data-imp-more]").dataset.impMore)]; x.open = !x.open; renderImport(); }
+    else if (el("[data-imp-save]")) importSave(el("[data-imp-save]"));
+    else if (el("[data-imp-done]")) { catState.tab = "recipes"; catState.rf = "authored"; openCatalog(); }
+  });
+  sheet.addEventListener("change", (e) => {
+    const box = e.target.closest("[data-imp-on]");
+    if (!box || !impView) return;
+    impView.items[Number(box.dataset.impOn)].on = box.checked;
+    renderImport();
+  });
 
   // Клики в листе, относящиеся к рецептам.
   sheet.addEventListener("click", async (e) => {
@@ -2757,7 +2878,7 @@ body.has-install main { padding-bottom: 220px; }
       return;
     }
     if (el("[data-recipe]")) { const b = el("[data-recipe]"); openRecipe(b.dataset.recipe, Number(b.dataset.liters) || undefined); return; }
-    if (el("[data-import]")) { importRecipe(); return; }
+    if (el("[data-import]")) { pickRecipeFile(); return; }
     if (el("[data-frow-add]")) {
       const box = $("frows"), last = box.lastElementChild, lo = last ? last.querySelector("[name=hi]").value : 18;
       box.insertAdjacentHTML("beforeend", fermRow({ temp: [Number(lo), Number(lo)], until: { stage: "done" } }, 1000 + box.children.length));
@@ -2794,7 +2915,6 @@ body.has-install main { padding-bottom: 220px; }
       sheet.close(); refresh();
     }
     else if (el("[data-rc-export]")) exportRecipe(r);
-    else if (el("[data-rc-chat]")) startRecipeChat(ref);
     else if (el("[data-rc-copy]")) openEditor({ ...r, id: r.id + "-my", source: `copy of lib:${r.id}`, tested: r.tested }, true);
     else if (el("[data-rc-edit]")) openEditor(r, false);
     else if (el("[data-rc-delete]")) {
@@ -3801,8 +3921,7 @@ body.has-install main { padding-bottom: 220px; }
     const time = (ts) => new Date(ts).toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
     const rows = (c.log || []).map((x) => `<div class="q">${escapeHtml(x.q)}<small>${escapeHtml(who(x))} · ${time(x.ts)}</small></div>
       <div class="a"><span class="who">${AI_ICON}DeepSeek</span><br>${escapeHtml(x.a)}<small>${time(x.ts)}</small></div>`).join("");
-    const rs = getRs(st);
-    const wait = pending ? `<div class="q">${escapeHtml(pending)}</div><div class="a wait">${escapeHtml(t(rs ? "rcai.thinking" : "ai.thinking"))}</div>` : "";
+    const wait = pending ? `<div class="q">${escapeHtml(pending)}</div><div class="a wait">${escapeHtml(t("ai.thinking"))}</div>` : "";
     const count = c.enabled ? `<span class="ai-count${c.left ? "" : " low"}">${escapeHtml(t("ai.count", { used: c.limit - c.left, limit: c.limit }))}</span>` : "";
     let bottom;
     if (!c.enabled) {
@@ -3811,18 +3930,15 @@ body.has-install main { padding-bottom: 220px; }
     } else if (!c.left) {
       bottom = `<p class="ai-note">${escapeHtml(t("ai.limitReached", { in: resetIn(c.resetAt) }))}</p>`;
     } else {
-      const chips = rs ? "" : ["ai.q.ok", "ai.q.bottle", "ai.q.temp"].map((k) => `<button type="button" data-ai-q="${escapeHtml(t(k))}" ${aiBusy ? "disabled" : ""}>${escapeHtml(t(k))}</button>`).join("") +
-        `<button type="button" class="v" data-rs-new ${aiBusy ? "disabled" : ""}>${escapeHtml(t("rcai.new"))}</button>`;
-      const ph = !rs ? t("ai.placeholder") : rs.last ? t("rcai.placeholder") : rs.base ? t("rcai.placeholderBase", { name: rs.baseName || "" }) : t("rcai.placeholderNew");
-      bottom = (chips ? `<div class="ai-chips">${chips}</div>` : "") + `
-        <div class="ai-ask"><textarea id="ai-q" rows="1" maxlength="500" placeholder="${escapeHtml(ph)}">${escapeHtml(aiDraft)}</textarea>
+      const chips = ["ai.q.ok", "ai.q.bottle", "ai.q.temp"].map((k) => `<button type="button" data-ai-q="${escapeHtml(t(k))}" ${aiBusy ? "disabled" : ""}>${escapeHtml(t(k))}</button>`).join("");
+      bottom = `<div class="ai-chips">${chips}</div>
+        <div class="ai-ask"><textarea id="ai-q" rows="1" maxlength="500" placeholder="${escapeHtml(t("ai.placeholder"))}">${escapeHtml(aiDraft)}</textarea>
           <button type="button" id="ai-send" aria-label="${escapeHtml(t("ai.send"))}" ${aiBusy ? "disabled" : ""}>${SEND_ICON}</button></div>
         <p class="ai-foot">${count} ${escapeHtml(t("ai.foot", { in: resetIn(c.resetAt), lang: I18N.name(I18N.lang()) }))}</p>`;
     }
     const empty = !rows && !wait && c.enabled ? `<p class="hint">${escapeHtml(t("ai.empty"))}</p>` : "";
-    const mode = rs ? `<div class="ai-mode">${AI_ICON}<span>${escapeHtml(t("rcai.mode"))}${rs.baseName ? ` · ${escapeHtml(t("rcai.on", { name: rs.baseName }))}` : ""}</span><button type="button" class="link" data-rs-exit>${escapeHtml(t("rcai.exit"))} ✕</button></div>` : "";
-    return `<div class="top-line ai-head"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${closeBtn()}${mode}</div>
-      <div class="ai-thread" id="ai-thread">${rows}${wait}</div>${empty}${rs && c.enabled ? rsExtras(st, rs) : ""}${bottom}
+    return `<div class="top-line ai-head"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${closeBtn()}</div>
+      <div class="ai-thread" id="ai-thread">${rows}${wait}</div>${empty}${bottom}
       <button type="button" class="secondary ai-close" data-close>${escapeHtml(t("ai.close"))}</button>`;
   }
   function renderAi(pending) {
@@ -3841,7 +3957,6 @@ body.has-install main { padding-bottom: 220px; }
   async function askAi(text) {
     const st = cur(), question = (text || "").trim();
     if (!st || !question || aiBusy) return;
-    if (getRs(st) || recipeIntent(question)) return askRecipe(question);
     aiBusy = true; aiDraft = "";
     renderAi(question);
     try {
@@ -3867,165 +3982,6 @@ body.has-install main { padding-bottom: 220px; }
   });
   sheet.addEventListener("keydown", (e) => {
     if (e.target.id === "ai-q" && e.key === "Enter" && !e.shiftKey) { e.preventDefault(); askAi(e.target.value); }
-  });
-
-  // ---------- Рецепт в AI-чате ----------
-  // Режим рецепта: чат задаёт по одному вопросу с вариантами (сначала объём и что есть из ингредиентов),
-  // потом присылает рецепт карточкой. Сохранить в «Авторские» может любой с доступом (имя — из трёх
-  // предложенных или своё), удалить — только админ. Состояние разговора — в этом браузере.
-  const rsKey = (st) => `ispindel.airecipe.${st.id}`;
-  const getRs = (st) => { try { return st ? JSON.parse(localStorage.getItem(rsKey(st)) || "null") : null; } catch { return null; } };
-  const setRs = (st, v) => { try { v ? localStorage.setItem(rsKey(st), JSON.stringify(v)) : localStorage.removeItem(rsKey(st)); } catch { /* приватный режим */ } };
-  const recipeIntent = (text) => /рецепт|recipe|receta/i.test(text);
-  function startRecipeChat(ref) {
-    const st = cur();
-    if (!st) return;
-    const base = ref ? recipeItems().find((x) => x.ref === ref) : null;
-    setRs(st, { turns: [], base: base ? base.ref : null, baseName: base ? rloc(base.name) : null });
-    aiDraft = "";
-    openAi();
-  }
-  async function askRecipe(text) {
-    const st = cur();
-    const rs = getRs(st) || { turns: [], base: null };
-    // Рецепт из справочника, названный в первом сообщении, — основа для правок.
-    if (!rs.turns.length && !rs.base) {
-      await ensureRecipeLists().catch(() => {});
-      const low = text.toLowerCase();
-      const m = recipeItems().filter((x) => low.includes(rloc(x.name).toLowerCase())).sort((p, q) => rloc(q.name).length - rloc(p.name).length)[0];
-      if (m) { rs.base = m.ref; rs.baseName = rloc(m.name); }
-    }
-    rs.turns.push({ role: "user", text });
-    rs.naming = false; rs.error = null;
-    setRs(st, rs);
-    aiBusy = true; aiDraft = "";
-    renderAi(text);
-    try {
-      const base = rs.base ? await loadRecipe(rs.base, st).catch(() => null) : null;
-      const res = await post("/api/ai/recipe", {
-        turns: rs.turns, lang: I18N.lang(), styles: Brew.STYLES.map((x) => x.id), context: aiContext(),
-        base: base || undefined, draft: (rs.last && rs.last.recipe) || undefined,
-      }, st.access);
-      const c = aiCache[st.id];
-      c.log = (c.log || []).concat({ ts: res.ts, q: text, a: res.answer, mine: true });
-      c.left = res.left; c.limit = res.limit;
-      if (res.mode === "chat" && !(rs.last && rs.last.recipe) && rs.turns.length === 1) setRs(st, null);
-      else {
-        rs.turns.push({ role: "ai", text: res.turn || res.answer });
-        const prev = rs.last || {};
-        rs.last = { question: res.question, recipe: res.recipe || prev.recipe || null, names: res.names || prev.names || null,
-          changes: res.recipe ? res.changes : prev.changes, stock: res.recipe ? res.stock : (res.stock || prev.stock), fresh: !!res.recipe };
-        if (res.recipe) { rs.saved = null; rs.full = false; }
-        setRs(st, rs);
-      }
-    } catch (err) {
-      // Ошибку показываем в самом чате: уведомление на главной за шторкой не видно.
-      rs.turns.pop(); rs.error = t("ai.fail", { message: err.message }); setRs(st, rs);
-      aiDraft = text;
-      if (err.status === 429 && aiCache[st.id]) aiCache[st.id].left = 0;
-    } finally {
-      aiBusy = false;
-      if (sheet.open) renderAi();
-      updateAiButton();
-    }
-  }
-  // Карточка рецепта в чате: цифры; правки к основе — только изменения; свои ингредиенты помечены.
-  function rsCardHtml(st, rs) {
-    const r = rs.last.recipe, style = Brew.byId[r.style];
-    const n5 = [["rc.og", fmt(r.og, 1)], ["rc.fg", fmt(r.fg, 1)], ["rc.abv", r.abv != null ? fmt(r.abv, 1) + "%" : "–"], ["IBU", r.ibu ?? "–"], ["EBC", r.ebc ?? "–"]]
-      .map(([k, v]) => `<div><small>${escapeHtml(k.startsWith("rc.") ? t(k) : k)}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
-    const own = (x) => x.own ? ` · <span class="own">${escapeHtml(t("rcai.own"))}</span>` : "";
-    const ln = (a, b, cls = "") => `<div class="ln${cls}"><span>${escapeHtml(a)}</span><span>${b}</span></div>`;
-    const full = (r.fermentables || []).map((x) => ln(rloc(x.name), escapeHtml(fmtKg(x.kg)) + own(x)))
-      .concat((r.hops || []).map((x) => ln(`${x.name} · ${hopUse(x)}`, escapeHtml(fmtG(x.g)) + own(x))))
-      .concat((r.other || []).map((x) => ln(rloc(x.name), x.g != null ? escapeHtml(fmtG(x.g)) + own(x) : "")))
-      .concat(r.yeast ? [ln(t("rc.yeast"), escapeHtml(r.yeast.name))] : [])
-      .concat(r.fermentation.map((x) => ln(untilText(x.until), escapeHtml(tempText(x.temp)))));
-    const changes = rs.base && (rs.last.changes || []).length
-      ? `<div class="chg-h">${escapeHtml(t("rcai.changesTo", { name: rs.baseName || "" }))}</div>` + rs.last.changes.map((x) => `<div class="ln chg"><span>${escapeHtml(x)}</span></div>`).join("") : "";
-    const showFull = !changes || rs.full;
-    const stock = (rs.last.stock || []).map((x) => `<div class="err">${escapeHtml(x)}</div>`).join("");
-    let foot;
-    if (rs.saved) {
-      foot = `<div class="saved"><b>${escapeHtml(t("rcai.saved"))}</b><span>${escapeHtml(t("rcai.savedText"))}</span>
-        <div class="ai-chips"><button type="button" data-rs-open>${escapeHtml(t("rcai.open"))}</button><button type="button" data-rs-brew>${escapeHtml(t("rc.brew"))}</button><button type="button" data-rs-ferm>${escapeHtml(t("rc.fermentNow"))}</button></div></div>`;
-    } else if (rs.naming) {
-      const names = (rs.last.names || []).concat(rloc(r.name)).filter((v, i, a) => v && a.indexOf(v) === i).slice(0, 3);
-      foot = `<div class="naming"><span>${escapeHtml(t("rcai.nameTitle"))}</span>
-        <input id="rs-name" maxlength="80" value="${escapeHtml(rs.name || names[0] || "")}">
-        <div class="ai-chips">${names.map((n) => `<button type="button" data-rs-name="${escapeHtml(n)}" aria-pressed="${n === (rs.name || names[0])}">${escapeHtml(n)}</button>`).join("")}</div>
-        <small class="field-error" id="rs-err"></small>
-        <div class="rbtn"><button type="button" data-rs-cancel>${escapeHtml(t("rcai.cancel"))}</button><button type="button" class="p" data-rs-save-go>${escapeHtml(t("rcai.saveGo"))}</button></div></div>`;
-    } else {
-      foot = `<div class="rbtn"><button type="button" data-rs-more>${escapeHtml(t("rcai.more"))}</button><button type="button" class="p" data-rs-save>${escapeHtml(t("rcai.save"))}</button></div>`;
-    }
-    return `<div class="rcard"><div class="hd" style="background:linear-gradient(90deg,${ebcColour(r.ebc)},${ebcColour((r.ebc || 10) + 6)})">
-        <span><b>${escapeHtml(rloc(r.name))}</b><small>${escapeHtml(t("rcai.sub", { style: style ? styleName(style) : r.style, l: fmtMax1(r.batch_l) }))}</small></span><i>${escapeHtml(t("rcai.badge"))}</i></div>
-      <div class="bd"><div class="n5">${n5}</div>${changes}${showFull ? full.join("") : ""}
-        ${changes ? `<button type="button" class="link" data-rs-full>${escapeHtml(t(rs.full ? "rcai.less" : "rcai.full"))}</button>` : ""}${stock}</div>${foot}</div>`;
-  }
-  // Что показать под перепиской в режиме рецепта: варианты ответа и карточку.
-  function rsExtras(st, rs) {
-    if (!rs) return "";
-    const err = rs.error && !aiBusy ? `<div class="a ai-err">${escapeHtml(rs.error)}</div>` : "";
-    if (!rs.last) return err;
-    const q = rs.last.question;
-    let html = (rs.last.recipe ? rsCardHtml(st, rs) : "") + err;
-    if (q && !aiBusy) {
-      const opts = (q.options || []).map((o) => `<button type="button" class="opt${o === q.default ? " def" : ""}" data-ai-q="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("");
-      html += `<div class="rs-q">${q.n && q.total ? `<span class="prog2">${escapeHtml(t("rcai.qn", { n: q.n, total: q.total }))}</span>` : ""}<div class="ai-chips">${opts}</div>
-        <div class="ai-chips"><button type="button" class="v" data-ai-q="${escapeHtml(t("rcai.skip"))}">${escapeHtml(t("rcai.skip"))}</button><button type="button" class="v" data-ai-q="${escapeHtml(t("rcai.enough"))}">${escapeHtml(t("rcai.enough"))}</button></div></div>`;
-    }
-    return html;
-  }
-  async function rsSave(btn) {
-    const st = cur(), rs = getRs(st);
-    if (!rs || !rs.last || !rs.last.recipe) return;
-    const name = ($("rs-name").value || "").trim();
-    if (!name) { $("rs-err").textContent = t("rcai.nameEmpty"); return; }
-    const lang = I18N.lang(), r = JSON.parse(JSON.stringify(rs.last.recipe));
-    r.name = lang === "en" ? { en: name } : { [lang]: name, en: (r.name && r.name.en && rloc(r.name) === name) ? r.name.en : name };
-    r.tags = ["authored"];
-    const ownList = [...(r.fermentables || []), ...(r.hops || []), ...(r.other || [])].filter((x) => x.own).map((x) => rloc(x.name));
-    r.origin = { by: "ai", wish: (rs.turns.find((x) => x.role === "user") || {}).text || "", base: rs.base || undefined, own: ownList.length ? ownList : undefined, at: Date.now() };
-    const mine = await loadMine(st, true).catch(() => []);
-    const baseId = (String(r.id || "ai-recipe").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "") || "ai-recipe").slice(0, 34);
-    let id = baseId, k = 2;
-    while (mine.some((x) => x.id === id)) id = `${baseId}-${k++}`;
-    r.id = id;
-    const err = Recipe.check(r, Brew.STYLES.map((x) => x.id));
-    if (err.length) { $("rs-err").textContent = t("ed.invalid", { errors: err.slice(0, 3).join("; ") }); return; }
-    btn.classList.add("loading"); btn.disabled = true;
-    try { await apiSend("PUT", "/api/recipes/" + id, r, st); }
-    catch (e) { $("rs-err").textContent = t("ed.saveError", { message: e.message }); btn.classList.remove("loading"); btn.disabled = false; return; }
-    recipes.full[recipeKey("my:" + id, st)] = r;
-    await loadMine(st, true).catch(() => {});
-    rs.saved = "my:" + id; rs.naming = false; rs.last.recipe = r;
-    setRs(st, rs); renderAi();
-  }
-  sheet.addEventListener("click", async (e) => {
-    const st = cur(), rs = st && getRs(st), el = (s) => e.target.closest(s);
-    if (el("[data-rs-new]")) { setRs(st, { turns: [], base: null }); renderAi(); if ($("ai-q")) $("ai-q").focus(); return; }
-    if (el("[data-rs-exit]")) { setRs(st, null); renderAi(); return; }
-    if (!rs) return;
-    if (el("[data-rs-full]")) { rs.full = !rs.full; setRs(st, rs); renderAi(); }
-    else if (el("[data-rs-more]")) { const q = $("ai-q"); if (q) { q.focus(); q.placeholder = t("rcai.placeholderMore"); } }
-    else if (el("[data-rs-save]")) { rs.naming = true; rs.name = null; setRs(st, rs); renderAi(); }
-    else if (el("[data-rs-cancel]")) { rs.naming = false; setRs(st, rs); renderAi(); }
-    else if (el("[data-rs-name]")) {
-      rs.name = el("[data-rs-name]").dataset.rsName; setRs(st, rs);
-      $("rs-name").value = rs.name;
-      sheet.querySelectorAll("[data-rs-name]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.rsName === rs.name)));
-    }
-    else if (el("[data-rs-save-go]")) rsSave(el("[data-rs-save-go]"));
-    else if (el("[data-rs-open]") && rs.saved) openRecipe(rs.saved);
-    else if (el("[data-rs-brew]") && rs.saved) startBrew(rs.saved, rs.last.recipe.batch_l);
-    else if (el("[data-rs-ferm]") && rs.saved) { sheet.close(); openBatchDialog(rs.last.recipe.style, rs.saved, "ferm"); }
-  });
-  sheet.addEventListener("input", (e) => {
-    if (e.target.id !== "rs-name") return;
-    const st = cur(), rs = getRs(st);
-    if (rs) { rs.name = e.target.value; setRs(st, rs); }
   });
 
   // Настройки AI: админ задаёт движок, ключ, лимит и длину ответа; гость видит, что включено.

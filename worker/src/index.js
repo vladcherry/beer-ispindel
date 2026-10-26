@@ -18,7 +18,7 @@
 //   POST /api/push/subscribe|unsubscribe|state|test — {endpoint, …}: push-подписка этого устройства на стик
 //   GET  /api/ai            — AI-помощник: включён ли, лимит на сегодня, чат текущей партии
 //   POST /api/ai/ask        — {question, context, lang}: вопрос AI (лимит в сутки на стик)
-//   POST /api/ai/recipe     — {turns, lang, styles, context, base?, draft?}: рецепт в чате (вопрос или готовый рецепт)
+//   POST /api/ai/import     — {text, file, lang, styles}: рецепты из текста файла (формат v1, ещё не сохранены)
 //   POST /api/ai/config|test — админ: движок, ключ, лимит, длина ответа; проверка ключа
 //   GET  /api/recipes       — свои рецепты стика (краткий список); /api/recipes/<id> — рецепт целиком
 //   PUT|DELETE /api/recipes/<id> — сохранить или удалить свой рецепт (не больше 50 на стик). Админ — любой;
@@ -43,7 +43,7 @@ const TOKEN_MIN = 8;
 const TOKEN_MAX = 64;
 
 import { onReading, onSchedule, pushApi, alertsList, vapidKeys } from "./push.js";
-import { aiState, aiConfig, aiTest, aiAsk, aiRecipe } from "./ai.js";
+import { aiState, aiConfig, aiTest, aiAsk, aiImport } from "./ai.js";
 import { recipesApi } from "./recipes.js";
 
 export default {
@@ -105,7 +105,7 @@ export default {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         if (url.pathname === "/api/ai/ask") return await aiAsk(request, env, stick, json, cors);
-        if (url.pathname === "/api/ai/recipe") return await aiRecipe(request, env, stick, json, cors);
+        if (url.pathname === "/api/ai/import") return await aiImport(request, env, stick, json, cors);
         if (url.pathname === "/api/ai/config") return await aiConfig(request, env, stick, json, cors);
         if (url.pathname === "/api/ai/test") return await aiTest(env, stick, json, cors);
       }
