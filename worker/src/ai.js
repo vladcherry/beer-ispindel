@@ -169,7 +169,7 @@ export async function aiRecipe(request, env, stick, json, cors) {
   const lang = LANGS[b.lang] ? b.lang : "en";
   const styles = Array.isArray(b.styles) ? b.styles.filter((s) => typeof s === "string" && /^[a-z0-9-]{1,40}$/.test(s)).slice(0, 80) : [];
   const turns = (Array.isArray(b.turns) ? b.turns : []).filter((x) => x && typeof x.text === "string" && x.text.trim())
-    .slice(-16).map((x) => ({ role: x.role === "ai" ? "assistant" : "user", content: x.text.slice(0, 600) }));
+    .slice(-16).map((x) => ({ role: x.role === "ai" ? "assistant" : "user", content: x.text.slice(0, x.role === "ai" ? 1500 : 600) }));
   if (!turns.length || turns.at(-1).role !== "user") return json({ error: "empty question" }, 400, cors);
   const asJson = (v) => { try { return v && typeof v === "object" ? JSON.stringify(v).slice(0, 12000) : null; } catch { return null; } };
   const base = asJson(b.base), draft = asJson(b.draft);
@@ -195,6 +195,13 @@ export async function aiRecipe(request, env, stick, json, cors) {
     const raw = String(data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content || "");
     return { raw, usage: data.usage || {} };
   };
+  // JSON из ответа: целиком или первый {...} (если модель обернула его в текст или ```json).
+  const parse = (s) => {
+    try { return JSON.parse(s); } catch { /* ниже */ }
+    const m = String(s).match(/\{[\s\S]*\}/);
+    if (m) { try { return JSON.parse(m[0]); } catch { /* не JSON */ } }
+    return null;
+  };
   let out, raw, usage = {};
   const tidy = (r) => {
     if (!r || typeof r !== "object") return r;
@@ -205,14 +212,16 @@ export async function aiRecipe(request, env, stick, json, cors) {
   };
   try {
     ({ raw, usage } = await call(messages));
-    try { out = JSON.parse(raw); } catch { out = null; }
+    out = parse(raw);
     let err = !out ? ["reply is not valid JSON"] : out.recipe ? globalThis.Recipe.check(tidy(out.recipe), styles.length ? styles : null) : [];
     if (err.length) {
       const fix = await call(messages.concat({ role: "assistant", content: raw.slice(0, 8000) },
         { role: "user", content: "Fix these problems and reply with the full JSON object again: " + err.join("; ") }));
       raw = fix.raw; usage = fix.usage;
-      try { out = JSON.parse(raw); } catch { out = null; }
-      err = !out ? ["reply is not valid JSON"] : out.recipe ? globalThis.Recipe.check(tidy(out.recipe), styles.length ? styles : null) : [];
+      out = parse(raw);
+      // Совсем не JSON — показываем текст как реплику, разговор продолжается.
+      if (!out && raw.trim()) out = { mode: "recipe", say: raw.trim().slice(0, 1200), question: null, recipe: null };
+      err = !out ? ["empty reply"] : out.recipe ? globalThis.Recipe.check(tidy(out.recipe), styles.length ? styles : null) : [];
       if (err.length) return json({ error: "AI recipe is invalid: " + err.slice(0, 4).join("; "), code: "invalid" }, 502, cors);
     }
   } catch (e) {
@@ -236,5 +245,8 @@ export async function aiRecipe(request, env, stick, json, cors) {
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`
   ).bind(stick.hash, c.batch_start ?? null, now, stick.keyHash, (request.headers.get("User-Agent") || "").slice(0, 300),
     question, answer, lang, usage.prompt_tokens ?? null, usage.completion_tokens ?? null).run();
-  return json({ ...reply, answer, ts: now, left: Math.max(0, limit - used - 1), limit }, 200, cors);
+  // Ход для истории — в том же JSON, что ответила модель (без рецепта: он уходит отдельно как DRAFT),
+  // иначе на следующем шаге модель начинает отвечать обычным текстом.
+  const turn = JSON.stringify({ mode: reply.mode, say: reply.say, question: reply.question, recipe: reply.recipe ? "see DRAFT" : null });
+  return json({ ...reply, answer, turn, ts: now, left: Math.max(0, limit - used - 1), limit }, 200, cors);
 }

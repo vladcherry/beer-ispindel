@@ -551,6 +551,7 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .tag.ai { background: color-mix(in srgb, var(--violet) 14%, transparent); color: var(--violet); }
 .rc-origin { font-size: 13px !important; color: var(--violet); background: color-mix(in srgb, var(--violet) 9%, transparent); border-radius: 9px; padding: 7px 10px; }
 .link.ai { color: var(--violet); }
+.ai-err { color: var(--alert) !important; border-color: color-mix(in srgb, var(--alert) 40%, transparent) !important; margin: 4px 0 8px; }
 
 /* Кто подключён к стику */
 .members { background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; padding: 12px; }
@@ -3780,7 +3781,7 @@ body.has-install main { padding-bottom: 220px; }
       if (m) { rs.base = m.ref; rs.baseName = rloc(m.name); }
     }
     rs.turns.push({ role: "user", text });
-    rs.naming = false;
+    rs.naming = false; rs.error = null;
     setRs(st, rs);
     aiBusy = true; aiDraft = "";
     renderAi(text);
@@ -3795,7 +3796,7 @@ body.has-install main { padding-bottom: 220px; }
       c.left = res.left; c.limit = res.limit;
       if (res.mode === "chat" && !(rs.last && rs.last.recipe) && rs.turns.length === 1) setRs(st, null);
       else {
-        rs.turns.push({ role: "ai", text: res.answer });
+        rs.turns.push({ role: "ai", text: res.turn || res.answer });
         const prev = rs.last || {};
         rs.last = { question: res.question, recipe: res.recipe || prev.recipe || null, names: res.names || prev.names || null,
           changes: res.recipe ? res.changes : prev.changes, stock: res.recipe ? res.stock : (res.stock || prev.stock), fresh: !!res.recipe };
@@ -3803,10 +3804,10 @@ body.has-install main { padding-bottom: 220px; }
         setRs(st, rs);
       }
     } catch (err) {
-      rs.turns.pop(); setRs(st, rs);
+      // Ошибку показываем в самом чате: уведомление на главной за шторкой не видно.
+      rs.turns.pop(); rs.error = t("ai.fail", { message: err.message }); setRs(st, rs);
       aiDraft = text;
       if (err.status === 429 && aiCache[st.id]) aiCache[st.id].left = 0;
-      setTimeout(() => notice(escapeHtml(t("ai.fail", { message: err.message })), "error"), 0);
     } finally {
       aiBusy = false;
       if (sheet.open) renderAi();
@@ -3850,9 +3851,11 @@ body.has-install main { padding-bottom: 220px; }
   }
   // Что показать под перепиской в режиме рецепта: варианты ответа и карточку.
   function rsExtras(st, rs) {
-    if (!rs || !rs.last) return "";
+    if (!rs) return "";
+    const err = rs.error && !aiBusy ? `<div class="a ai-err">${escapeHtml(rs.error)}</div>` : "";
+    if (!rs.last) return err;
     const q = rs.last.question;
-    let html = rs.last.recipe ? rsCardHtml(st, rs) : "";
+    let html = (rs.last.recipe ? rsCardHtml(st, rs) : "") + err;
     if (q && !aiBusy) {
       const opts = (q.options || []).map((o) => `<button type="button" class="opt${o === q.default ? " def" : ""}" data-ai-q="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join("");
       html += `<div class="rs-q">${q.n && q.total ? `<span class="prog2">${escapeHtml(t("rcai.qn", { n: q.n, total: q.total }))}</span>` : ""}<div class="ai-chips">${opts}</div>
