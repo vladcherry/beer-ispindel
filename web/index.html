@@ -297,7 +297,7 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .ok-chip.bad { background: color-mix(in srgb, var(--alert) 13%, transparent); color: var(--alert); }
 .ai-close { width: 100%; margin-top: 8px; }
 /* Заголовок чата остаётся сверху при прокрутке листа */
-.sheet .ai-head { position: sticky; top: -10px; z-index: 3; margin: 0 -16px; padding: 8px 16px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.sheet .ai-head { flex-wrap: wrap; }
 .actbar button.ai { color: var(--violet); font-weight: 600; background: color-mix(in srgb, var(--violet) 9%, transparent); }
 /* AI-чат партии */
 .ai-count { font: 600 12px var(--body); border-radius: 999px; padding: 3px 9px; background: color-mix(in srgb, var(--violet) 13%, transparent); color: var(--violet); white-space: nowrap; }
@@ -322,9 +322,11 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 /* Карточка стиля и справочник — лист снизу */
 dialog.sheet {
   margin: auto auto 0; width: min(560px, 100%); max-width: 100%; max-height: 88vh; overflow: auto;
-  border-radius: 18px 18px 0 0; padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  border-radius: 18px 18px 0 0; padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
 }
-dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--rule); margin: 0 auto 10px; }
+/* На весь экран */
+dialog.sheet.full { width: 100%; height: 100%; max-height: 100%; max-height: 100dvh; border-radius: 0; margin: 0; }
+dialog.sheet.full .top-line { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
 @media (prefers-reduced-motion: no-preference) {
   dialog.sheet[open] { animation: sheet-in .28s cubic-bezier(.2, .7, .2, 1); }
   @keyframes sheet-in { from { transform: translateY(40px); opacity: .4; } }
@@ -554,10 +556,29 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .ai-err { color: var(--alert) !important; border-color: color-mix(in srgb, var(--alert) 40%, transparent) !important; margin: 4px 0 8px; }
 
 /* Заголовок всплывающих окон с «Закрыть» — закреплён сверху; «Закрыть» — кнопкой, а не крестиком */
-.sheet .top-line:not(.ai-head) { position: sticky; top: -10px; z-index: 4; margin: -10px -16px 6px; padding: 10px 16px 8px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+/* Единый заголовок листа: ручка, назад, название, развернуть, «Закрыть». Прилипает к самому верху. */
+.sheet .top-line { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 8px; margin: 0 -16px 8px; padding: 16px 16px 8px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.sheet .top-line::before { content: ""; position: absolute; top: 5px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--rule); opacity: .9; }
+dialog.sheet.full .top-line::before { display: none; }
+.sheet .top-line h2 { flex: 1; min-width: 0; font: 600 22px/1.15 var(--display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0; }
+.sheet .top-line .back { flex: none; font-size: 22px; line-height: 1; padding: 6px 8px 6px 0; }
+/* Где есть «назад» или звезда — кнопки первой строкой, название второй (целиком, до двух строк) */
+.sheet .top-line:has(.back, .star, .link) { flex-wrap: wrap; row-gap: 4px; }
+.sheet .top-line:has(.back, .star, .link) h2 { order: 10; flex: 1 0 100%; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.1; }
+.sheet .top-line .star.big, .sheet .top-line:not(:has(.star)) .xp { margin-left: auto; }
+.set-head h2 { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.1; }
+@media (max-width: 400px) { .set-head h2 { font-size: 20px; } }
+.sheet .xp, .set-head .xp { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+.sheet .xp svg, .set-head .xp svg { width: 18px; height: 18px; }
+.sheet .sty-top .xp { background: rgba(255,255,255,.55); border-color: transparent; color: #2b1d05; }
+.sheet .sty-top::before { background: rgba(255,255,255,.6); }
+#settings.full { width: 100vw; max-width: 100vw; height: 100%; max-height: 100%; max-height: 100dvh; border-radius: 0; margin: 0; }
 .sheet .x { flex: none; margin-left: auto; font: 600 14.5px var(--body); color: var(--ink); padding: 8px 14px; min-height: 38px; border: 1px solid var(--rule); border-radius: 999px; background: var(--bg); cursor: pointer; }
-.sheet .star.big + .x { margin-left: 8px; }
+.sheet .star.big + .x, .sheet .star.big + .xp { margin-left: 4px; }
+.sheet .top-line .x { margin-left: 0; }
+.sheet .top-line h2 + .x, .sheet .top-line h2 + .xp { margin-left: 0; }
 .sheet .sty-top { border-bottom: 0; margin-bottom: 0; }
+.sheet .sty-top h2 { color: inherit; }
 .sheet .sty-top .x { background: rgba(255,255,255,.55); border-color: transparent; color: #2b1d05; }
 .sheet .sty-hero { margin-top: 0; padding-top: 2px; }
 .x-btn { flex: none; font: 600 14.5px var(--body); color: var(--ink); padding: 8px 14px; min-height: 38px; border: 1px solid var(--rule); border-radius: 999px; background: var(--bg); cursor: pointer; }
@@ -2005,11 +2026,35 @@ body.has-install main { padding-bottom: 220px; }
   const COLOURS = { pale: "#e8c55c", amber: "#c4782a", dark: "#4a2c1d" };
   // «Закрыть» словом, а не крестиком: на телефоне в крестик трудно попасть.
   const closeBtn = () => `<button class="x" type="button" data-close>${escapeHtml(t("settings.close"))}</button>`;
+  const backBtn = (color) => `<button class="back" type="button" data-back aria-label="${escapeHtml(t("act.catalog"))}"${color ? ` style="color:${color}"` : ""}>←</button>`;
+  // Развернуть на весь экран — у каждого всплывающего окна, выбор запоминается.
+  const EXPAND_SVG = { on: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>`,
+    off: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>` };
+  let sheetFull = (() => { try { return localStorage.getItem("ispindel.sheetFull") === "1"; } catch { return false; } })();
+  const expandBtn = (full) => `<button class="xp" type="button" data-expand aria-pressed="${full}" aria-label="${escapeHtml(t(full ? "sheet.shrink" : "sheet.expand"))}" title="${escapeHtml(t(full ? "sheet.shrink" : "sheet.expand"))}">${EXPAND_SVG[full ? "off" : "on"]}</button>`;
+  function addExpand(root, full) {
+    root.querySelectorAll(".top-line [data-close], .set-head #set-close").forEach((x) => {
+      const old = x.parentElement.querySelector("[data-expand]");
+      if (old) old.outerHTML = expandBtn(full); else x.insertAdjacentHTML("beforebegin", expandBtn(full));
+    });
+  }
+  function setFull(full) {
+    sheetFull = full;
+    try { localStorage.setItem("ispindel.sheetFull", full ? "1" : "0"); } catch { /* приватный режим */ }
+    document.querySelectorAll("dialog.sheet, #settings").forEach((d) => { d.classList.toggle("full", full); addExpand(d, full); });
+  }
+  document.addEventListener("click", (e) => { if (e.target.closest("[data-expand]")) setFull(!sheetFull); });
+  $("settings").classList.toggle("full", sheetFull);
+  addExpand($("settings"), sheetFull);
   function openSheet(html) {
     $("sheet-body").innerHTML = html;
+    sheet.classList.toggle("full", sheetFull);
     if (!sheet.open) sheet.showModal();
     sheet.scrollTop = 0;
   }
+  // Кнопка «развернуть» — в любом заголовке листа, как бы его ни перерисовали.
+  new MutationObserver(() => { if (!$("sheet-body").querySelector("[data-expand]")) addExpand($("sheet-body"), sheetFull); })
+    .observe($("sheet-body"), { childList: true, subtree: true });
   sheet.addEventListener("click", (e) => {
     if (e.target === sheet || e.target.closest("[data-close]")) sheet.close();
     const back = e.target.closest("[data-back]");
@@ -2123,10 +2168,9 @@ body.has-install main { padding-bottom: 220px; }
     if (st && view && view.hasBatch && !isCurrent) action = `<button type="button" class="main" data-choose="${id}">${escapeHtml(t("sheet.choose"))}</button>`;
     else if (st && view && !view.hasBatch) action = `<button type="button" class="main" data-choose="${id}">${escapeHtml(t("sheet.startWith"))}</button>`;
     const foot = action || recs.length ? `<div class="rc-foot">${recs.length ? `<button type="button" data-sty-recipes>${escapeHtml(t("sty.recipesN", { n: recs.length }))}</button>` : ""}${action}</div>` : "";
-    openSheet(`<div class="top-line sty-top" style="background:${h.top};color:${h.ink}">${fromCatalog ? `<button class="back" type="button" data-back style="color:${h.sub}">← ${escapeHtml(t("act.catalog"))}</button>` : ""}
+    openSheet(`<div class="top-line sty-top" style="background:${h.top};color:${h.ink}">${fromCatalog ? backBtn(h.sub) : ""}<h2>${escapeHtml(name)}</h2>
           <button type="button" class="star big" data-fav-style="${id}" aria-pressed="${isFavStyle(id)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button>${closeBtn()}</div>
       <div class="sty-hero" style="background:${h.bg};color:${h.ink}">
-        <h2>${escapeHtml(name)}</h2>
         <div class="sub" style="color:${h.sub}">${escapeHtml([x.name.en !== name ? x.name.en : null, "BJCP " + StyleGuide.code(id)].filter(Boolean).join(" · "))}</div>
         <div class="pills">${pills}</div>${glassSvg(h.beer, colour === "dark")}</div>
       <p>${escapeHtml(StyleGuide.desc(id, lang))}</p>
@@ -2332,9 +2376,8 @@ body.has-install main { padding-bottom: 220px; }
         ${hasBatch && !isCur ? `<button type="button" class="wide" data-rc-use>${escapeHtml(t("rc.useNow"))}</button>` : ""}
         <button type="button" data-rc-ferment>${escapeHtml(t("rc.fermentNow"))}</button>
         <button type="button" class="main" data-rc-brew>${BREW_ICON}${escapeHtml(t("rc.brew"))}</button></div>` : "";
-    return `<div class="top-line"><button class="back" type="button" data-back>← ${escapeHtml(t("act.catalog"))}</button>
+    return `<div class="top-line">${backBtn()}<h2>${escapeHtml(rloc(r.name))}</h2>
         <button type="button" class="star big" data-fav="${ref}" aria-pressed="${isFav(ref)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button>${closeBtn()}</div>
-      <h2>${escapeHtml(rloc(r.name))}</h2>
       <div class="sub">${escapeHtml(sub)}</div>
       ${isCur ? `<span class="current-mark">✓ ${escapeHtml(t("rc.current"))}</span>` : ""}
       ${r.origin && r.origin.by === "ai" ? `<p class="rc-origin">${escapeHtml([t("rc.origin", { wish: r.origin.wish || "" }), (r.origin.own || []).length ? t("rc.originOwn", { list: r.origin.own.join(", ") }) : null,
