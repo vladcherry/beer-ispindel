@@ -1,3 +1,5 @@
+import { batchesBrief } from "./batches.js";
+
 // AI-помощник по партии (DeepSeek). Ключ и настройки — у стика, их задаёт админ; ключ не покидает сервер.
 // Лимит вопросов — общий на стик в сутки (UTC). Журнал чата — по партии: новая партия начинает с чистого листа.
 // В запрос уходит только сжатая сводка партии от приложения (одна строка, с выжимкой рецепта) и последняя пара вопрос–ответ.
@@ -103,8 +105,12 @@ export async function aiAsk(request, env, stick, json, cors) {
     "SELECT question, answer FROM ai_log WHERE token_hash = ?1 AND batch_start IS ?2 ORDER BY ts DESC LIMIT 1"
   ).bind(stick.hash, c.batch_start ?? null).first();
   const len = c.ai_len || "short";
+  // Прошлые варки стика — чтобы отвечать на «как прошла прошлая партия», «что варили в сентябре».
+  const past = await batchesBrief(env, stick);
   const messages = [
-    { role: "system", content: `Homebrew fermentation expert. Data: ${context || "none"}. Units °P, °C; r=gravity drop °P/day. Reply in ${LANGS[lang]}, ≤${WORDS[len]} words, practical, no preamble, plain words — never use the data codes.` },
+    { role: "system", content: `Homebrew fermentation expert. Data: ${context || "none"}. Units °P, °C; r=gravity drop °P/day.` +
+      (past ? ` Past batches of this brewer, newest first (date, days, name, recipe, results): ${past}. Use them when asked about earlier brews; compare with the current batch when useful.` : "") +
+      ` Reply in ${LANGS[lang]}, ≤${WORDS[len]} words, practical, no preamble, plain words — never use the data codes.` },
   ];
   if (prev) {
     messages.push({ role: "user", content: prev.question.slice(0, 200) }, { role: "assistant", content: prev.answer.slice(0, 300) });

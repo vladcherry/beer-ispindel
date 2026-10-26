@@ -290,7 +290,8 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .actbar button:first-child { border-bottom-left-radius: 12px; } .actbar button:last-child { border-bottom-right-radius: 12px; }
 .actbar svg { width: 20px; height: 20px; }
 /* Пять кнопок (с «Изменить») на узком экране — мельче, длинные слова переносятся */
-.actbar:has(> :nth-child(5)) button { font-size: 12px; padding-inline: 2px; overflow-wrap: anywhere; hyphens: auto; }
+.actbar:has(> :nth-child(5)) { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, .7fr); }
+.actbar:has(> :nth-child(5)) button { font-size: 12px; padding-inline: 2px; hyphens: auto; -webkit-hyphens: auto; }
 @media (max-width: 380px) { .actbar:has(> :nth-child(5)) button { font-size: 11px; letter-spacing: -.1px; } }
 .ai-actions > * + * { border-top: 1px solid var(--rule); }
 .ai-actions .set-row .t b { white-space: normal; }
@@ -377,9 +378,22 @@ dialog.sheet.full .top-line { padding-top: calc(14px + env(safe-area-inset-top, 
 .cat-list .cur { color: var(--ok); font-weight: 600; }
 
 /* Справочник: вкладки «Стили | Рецепты», список рецептов, карточка, день варки, розлив */
-.tabs2 { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 3px; background: var(--bg); border-radius: 10px; margin: 8px 0 2px; }
+.tabs2 { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; padding: 3px; background: var(--bg); border-radius: 10px; margin: 8px 0 2px; }
 .tabs2 button { border: 0; border-radius: 8px; padding: 7px 6px; background: transparent; color: var(--muted); font-size: 14.5px; font-weight: 600; cursor: pointer; }
 .tabs2 button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.ai-hist { display: grid; gap: 4px; margin: -2px 0 10px; }
+.ai-hist small { color: var(--muted); font-size: 12.5px; }
+.bh-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; }
+.bh-item { background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; padding: 10px 12px; display: grid; gap: 3px; }
+.bh-item.now { border-color: var(--amber-deep); background: var(--amber-soft); }
+.bh-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.bh-top b { font: 600 17px/1.15 var(--display); }
+.bh-item small { color: var(--muted); font-size: 12.5px; }
+.bh-nums { font-size: 14px; }
+.bh-act { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
+.bh-act button { border: 1px solid var(--rule); background: var(--surface); color: var(--ink); border-radius: 9px; padding: 7px 10px; font: 600 13px var(--body); cursor: pointer; }
+.bh-act button.main { background: var(--amber); border-color: var(--amber); color: #fff; }
+.bh-act button.danger { color: var(--alert); }
 .rc-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; }
 .rc-item { display: flex; align-items: stretch; background: var(--bg); border-radius: 12px; border: 1px solid var(--rule); }
 .rc-open { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: stretch; border: 0; background: none; padding: 10px 4px 10px 10px; text-align: left; color: var(--ink); cursor: pointer; font-size: 15px; }
@@ -1388,6 +1402,12 @@ body.has-install main { padding-bottom: 220px; }
 
   // Партия общая для всех, у кого есть доступ к стику: {start?, style?, fg?} уходят на сервер.
   async function postBatch(st, body) {
+    // Новая партия: итоги прежней — в историю варок (плотность считает приложение, сервер её не знает).
+    if ("start" in body && !body.keep && st.batchStart && body.start !== st.batchStart && view && view.st === st && view.hasBatch) {
+      body = { ...body, archive: { og: view.og ?? undefined, fg: view.current ?? undefined, abv: view.a.abvNow ?? undefined, stage: view.a.stage || undefined,
+        name: view.recipe ? rloc(view.recipe.name) : undefined } };
+      delete batchHist[st.id];
+    }
     const res = await fetch(apiBase() + "/api/batch", {
       method: "POST", headers: { "Content-Type": "application/json", "X-Access": st.access },
       body: JSON.stringify(body),
@@ -1908,7 +1928,7 @@ body.has-install main { padding-bottom: 220px; }
     const start = v.start ? new Date(v.start).getTime() : null;
     if (!start || start > Date.now() + 60e3) { $("be-err").textContent = t("be.startBad"); return; }
     // Поправка начала: отмеченные стадии и НП передаём явно, иначе сервер сочтёт это новой партией.
-    if (Math.abs(start - st.batchStart) >= 60e3) { body.start = start; body.marks = st.marks || []; }
+    if (Math.abs(start - st.batchStart) >= 60e3) { body.start = start; body.keep = true; body.marks = st.marks || []; }
     if (v.recipe !== (st.recipe || "")) body.recipe = v.recipe || null;
     if (v.style !== (st.style || "")) body.style = v.style || null;
     const og = v.ogManual ? roundTo(v.og) : null, fg = v.fgManual ? roundTo(v.fg) : null;
@@ -2268,6 +2288,8 @@ body.has-install main { padding-bottom: 220px; }
 
   function openCatalog() {
     openSheet(catalogHtml()); bindSearch();
+    if (catState.tab === "history") Promise.all([loadHistory2(cur()), ensureRecipeLists()]).then(() => { if (sheet.open && sheet.querySelector(".tabs2")) renderCatalog(); })
+      .catch((e) => { if (sheet.open) $("cat-body").innerHTML = `<p class="hint">${escapeHtml(t("hist.loadError", { message: e.message }))}</p>`; });
     if (catState.tab === "recipes") ensureRecipeLists().then(() => { if (sheet.open && sheet.querySelector(".tabs2")) renderCatalog(); })
       .catch((e) => { if (sheet.open) $("cat-body").innerHTML = `<p class="hint">${escapeHtml(t("rc.loadError", { message: e.message }))}</p>`; });
   }
@@ -2294,14 +2316,73 @@ body.has-install main { padding-bottom: 220px; }
     const rows = items.map((x) => `<li><button type="button" data-style="${x.id}">
         <span><span class="dot" style="background:${COLOURS[StyleGuide.colour(x.id)]}"></span>${escapeHtml(x.name[lang] || x.name.en)}${x.id === cur0 ? ` <span class="cur">✓</span>` : ""}${isFavStyle(x.id) ? ` <span class="fav-mark">★</span>` : ""}</span>
         <small>${rangeText(x.t)} °C · ${rangeText(x.abv)}%</small></button></li>`).join("");
-    const tabs = ["styles", "recipes"].map((k) => `<button type="button" data-tab="${k}" aria-pressed="${k === catState.tab}">${escapeHtml(t("catalog.tab." + k))}</button>`).join("");
-    const body = catState.tab === "recipes" ? recipesHtml()
+    const tabs = ["styles", "recipes"].concat(cur() ? ["history"] : []).map((k) => `<button type="button" data-tab="${k}" aria-pressed="${k === catState.tab}">${escapeHtml(t("catalog.tab." + k))}</button>`).join("");
+    const body = catState.tab === "recipes" ? recipesHtml() : catState.tab === "history" ? historyHtml()
       : `<div class="cats">${cats}</div>${rows ? `<ul class="cat-list">${rows}</ul>` : `<p class="hint">${escapeHtml(t("catalog.empty"))}</p>`}`;
     return `<div class="top-line"><h2>${escapeHtml(t("catalog.guide"))}</h2>${closeBtn()}</div>
       <div class="tabs2" role="group">${tabs}</div>
-      <input class="cat-search" type="search" value="${escapeHtml(catState.q)}" placeholder="${escapeHtml(t(catState.tab === "recipes" ? "rc.search" : "catalog.search"))}" autocomplete="off">
+      <input class="cat-search" type="search" value="${escapeHtml(catState.q)}" placeholder="${escapeHtml(t(catState.tab === "recipes" ? "rc.search" : catState.tab === "history" ? "hist.search" : "catalog.search"))}" autocomplete="off">
       <div id="cat-body">${body}</div>`;
   }
+
+  // ----- Справочник: вкладка «Варки» (история партий стика) -----
+  // Прежние партии сервер переносит в историю, когда начинается новая. Из записи можно начать новую
+  // партию с тем же рецептом (или стилем); удалить запись может админ.
+  const batchHist = {}; // id стика → [{ id, start, end, style, recipe, name, og, fg, abv, stage }]
+  async function loadHistory2(st, force) {
+    if (!st) return [];
+    if (!force && batchHist[st.id]) return batchHist[st.id];
+    const { batches } = await api("/api/batches", {}, st.access);
+    return (batchHist[st.id] = batches || []);
+  }
+  function histName(b) {
+    const r = b.recipe && recipeItems().find((x) => x.ref === b.recipe);
+    const style = b.style && Brew.byId[b.style];
+    return b.name || (r && rloc(r.name)) || (style && styleName(style)) || t("hist.noName");
+  }
+  function historyHtml() {
+    const st = cur(), list = st && batchHist[st.id];
+    if (!list) return `<p class="hint">${escapeHtml(t("rc.loading"))}</p>`;
+    const q = catState.q.trim().toLowerCase();
+    const days = (ms) => Math.max(1, Math.round(ms / 86400e3));
+    const nowItem = st.batchStart && view && view.st === st ? `<li class="bh-item now"><div class="bh-top"><b>${escapeHtml(view.recipe ? rloc(view.recipe.name) : view.style ? styleName(view.style) : t("hist.noName"))}</b>
+        <span class="tag">${escapeHtml(t("hist.now"))}</span></div><small>${escapeHtml(t("hist.since", { date: dateShort(st.batchStart), n: days(Date.now() - st.batchStart) }))}</small></li>` : "";
+    const rows = list.filter((b) => !q || [histName(b), b.style && styleName(Brew.byId[b.style])].some((v) => v && v.toLowerCase().includes(q))).map((b) => {
+      const style = b.style && Brew.byId[b.style];
+      const r = b.recipe && recipeItems().find((x) => x.ref === b.recipe);
+      const nums = [b.og != null && b.fg != null ? `${fmt(b.og, 1)} → ${fmt(b.fg, 1)} °P` : b.og != null ? `${t("rc.og")} ${fmt(b.og, 1)} °P` : null,
+        b.abv != null ? fmt(b.abv, 1) + " %" : null, b.stage ? t("hist.stage", { stage: t("stage." + b.stage) }) : null].filter(Boolean).join(" · ");
+      const acts = [
+        r ? `<button type="button" class="main" data-hist-brew="${b.id}">↻ ${escapeHtml(t("hist.useRecipe"))}</button>`
+          : style ? `<button type="button" class="main" data-hist-brew="${b.id}">↻ ${escapeHtml(t("hist.useStyle"))}</button>` : "",
+        r ? `<button type="button" data-recipe="${r.ref}">${escapeHtml(t("hist.openRecipe"))}</button>` : "",
+        isAdmin(st) ? `<button type="button" class="danger" data-hist-del="${b.id}">${escapeHtml(t("hist.delete"))}</button>` : "",
+      ].join("");
+      return `<li class="bh-item"><div class="bh-top"><b>${escapeHtml(histName(b))}</b>${style && b.name ? `<small>${escapeHtml(styleName(style))}</small>` : ""}</div>
+        <small>${escapeHtml(t("hist.dates", { from: dateShort(b.start), to: dateShort(b.end), n: days(b.end - b.start) }))}${b.recipe && !r ? " · " + escapeHtml(t("hist.recipeGone")) : ""}</small>
+        ${nums ? `<div class="bh-nums">${escapeHtml(nums)}</div>` : ""}${acts ? `<div class="bh-act">${acts}</div>` : ""}</li>`;
+    }).join("");
+    return `${nowItem || rows ? `<ul class="bh-list">${nowItem}${rows}</ul>` : ""}${rows ? "" : `<p class="hint">${escapeHtml(t(q ? "catalog.empty" : "hist.empty"))}</p>`}`;
+  }
+  // Новая партия по записи истории: рецепт, если он ещё есть, иначе стиль.
+  function brewFromHistory(id) {
+    const st = cur(), b = (batchHist[st.id] || []).find((x) => String(x.id) === String(id));
+    if (!b) return;
+    const r = b.recipe && recipeItems().find((x) => x.ref === b.recipe);
+    sheet.close();
+    openBatchDialog(b.style && Brew.byId[b.style] ? b.style : undefined, r ? r.ref : undefined);
+  }
+  $("sheet").addEventListener("click", async (e) => {
+    const use = e.target.closest("[data-hist-brew]"), del = e.target.closest("[data-hist-del]");
+    if (use) brewFromHistory(use.dataset.histBrew);
+    if (del) {
+      const st = cur(), b = (batchHist[st.id] || []).find((x) => String(x.id) === del.dataset.histDel);
+      if (!b || !confirm(t("hist.confirmDelete", { name: histName(b) }))) return;
+      try { await apiSend("DELETE", "/api/batches/" + b.id); } catch (err) { notice(escapeHtml(t("hist.deleteError", { message: err.message })), "error"); return; }
+      await loadHistory2(st, true).catch(() => {});
+      renderCatalog();
+    }
+  });
 
   // Карточка стиля: шапка в цвете пива с бокалом, диапазоны стиля шкалами с отметкой партии,
   // советы, рецепты этого стиля, ссылки; кнопки — внизу.
@@ -4097,7 +4178,7 @@ body.has-install main { padding-bottom: 220px; }
     const who = (x) => x.mine ? t("ai.you") : (parseUA(x.ua) || {}).label || t("members.unknown");
     const time = (ts) => new Date(ts).toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" });
     const rows = (c.log || []).map((x) => `<div class="q">${escapeHtml(x.q)}<small>${escapeHtml(who(x))} · ${time(x.ts)}</small></div>
-      <div class="a"><span class="who">${AI_ICON}DeepSeek</span><br>${escapeHtml(x.a)}<small>${time(x.ts)}</small></div>`).join("");
+      <div class="a"><span class="who">${AI_ICON}DeepSeek</span><br>${escapeHtml(x.a)}<small>${time(x.ts)}</small></div>${x.ts === aiHistFor ? aiHistChips(st) : ""}`).join("");
     const wait = pending ? `<div class="q">${escapeHtml(pending)}</div><div class="a wait">${escapeHtml(t("ai.thinking"))}</div>` : "";
     const count = c.enabled ? `<span class="ai-count${c.left ? "" : " low"}">${escapeHtml(t("ai.count", { used: c.limit - c.left, limit: c.limit }))}</span>` : "";
     let bottom;
@@ -4131,6 +4212,20 @@ body.has-install main { padding-bottom: 220px; }
     try { await loadAi(st, true, true); } catch (err) { notice(escapeHtml(err.message), "error"); }
     if (sheet.open && cur() === st) renderAi();
   }
+  // Вопрос о прошлых варках — под ответом кнопки: начать новую партию по рецепту одной из них.
+  const HIST_Q = /предыд|прошл|прежн|минул|попередн|раньше|раніше|истори|історі|варил|варк|previous|past|last batch|earlier|history|brewed|anterior|pasad|historial/i;
+  let aiHistFor = null;
+  function aiHistChips(st) {
+    const seen = new Set();
+    const list = (batchHist[st.id] || []).filter((b) => {
+      const key = b.recipe || b.style;
+      if (!key || seen.has(key) || !(b.recipe ? recipeItems().some((x) => x.ref === b.recipe) : Brew.byId[b.style])) return false;
+      seen.add(key); return true;
+    }).slice(0, 4);
+    if (!list.length) return "";
+    return `<div class="ai-hist"><small>${escapeHtml(t("hist.aiPick"))}</small><div class="ai-chips">${list.map((b) =>
+      `<button type="button" class="v" data-hist-brew="${b.id}">↻ ${escapeHtml(histName(b))} · ${escapeHtml(dateShort(b.start))}</button>`).join("")}</div></div>`;
+  }
   async function askAi(text) {
     const st = cur(), question = (text || "").trim();
     if (!st || !question || aiBusy) return;
@@ -4138,6 +4233,10 @@ body.has-install main { padding-bottom: 220px; }
     renderAi(question);
     try {
       const res = await post("/api/ai/ask", { question, context: aiContext(), lang: I18N.lang() }, st.access);
+      if (HIST_Q.test(question)) {
+        await Promise.all([loadHistory2(st, true), ensureRecipeLists()]).catch(() => {});
+        aiHistFor = res.ts;
+      }
       const c = aiCache[st.id];
       c.log = (c.log || []).concat({ ts: res.ts, q: question, a: res.answer, mine: true });
       c.left = res.left; c.limit = res.limit;

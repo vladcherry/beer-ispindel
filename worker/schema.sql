@@ -102,3 +102,21 @@ CREATE TABLE IF NOT EXISTS recipes (
   updated INTEGER NOT NULL,
   PRIMARY KEY (owner, id)
 );
+
+-- История варок: прежние партии стика (переносятся сюда, когда начинается новая).
+CREATE TABLE IF NOT EXISTS batches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner TEXT NOT NULL,        -- tokens.hash стика
+  start INTEGER NOT NULL,     -- начало и конец партии, мс
+  end INTEGER NOT NULL,
+  style TEXT,
+  recipe TEXT,                -- lib:<id> или my:<id>
+  name TEXT,                  -- название рецепта на момент варки
+  og REAL,                    -- итоги от приложения, °P
+  fg REAL,
+  abv REAL,
+  fg_target REAL,
+  stage TEXT,                 -- стадия на момент завершения
+  created INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_batches ON batches (owner, start);

@@ -2,7 +2,9 @@
 //   POST /ingest            — сюда шлёт iSpindel (HTTP или HTTPS Post), JSON с полем token
 //   POST /api/register      — {token}: зарегистрировать токен стика, в ответ — ключ доступа
 //   POST /api/share         — новый ключ доступа к тому же стику (для ссылки «Поделиться»)
-//   POST /api/batch         — {start, style, fg, og, range, recipe, marks}: партия, общая для всех, у кого есть доступ
+//   POST /api/batch         — {start, style, fg, og, range, recipe, marks, keep?, archive?}: партия, общая для всех, у кого есть доступ;
+//                             новое начало без keep переносит прежнюю партию в историю (archive — её итоги от приложения)
+//   GET  /api/batches       — история варок; DELETE /api/batches/<id> — удалить запись (админ)
 //   POST /api/formula       — {formula: "…" | ""}: полином плотности по наклону, тоже общий для стика
 //   POST /api/units         — {units: "auto" | "P" | "SG"}: в чём iSpindel (или формула) считает плотность
 //   POST /api/tcal          — {offset: °C}: поправка к температуре iSpindel, общая для стика (−10…10)
@@ -43,6 +45,7 @@ const TOKEN_MIN = 8;
 const TOKEN_MAX = 64;
 
 import { onReading, onSchedule, pushApi, alertsList, vapidKeys } from "./push.js";
+import { archiveBatch, batchesApi } from "./batches.js";
 import { aiState, aiConfig, aiTest, aiAsk, aiImport } from "./ai.js";
 import { recipesApi } from "./recipes.js";
 
@@ -113,6 +116,11 @@ export default {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await recipesApi(request, env, stick, url, json, cors);
+      }
+      if (url.pathname === "/api/batches" || url.pathname.startsWith("/api/batches/")) {
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        return await batchesApi(request, env, stick, url, json, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/batch") {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
@@ -330,7 +338,7 @@ async function register(request, env, cors) {
 
 // Миграции выполняются один раз: номер версии схемы лежит в таблице meta, и дальше
 // каждый новый экземпляр воркера тратит на проверку одно чтение, а не обход таблиц.
-const SCHEMA_VERSION = 14;
+const SCHEMA_VERSION = 15;
 let schemaReady = false;
 async function ensureSchema(env) {
   if (schemaReady) return;
@@ -403,6 +411,11 @@ async function ensureSchema(env) {
     // Свои рецепты стика (JSON в формате web/recipe.js).
     env.DB.prepare(`CREATE TABLE IF NOT EXISTS recipes (
       owner TEXT NOT NULL, id TEXT NOT NULL, json TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL, PRIMARY KEY (owner, id))`),
+    // История варок: прежние партии стика.
+    env.DB.prepare(`CREATE TABLE IF NOT EXISTS batches (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, owner TEXT NOT NULL, start INTEGER NOT NULL, end INTEGER NOT NULL, style TEXT, recipe TEXT,
+      name TEXT, og REAL, fg REAL, abv REAL, fg_target REAL, stage TEXT, created INTEGER)`),
+    env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_batches ON batches (owner, start)"),
     env.DB.prepare("INSERT OR REPLACE INTO meta (k, v) VALUES ('schema', ?1)").bind(String(SCHEMA_VERSION)),
   );
   await env.DB.batch(fixes);
@@ -519,6 +532,10 @@ async function setBatch(request, env, stick, cors) {
     sets.push("recipe"); params.push(r);
   }
   if (!sets.length) return json({ error: "nothing to update" }, 400, cors);
+  // Новая партия (или сброс) — прежнюю в историю. keep: true — это поправка даты начала той же партии.
+  if ("start" in body && !body.keep && stick.batch_start != null && body.start !== stick.batch_start && now - stick.batch_start > 3600e3) {
+    await archiveBatch(env, stick, now, body.archive);
+  }
   const sql = `UPDATE tokens SET ${sets.map((c, i) => `${c} = ?${i + 1}`).join(", ")} WHERE hash = ?${sets.length + 1}`;
   await env.DB.prepare(sql).bind(...params, stick.hash).run();
   return json({ ok: true }, 200, cors);
