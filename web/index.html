@@ -289,6 +289,9 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .actbar button:hover { background: var(--amber-soft); }
 .actbar button:first-child { border-bottom-left-radius: 12px; } .actbar button:last-child { border-bottom-right-radius: 12px; }
 .actbar svg { width: 20px; height: 20px; }
+/* Пять кнопок (с «Изменить») на узком экране — мельче, длинные слова переносятся */
+.actbar:has(> :nth-child(5)) button { font-size: 12px; padding-inline: 2px; overflow-wrap: anywhere; hyphens: auto; }
+@media (max-width: 380px) { .actbar:has(> :nth-child(5)) button { font-size: 11px; letter-spacing: -.1px; } }
 .ai-actions > * + * { border-top: 1px solid var(--rule); }
 .ai-actions .set-row .t b { white-space: normal; }
 .set-row.danger-row b { color: var(--alert); }
@@ -545,11 +548,26 @@ dialog.sheet.full .top-line { padding-top: calc(14px + env(safe-area-inset-top, 
 .n5 div { background: var(--bg); border-radius: 8px; padding: 4px 1px; }
 .n5 small { display: block; font-size: 10.5px; color: var(--muted); }
 .n5 b { font: 600 16px var(--display); }
-.n5 .og-edit { display: block; background: var(--bg); border-radius: 8px; padding: 4px 1px; outline: 1.5px dashed color-mix(in srgb, var(--violet) 55%, transparent); outline-offset: -1.5px; }
-.n5 .og-edit small { color: var(--violet); }
-.n5 .og-edit input { width: 100%; min-width: 0; border: 0; background: transparent; text-align: center; font: 600 16px var(--display); color: var(--ink); padding: 0; }
-.n5 .og-edit input:focus { outline: none; }
 .og-was { color: var(--violet); font-size: 12px; }
+/* Ползунок плотности: °P и удельная плотность сразу */
+.gs { display: grid; gap: 2px; }
+.gs-v { display: flex; align-items: baseline; gap: 10px; }
+.gs-v b { font: 600 22px var(--display); }
+.gs-v span { color: var(--muted); font: 600 14px var(--body); }
+.gs input[type=range] { width: 100%; accent-color: var(--amber-deep); margin: 4px 0 0; height: 28px; }
+.gs-ends { display: flex; justify-content: space-between; color: var(--muted); font-size: 11.5px; }
+.imp-og { border-top: 1px solid var(--rule); margin-top: 4px; padding-top: 6px; }
+.imp-og > small { color: var(--muted); font-size: 12px; }
+/* Изменить партию */
+.be { display: grid; gap: 14px; }
+.be > label, .be-f { display: grid; gap: 5px; font-size: 14px; }
+.be > label > span, .be-f > span { font-weight: 600; }
+.be input[type=datetime-local], .be select { font: inherit; font-size: 16px; padding: 9px 10px; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); color: var(--ink); min-width: 0; width: 100%; box-sizing: border-box; }
+.be small { color: var(--muted); font-size: 12.5px; }
+.be .seg2 { display: flex; gap: 6px; }
+.be .seg2 button { flex: 1; padding: 8px 6px; border-radius: 10px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); font: 600 13.5px var(--body); cursor: pointer; }
+.be .seg2 button[aria-pressed="true"] { background: var(--amber-soft); border-color: var(--amber-deep); color: var(--amber-deep); }
+.be-sum { background: var(--bg); border-radius: 10px; padding: 9px 11px; font-size: 14px; }
 .rcard .ln { display: flex; justify-content: space-between; gap: 8px; }
 .rcard .ln span:last-child { color: var(--muted); white-space: nowrap; text-align: right; }
 .rcard .bd .link { justify-self: start; }
@@ -1375,7 +1393,8 @@ body.has-install main { padding-bottom: 220px; }
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
-    if ("start" in body) { if (body.start !== st.batchStart) st.marks = []; st.batchStart = body.start; }
+    if ("start" in body) { if (body.start !== st.batchStart) { st.marks = []; st.og = null; } st.batchStart = body.start; }
+    if ("og" in body) st.og = body.og;
     if ("style" in body) st.style = body.style;
     if ("fg" in body) st.fg = body.fg;
     if ("recipe" in body) st.recipe = body.recipe;
@@ -1478,6 +1497,7 @@ body.has-install main { padding-bottom: 220px; }
       if ("admin" in data && st.admin !== data.admin) { st.admin = data.admin; save(); }
       if ("style" in data) { st.style = data.style; st.fg = data.fg; save(); }
       if ("recipe" in data && st.recipe !== data.recipe) { st.recipe = data.recipe; save(); }
+      if ("og" in data && (st.og ?? null) !== data.og) { st.og = data.og; save(); }
       if ("marks" in data && JSON.stringify(st.marks || []) !== JSON.stringify(data.marks)) { st.marks = data.marks; save(); }
       const recipe = st.recipe ? await loadRecipe(st.recipe, st).catch(() => null) : null;
       // Норма температуры для оповещений — из рецепта (все шаги плана) или стиля; сервер их не знает.
@@ -1779,6 +1799,134 @@ body.has-install main { padding-bottom: 220px; }
     if (e.target.closest("#brew-banner")) openBrew();
   });
 
+  // ---------- Ползунок плотности ----------
+  // Сразу показывает °P и удельную плотность; границы — реальные для стиля (их задаёт вызывающий).
+  const gsLabel = (v) => `<b>${escapeHtml(fmt(v, 1))} °P</b><span>SG ${sgFromPlato(v).toFixed(3)}</span>`;
+  const gravSlider = (attrs, v, lo, hi) => `<div class="gs"><div class="gs-v">${gsLabel(v)}</div>
+      <input type="range" ${attrs} min="${lo}" max="${hi}" step="0.1" value="${Math.min(hi, Math.max(lo, Math.round(v * 10) / 10))}">
+      <div class="gs-ends"><span>${escapeHtml(fmt(lo, 1))} · ${sgFromPlato(lo).toFixed(3)}</span><span>${escapeHtml(fmt(hi, 1))} · ${sgFromPlato(hi).toFixed(3)}</span></div></div>`;
+  document.addEventListener("input", (e) => {
+    const r = e.target.closest(".gs input[type=range]");
+    if (!r) return;
+    const v = Number(r.value);
+    r.closest(".gs").querySelector(".gs-v").innerHTML = gsLabel(v);
+    if (r.dataset.be && beView) { beView[r.dataset.be] = v; beSummary(); }
+  });
+
+  // ---------- Изменить партию ----------
+  // Всё о текущей партии в одном окне: начало, рецепт, стиль, начальная и целевая конечная плотность.
+  // Поправка начала не сбрасывает отмеченные стадии; НП «по шпинделю» — медиана первых замеров партии.
+  let beView = null; // { start, recipe, style, ogManual, og, fgManual, fg }
+  const roundTo = (v) => Math.round(v * 10) / 10;
+  async function openBatchEdit() {
+    const st = cur();
+    if (!st || !st.batchStart) return;
+    await ensureRecipeLists().catch(() => {});
+    const style = st.style ? Brew.byId[st.style] : null, a = view && view.a;
+    beView = {
+      start: toLocalInput(st.batchStart), recipe: st.recipe || "", style: st.style || "",
+      ogManual: st.og != null, og: roundTo(st.og ?? (view && view.ogAuto) ?? (style ? (style.og[0] + style.og[1]) / 2 : 12)),
+      fgManual: st.fg != null, fg: roundTo(st.fg ?? (a && a.fg) ?? (style ? (style.fg[0] + style.fg[1]) / 2 : 2.5)),
+    };
+    openSheet(batchEditHtml());
+    beSummary();
+  }
+  function beBounds(kind) {
+    const style = beView.style ? Brew.byId[beView.style] : null, v = beView[kind];
+    if (kind === "og") {
+      const [lo, hi] = style ? style.og : [8, 20];
+      return [Math.max(2, Math.floor(Math.min(lo, v) - 3)), Math.min(30, Math.ceil(Math.max(hi, v) + 3))];
+    }
+    const [lo, hi] = style ? style.fg : [1, 4];
+    return [Math.max(-2, Math.floor(Math.min(lo, v) - 2)), Math.min(15, Math.ceil(Math.max(hi, v) + 2))];
+  }
+  function batchEditHtml() {
+    const v = beView, st = cur(), style = v.style ? Brew.byId[v.style] : null;
+    const items = recipeItems();
+    const recipes = `<option value="">${escapeHtml(t("batchdlg.noRecipe"))}</option>` + items.map((x) =>
+      `<option value="${x.ref}" ${x.ref === v.recipe ? "selected" : ""}>${escapeHtml(rloc(x.name))}</option>`).join("");
+    const styles = `<option value="">${escapeHtml(t("batchdlg.noStyle"))}</option>` + Brew.STYLES.slice().sort((p, q) => styleName(p).localeCompare(styleName(q)))
+      .map((x) => `<option value="${x.id}" ${x.id === v.style ? "selected" : ""}>${escapeHtml(styleName(x))}</option>`).join("");
+    const seg = (key, on, offLabel, onLabel) => `<div class="seg2"><button type="button" data-be-mode="${key}:0" aria-pressed="${!on}">${escapeHtml(offLabel)}</button>
+      <button type="button" data-be-mode="${key}:1" aria-pressed="${on}">${escapeHtml(onLabel)}</button></div>`;
+    const auto = view && view.ogAuto;
+    const [ol, oh] = beBounds("og"), [fl, fh] = beBounds("fg");
+    const range = (r) => r ? `${fmt(r[0], 1)}–${fmt(r[1], 1)} °P` : "";
+    return `<div class="top-line"><h2>${escapeHtml(t("be.title"))}</h2>${closeBtn()}</div>
+      <div class="be" id="be">
+        <label><span>${escapeHtml(t("be.start"))}</span><input type="datetime-local" id="be-start" value="${escapeHtml(v.start)}">
+          <small>${escapeHtml(t("be.startHint"))}</small></label>
+        <label><span>${escapeHtml(t("batchdlg.recipe"))}</span><select id="be-recipe">${recipes}</select></label>
+        <label><span>${escapeHtml(t("batchdlg.style"))}</span><select id="be-style">${styles}</select></label>
+        <div class="be-f"><span>${escapeHtml(t("be.og"))}</span>
+          ${seg("og", v.ogManual, auto != null ? t("be.ogAuto", { v: fmt(auto, 1) }) : t("be.ogAutoNone"), t("be.manual"))}
+          ${v.ogManual ? gravSlider('data-be="og"', v.og, ol, oh) : ""}
+          <small>${escapeHtml([t("be.ogHint"), style ? t("be.styleRange", { r: range(style.og) }) : ""].filter(Boolean).join(" "))}</small></div>
+        <div class="be-f"><span>${escapeHtml(t("be.fg"))}</span>
+          ${seg("fg", v.fgManual, t("be.fgAuto"), t("be.manual"))}
+          ${v.fgManual ? gravSlider('data-be="fg"', v.fg, fl, fh) : ""}
+          <small>${escapeHtml([t("be.fgHint"), style ? t("be.styleRange", { r: range(style.fg) }) : ""].filter(Boolean).join(" "))}</small></div>
+        <p class="be-sum" id="be-sum"></p>
+        <small class="field-error" id="be-err"></small>
+      </div>
+      <div class="rc-foot"><button type="button" data-close>${escapeHtml(t("settings.close"))}</button>
+        <button type="button" class="main" data-be-save>${escapeHtml(t("be.save"))}</button></div>`;
+  }
+  function beRecipe() { return beView.recipe ? recipes.full[recipeKey(beView.recipe, cur())] || null : null; }
+  function beSummary() {
+    const el = $("be-sum");
+    if (!el || !beView) return;
+    const v = beView, style = v.style ? Brew.byId[v.style] : null, r = beRecipe();
+    const og = v.ogManual ? v.og : view && view.ogAuto, fg = v.fgManual ? v.fg : style ? (style.fg[0] + style.fg[1]) / 2 : null;
+    const norm = r ? Recipe.range(r) : style ? style.t : null;
+    el.textContent = [og != null && fg != null && og > fg ? t("be.abv", { abv: fmt(Brew.abv(og, fg), 1) }) : null,
+      norm ? t("be.norm", { t: tempText(norm), from: t(r ? "be.fromRecipe" : "be.fromStyle") }) : null].filter(Boolean).join(" · ") || t("be.noSum");
+  }
+  function beRender() { setSheet(batchEditHtml(), true); beSummary(); }
+  const beOpen = () => beView && sheet.open && $("be");
+  $("sheet").addEventListener("change", async (e) => {
+    if (!beOpen()) return;
+    if (e.target.id === "be-start") beView.start = e.target.value;
+    else if (e.target.id === "be-style") { beView.style = e.target.value; beRender(); }
+    else if (e.target.id === "be-recipe") {
+      // Рецепт задаёт стиль и цель КП — как при новой партии с рецептом.
+      beView.recipe = e.target.value;
+      const r = beView.recipe ? await loadRecipe(beView.recipe, cur()).catch(() => null) : null;
+      if (r) { beView.style = Brew.byId[r.style] ? r.style : beView.style; beView.fgManual = true; beView.fg = r.fg; if (!beView.ogManual) beView.og = r.og; }
+      beRender();
+    }
+  });
+  $("sheet").addEventListener("click", (e) => {
+    if (!beOpen()) return;
+    const m = e.target.closest("[data-be-mode]");
+    if (m) { const [k, on] = m.dataset.beMode.split(":"); beView[k + "Manual"] = on === "1"; beRender(); return; }
+    const save = e.target.closest("[data-be-save]");
+    if (save) saveBatchEdit(save);
+  });
+  async function saveBatchEdit(btn) {
+    const st = cur(), v = beView, body = {};
+    const start = v.start ? new Date(v.start).getTime() : null;
+    if (!start || start > Date.now() + 60e3) { $("be-err").textContent = t("be.startBad"); return; }
+    // Поправка начала: отмеченные стадии и НП передаём явно, иначе сервер сочтёт это новой партией.
+    if (Math.abs(start - st.batchStart) >= 60e3) { body.start = start; body.marks = st.marks || []; }
+    if (v.recipe !== (st.recipe || "")) body.recipe = v.recipe || null;
+    if (v.style !== (st.style || "")) body.style = v.style || null;
+    const og = v.ogManual ? roundTo(v.og) : null, fg = v.fgManual ? roundTo(v.fg) : null;
+    if (og !== (st.og ?? null) || body.start) body.og = og;
+    if (fg !== (st.fg ?? null)) body.fg = fg;
+    if (og != null && fg != null && og <= fg) { $("be-err").textContent = t("be.ogBelowFg"); return; }
+    if ("recipe" in body || "style" in body) {
+      const r = beRecipe(), style = v.style ? Brew.byId[v.style] : null;
+      body.range = r ? Recipe.range(r) : style ? style.t : null;
+    }
+    if (!Object.keys(body).length) { sheet.close(); return; }
+    btn.classList.add("loading"); btn.disabled = true;
+    try { await postBatch(st, body); }
+    catch (err) { $("be-err").textContent = t("err.batch", { message: err.message }); btn.classList.remove("loading"); btn.disabled = false; return; }
+    if (body.start) syncRanges();
+    beView = null; sheet.close(); refresh();
+  }
+
   // Стрелка тенденции на плитке: up / down / flat; подпись — в title и aria-label.
   const TREND_SVG = {
     up: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17L17 7"/><path d="M9 7h8v8"/></svg>`,
@@ -1901,8 +2049,10 @@ body.has-install main { padding-bottom: 220px; }
     const st = cur() || demoStick;
     const baseStyle = st.style ? Brew.byId[st.style] || null : null;
     const current = median(valid.slice(-5).map((r) => r.g));
-    let og = null;
-    if (hasBatch) og = median(valid.filter((r) => r.ts >= st.batchStart).slice(0, 6).map((r) => r.g));
+    // Начальная плотность — заданная вручную в «Изменить партию», иначе по первым замерам партии.
+    let og = null, ogAuto = null;
+    if (hasBatch) ogAuto = median(valid.filter((r) => r.ts >= st.batchStart).slice(0, 6).map((r) => r.g));
+    if (hasBatch) og = st.og != null ? st.og : ogAuto;
     const input = {
       rows: rows.map((r) => ({ ts: r.ts, g: plausible(r.g) ? r.g : null, temperature: toC(r.temperature, r.temp_units) })),
       now, batchStart: hasBatch ? st.batchStart : null, og, fgManual: st.fg ?? null, marks: hasBatch ? st.marks || [] : [],
@@ -1915,7 +2065,7 @@ body.has-install main { padding-bottom: 220px; }
     if (style !== baseStyle) a = Brew.analyze({ ...input, style });
     const pct = batteryPct(last.battery);
     const fc = batteryForecast(batt);
-    view = { st, style, a, og, current, last, pct, fc, hasBatch, recipe, rstep };
+    view = { st, style, a, og, ogAuto, current, last, pct, fc, hasBatch, recipe, rstep };
 
     // Плашка
     $("g-icon").innerHTML = icons.gravity();
@@ -1995,7 +2145,7 @@ body.has-install main { padding-bottom: 220px; }
       if (a.stage === "done" || a.stage === "ready") html += batchPrimingHtml(rows, a, recipe, style, st, now);
       // Пока в калькуляторе сахара что-то вводят, ежеминутное обновление панель не перерисовывает.
       if (!(document.activeElement && bp.contains(document.activeElement) && document.activeElement.closest(".prime"))) {
-        bp.innerHTML = html + actionBar(t("act.newBatch"), !!(a.stages && a.stage !== "ready"));
+        bp.innerHTML = html + actionBar(t("act.newBatch"), !!(a.stages && a.stage !== "ready"), st.id !== "demo");
         fitStageLabels(); fillPrimes(bp);
       }
     } else {
@@ -2003,6 +2153,7 @@ body.has-install main { padding-bottom: 220px; }
     }
     if ($("new-batch")) $("new-batch").onclick = () => openBatchDialog();
     if ($("next-stage")) $("next-stage").onclick = () => stagesSheet();
+    if ($("edit-batch")) $("edit-batch").onclick = () => openBatchEdit();
     if ($("ai-btn")) $("ai-btn").onclick = () => openAi();
     $("about-style").onclick = () => style ? openStyle(style.id) : openCatalog();
     $("open-catalog").onclick = () => openCatalog();
@@ -2028,12 +2179,14 @@ body.has-install main { padding-bottom: 220px; }
     play: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor"/></svg>`,
     book: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>`,
     list: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>`,
+    edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>`,
     ext: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>`,
   };
   const BREW_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 9h18"/><path d="M9 5.5c0-1 .7-1.5 1.5-1.5M13 5.5c0-1 .7-1.5 1.5-1.5"/></svg>`;
   const BOTTLE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4v4l1.5 3v11a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V9L10 6z"/><path d="M8.5 13h7"/></svg>`;
   // Пока партия идёт — главная кнопка «Следующий этап» (список стадий с «Завершено»), «Новая партия» — в том списке.
-  const actionBar = (first, nextStage) => `<div class="actbar">
+  const actionBar = (first, nextStage, edit) => `<div class="actbar">
+      ${edit ? `<button type="button" id="edit-batch">${ACT_ICONS.edit}${escapeHtml(t("act.editBatch"))}</button>` : ""}
       ${nextStage ? `<button type="button" class="main" id="next-stage">${ACT_ICONS.next}${escapeHtml(t("act.nextStage"))}</button>`
         : `<button type="button" class="main" id="new-batch">${ACT_ICONS.play}${escapeHtml(first)}</button>`}
       <button type="button" id="about-style">${ACT_ICONS.book}${escapeHtml(t("act.style"))}</button>
@@ -2800,11 +2953,12 @@ body.has-install main { padding-bottom: 220px; }
         <div class="bd"><div class="err">${escapeHtml((x.errors || []).join("; "))}</div></div></div>`;
     }
     const r = x.recipe, style = Brew.byId[r.style];
-    // Начальную плотность можно поправить до сохранения (°P или SG): алкоголь пересчитывается.
-    const og = `<label class="og-edit"><small>${escapeHtml(t("rc.og"))} ✎</small><input type="text" inputmode="decimal" data-imp-og="${i}"
-        value="${escapeHtml(x.ogText ?? fmt(r.og, 1))}" ${x.saved ? "disabled" : ""} aria-label="${escapeHtml(t("imp.ogLabel"))}"></label>`;
-    const n5 = og + [["rc.fg", fmt(r.fg, 1)], ["rc.abv", r.abv != null ? fmt(r.abv, 1) + "%" : "–"], ["IBU", r.ibu ?? "–"], ["EBC", r.ebc ?? "–"]]
+    const n5 = [["rc.og", fmt(r.og, 1)], ["rc.fg", fmt(r.fg, 1)], ["rc.abv", r.abv != null ? fmt(r.abv, 1) + "%" : "–"], ["IBU", r.ibu ?? "–"], ["EBC", r.ebc ?? "–"]]
       .map(([k, v]) => `<div><small>${escapeHtml(k.startsWith("rc.") ? t(k) : k)}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
+    // Начальную плотность можно поправить ползунком до сохранения: алкоголь пересчитывается.
+    const from = x.ogFrom ?? r.og, sr = style ? style.og : [from, from];
+    const ogLo = Math.max(Math.floor(r.fg) + 1, Math.floor(Math.min(sr[0], from) - 3)), ogHi = Math.min(30, Math.ceil(Math.max(sr[1], from) + 3));
+    const ogSlider = x.saved ? "" : `<div class="imp-og"><small>${escapeHtml(t("imp.ogLabel"))}</small>${gravSlider(`data-imp-og="${i}"`, r.og, ogLo, ogHi)}</div>`;
     const ogNote = x.ogErr ? `<div class="err">${escapeHtml(x.ogErr)}</div>`
       : x.ogFrom != null && x.ogFrom !== r.og ? `<small class="og-was">${escapeHtml(t("imp.ogWas", { v: fmt(x.ogFrom, 1) }))}</small>` : "";
     const ln = (a, b) => `<div class="ln"><span>${escapeHtml(a)}</span><span>${escapeHtml(b)}</span></div>`;
@@ -2821,7 +2975,7 @@ body.has-install main { padding-bottom: 220px; }
     return `<div class="rcard${x.on || x.saved ? "" : " off"}"><label class="hd" style="background:linear-gradient(90deg,${ebcColour(r.ebc)},${ebcColour((r.ebc || 10) + 6)})${r.ebc > 30 ? ";color:#fff8ec" : ""}">
         <input type="checkbox" data-imp-on="${i}" ${x.on || x.saved ? "checked" : ""} ${x.saved ? "disabled" : ""}>
         <span><b>${escapeHtml(rloc(r.name))}</b><small>${escapeHtml([style ? styleName(style) : r.style, fmtL(r.batch_l)].join(" · "))}</small></span></label>
-      <div class="bd"><div class="n5">${n5}</div>${ogNote}${lines}${more}</div>${foot}</div>`;
+      <div class="bd"><div class="n5">${n5}</div>${ogSlider}${ogNote}${lines}${more}</div>${foot}</div>`;
   }
   function importHtml() {
     const v = impView;
@@ -2863,24 +3017,17 @@ body.has-install main { padding-bottom: 220px; }
     await loadMine(st, true).catch(() => {});
     renderImport();
   }
-  // Новая НП: число в °P или удельная плотность (1.040 → 10,0 °P); КП и засыпь не трогаем.
+  // Новая НП с ползунка (°P); КП и засыпь не трогаем.
   function importOg(x, raw) {
-    const r = x.recipe;
+    const r = x.recipe, v = Math.round(Number(raw) * 10) / 10;
     if (x.ogFrom == null) x.ogFrom = r.og;
-    let v = Number(String(raw).trim().replace(",", "."));
-    if (v > 1 && v < 1.2) v = 259 - 259 / v;
-    v = Math.round(v * 10) / 10;
-    x.ogText = raw; x.ogErr = null;
-    if (!Number.isFinite(v) || v <= 0) { x.ogErr = t("imp.ogBad"); return; }
+    x.ogErr = null;
     if (v <= r.fg) { x.ogErr = t("imp.ogLow", { fg: fmt(r.fg, 1) }); return; }
     const next = { ...r, og: v, abv: Math.round(Brew.abv(v, r.fg) * 10) / 10 };
     const err = Recipe.check(next, styleIds());
     if (err.length) { x.ogErr = t("ed.invalid", { errors: err.slice(0, 2).join("; ") }); return; }
-    x.recipe = next; x.ogText = null;
+    x.recipe = next;
   }
-  sheet.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && e.target.closest("[data-imp-og]")) e.target.blur();
-  });
   sheet.addEventListener("click", (e) => {
     if (!impView || !$("imp")) return;
     const el = (sel) => e.target.closest(sel);

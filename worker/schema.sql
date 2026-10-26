@@ -33,8 +33,9 @@ CREATE TABLE IF NOT EXISTS tokens (
   ai_limit  INTEGER,
   ai_len    TEXT,
   recipe    TEXT,                  -- рецепт текущей партии: lib:<id> (библиотека приложения) или my:<id> (recipes)
-  stage_marks TEXT,
-  t_offset  REAL,                  -- поправка к температуре iSpindel, °C (калибровка по эталонному термометру)                -- стадии партии, отмеченные вручную: JSON [{id, at}]
+  stage_marks TEXT,                -- стадии партии, отмеченные вручную: JSON [{id, at}]
+  t_offset  REAL,                  -- поправка к температуре iSpindel, °C (калибровка по эталонному термометру)
+  og_manual REAL,                  -- начальная плотность партии, заданная вручную, °P (иначе — по первым замерам)
   created   INTEGER NOT NULL,
   last_seen INTEGER
 );
