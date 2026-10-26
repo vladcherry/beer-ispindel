@@ -545,6 +545,11 @@ dialog.sheet.full .top-line { padding-top: calc(14px + env(safe-area-inset-top, 
 .n5 div { background: var(--bg); border-radius: 8px; padding: 4px 1px; }
 .n5 small { display: block; font-size: 10.5px; color: var(--muted); }
 .n5 b { font: 600 16px var(--display); }
+.n5 .og-edit { display: block; background: var(--bg); border-radius: 8px; padding: 4px 1px; outline: 1.5px dashed color-mix(in srgb, var(--violet) 55%, transparent); outline-offset: -1.5px; }
+.n5 .og-edit small { color: var(--violet); }
+.n5 .og-edit input { width: 100%; min-width: 0; border: 0; background: transparent; text-align: center; font: 600 16px var(--display); color: var(--ink); padding: 0; }
+.n5 .og-edit input:focus { outline: none; }
+.og-was { color: var(--violet); font-size: 12px; }
 .rcard .ln { display: flex; justify-content: space-between; gap: 8px; }
 .rcard .ln span:last-child { color: var(--muted); white-space: nowrap; text-align: right; }
 .rcard .bd .link { justify-self: start; }
@@ -2795,8 +2800,13 @@ body.has-install main { padding-bottom: 220px; }
         <div class="bd"><div class="err">${escapeHtml((x.errors || []).join("; "))}</div></div></div>`;
     }
     const r = x.recipe, style = Brew.byId[r.style];
-    const n5 = [["rc.og", fmt(r.og, 1)], ["rc.fg", fmt(r.fg, 1)], ["rc.abv", r.abv != null ? fmt(r.abv, 1) + "%" : "–"], ["IBU", r.ibu ?? "–"], ["EBC", r.ebc ?? "–"]]
+    // Начальную плотность можно поправить до сохранения (°P или SG): алкоголь пересчитывается.
+    const og = `<label class="og-edit"><small>${escapeHtml(t("rc.og"))} ✎</small><input type="text" inputmode="decimal" data-imp-og="${i}"
+        value="${escapeHtml(x.ogText ?? fmt(r.og, 1))}" ${x.saved ? "disabled" : ""} aria-label="${escapeHtml(t("imp.ogLabel"))}"></label>`;
+    const n5 = og + [["rc.fg", fmt(r.fg, 1)], ["rc.abv", r.abv != null ? fmt(r.abv, 1) + "%" : "–"], ["IBU", r.ibu ?? "–"], ["EBC", r.ebc ?? "–"]]
       .map(([k, v]) => `<div><small>${escapeHtml(k.startsWith("rc.") ? t(k) : k)}</small><b>${escapeHtml(String(v))}</b></div>`).join("");
+    const ogNote = x.ogErr ? `<div class="err">${escapeHtml(x.ogErr)}</div>`
+      : x.ogFrom != null && x.ogFrom !== r.og ? `<small class="og-was">${escapeHtml(t("imp.ogWas", { v: fmt(x.ogFrom, 1) }))}</small>` : "";
     const ln = (a, b) => `<div class="ln"><span>${escapeHtml(a)}</span><span>${escapeHtml(b)}</span></div>`;
     const lines = x.open ? (r.fermentables || []).map((y) => ln(rloc(y.name), fmtKg(y.kg)))
       .concat((r.hops || []).map((y) => ln(`${y.name} · ${hopUse(y)}`, fmtG(y.g))))
@@ -2811,7 +2821,7 @@ body.has-install main { padding-bottom: 220px; }
     return `<div class="rcard${x.on || x.saved ? "" : " off"}"><label class="hd" style="background:linear-gradient(90deg,${ebcColour(r.ebc)},${ebcColour((r.ebc || 10) + 6)})${r.ebc > 30 ? ";color:#fff8ec" : ""}">
         <input type="checkbox" data-imp-on="${i}" ${x.on || x.saved ? "checked" : ""} ${x.saved ? "disabled" : ""}>
         <span><b>${escapeHtml(rloc(r.name))}</b><small>${escapeHtml([style ? styleName(style) : r.style, fmtL(r.batch_l)].join(" · "))}</small></span></label>
-      <div class="bd"><div class="n5">${n5}</div>${lines}${more}</div>${foot}</div>`;
+      <div class="bd"><div class="n5">${n5}</div>${ogNote}${lines}${more}</div>${foot}</div>`;
   }
   function importHtml() {
     const v = impView;
@@ -2823,7 +2833,7 @@ body.has-install main { padding-bottom: 220px; }
     if (v.error) return html + `<p class="imp-err">${escapeHtml(v.error)}</p>`;
     const items = v.items || [];
     if (!items.length) return html + `<p class="hint">${escapeHtml(v.say || t("imp.none"))}</p>`;
-    const ok = items.filter((x) => x.recipe), left = ok.filter((x) => !x.saved), n = left.filter((x) => x.on).length;
+    const ok = items.filter((x) => x.recipe), left = ok.filter((x) => !x.saved), n = left.filter((x) => x.on && !x.ogErr).length;
     html += `<p class="hint">${escapeHtml(t("imp.found", { n: ok.length }) + " " + t("imp.check"))}</p>` +
       (v.cut ? `<p class="hint">${escapeHtml(t("imp.cut"))}</p>` : "") + items.map(importCard).join("");
     html += left.length
@@ -2836,7 +2846,7 @@ body.has-install main { padding-bottom: 220px; }
     btn.classList.add("loading"); btn.disabled = true;
     const mine = await loadMine(st, true).catch(() => []);
     const ids = new Set(mine.map((x) => x.id));
-    for (const x of v.items.filter((y) => y.recipe && y.on && !y.saved)) {
+    for (const x of v.items.filter((y) => y.recipe && y.on && !y.saved && !y.ogErr)) {
       const r = JSON.parse(JSON.stringify(x.recipe));
       r.tags = [...new Set((Array.isArray(r.tags) ? r.tags : []).concat("authored", "file"))];
       r.origin = { by: "file", file: v.file.slice(0, 80), at: Date.now() };
@@ -2853,6 +2863,24 @@ body.has-install main { padding-bottom: 220px; }
     await loadMine(st, true).catch(() => {});
     renderImport();
   }
+  // Новая НП: число в °P или удельная плотность (1.040 → 10,0 °P); КП и засыпь не трогаем.
+  function importOg(x, raw) {
+    const r = x.recipe;
+    if (x.ogFrom == null) x.ogFrom = r.og;
+    let v = Number(String(raw).trim().replace(",", "."));
+    if (v > 1 && v < 1.2) v = 259 - 259 / v;
+    v = Math.round(v * 10) / 10;
+    x.ogText = raw; x.ogErr = null;
+    if (!Number.isFinite(v) || v <= 0) { x.ogErr = t("imp.ogBad"); return; }
+    if (v <= r.fg) { x.ogErr = t("imp.ogLow", { fg: fmt(r.fg, 1) }); return; }
+    const next = { ...r, og: v, abv: Math.round(Brew.abv(v, r.fg) * 10) / 10 };
+    const err = Recipe.check(next, styleIds());
+    if (err.length) { x.ogErr = t("ed.invalid", { errors: err.slice(0, 2).join("; ") }); return; }
+    x.recipe = next; x.ogText = null;
+  }
+  sheet.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.closest("[data-imp-og]")) e.target.blur();
+  });
   sheet.addEventListener("click", (e) => {
     if (!impView || !$("imp")) return;
     const el = (sel) => e.target.closest(sel);
@@ -2861,6 +2889,8 @@ body.has-install main { padding-bottom: 220px; }
     else if (el("[data-imp-done]")) { catState.tab = "recipes"; catState.rf = "authored"; openCatalog(); }
   });
   sheet.addEventListener("change", (e) => {
+    const ogIn = e.target.closest("[data-imp-og]");
+    if (ogIn && impView) { importOg(impView.items[Number(ogIn.dataset.impOg)], ogIn.value); renderImport(); return; }
     const box = e.target.closest("[data-imp-on]");
     if (!box || !impView) return;
     impView.items[Number(box.dataset.impOn)].on = box.checked;
