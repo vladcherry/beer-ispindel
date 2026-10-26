@@ -2116,8 +2116,9 @@ body.has-install main { padding-bottom: 220px; }
     $("g-icon").innerHTML = icons.gravity();
     $("t-icon").innerHTML = icons.temp();
     $("g-value").textContent = current == null ? "–" : fmt(current, 1);
+    // SG здесь — текущей плотности (крупное число на плитке); у начальной — своя SG в скобках.
     $("g-sg").textContent = current == null ? t("hero.noGravity")
-      : `SG ${sgFromPlato(current).toFixed(3)}` + (og != null ? ` · ${t("band.og", { og: fmt(og, 1) })}` : "");
+      : `SG ${sgFromPlato(current).toFixed(3)}` + (og != null ? ` · ${t("band.og", { og: fmt(og, 1), sg: sgFromPlato(og).toFixed(3) })}` : "");
     $("g-bar").hidden = a.progress == null;
     if (a.progress != null) $("g-bar").firstElementChild.style.width = Math.round(Math.min(1, Math.max(0, a.progress)) * 100) + "%";
     const rateText = a.rate != null ? (a.rate >= 0 ? "−" : "+") + fmt(Math.abs(a.rate), 1) + " °P/" + t("unit.dayShort") : null;
