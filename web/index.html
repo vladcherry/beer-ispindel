@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- Версию проставляет деплой (.github/workflows/pages.yml); в репозитории — dev. -->
+<meta name="app-version" content="dev" data-sha="" data-built="">
 <title>Beer iSpindel</title>
 <meta name="description" content="Gravity, temperature and battery from an iSpindel while the beer ferments.">
 <meta name="theme-color" content="#eef1ec" media="(prefers-color-scheme: light)">
@@ -770,6 +772,19 @@ button.loading::before { content: ""; display: inline-block; width: 13px; height
 .seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, .15); }
 .set-card { display: grid; gap: 8px; padding: 12px; background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; }
 .set-card h4 { margin: 0; font: 600 16px/1.2 var(--display); text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.ver-line { display: flex; justify-content: space-between; gap: 10px; font-size: 14.5px; }
+.ver-line b { font-variant-numeric: tabular-nums; text-align: right; }
+.ver-card small { color: var(--muted); font-size: 12.5px; }
+.ver-act { display: flex; gap: 8px; }
+.ver-act button { flex: 1; }
+/* Новая версия: карточка внизу экрана */
+.upd-pop { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 60; max-width: 460px; margin: 0 auto;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 16px; box-shadow: 0 10px 34px rgba(0,0,0,.25);
+  padding: 14px 14px 12px; display: grid; gap: 8px; animation: install-in .25s ease-out; }
+.upd-pop b { font: 600 18px/1.2 var(--display); }
+.upd-pop p { margin: 0; font-size: 14px; color: var(--muted); }
+.upd-pop .row2 { display: flex; gap: 8px; }
+.upd-pop .row2 button { flex: 1; }
 .set-card.danger { border-color: color-mix(in srgb, var(--alert) 45%, transparent); }
 .set-card.danger h4 { color: var(--alert); }
 .set-card .note { color: var(--muted); font-size: 13px; }
@@ -986,6 +1001,16 @@ body.has-install main { padding-bottom: 220px; }
         <li><button type="button" class="set-row" id="set-lang"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h8M8 3v2M6 5c0 4 2.5 7 6 8M10 5c0 4-2.5 7-6 8M13 21l4-9 4 9M14.5 18h5"/></svg></span>
           <span class="t"><b data-i18n="ui.language"></b></span><span class="v" id="set-lang-v"></span><span class="ch">›</span></button></li>
       </ul>
+      <h3 class="gl" data-i18n="ver.title"></h3>
+      <div class="set-card ver-card">
+        <div class="ver-line"><span data-i18n="ver.installed"></span><b id="ver-cur"></b></div>
+        <div class="ver-line"><span data-i18n="ver.server"></span><b id="ver-srv">—</b></div>
+        <small id="ver-msg"></small>
+        <div class="ver-act">
+          <button class="secondary" type="button" id="ver-check" data-i18n="ver.check"></button>
+          <button class="primary" type="button" id="ver-update" data-i18n="ver.update" hidden></button>
+        </div>
+      </div>
     </div>
 
     <div class="set-page" data-page="stick" hidden>
@@ -3767,7 +3792,7 @@ body.has-install main { padding-bottom: 220px; }
     form.elements.join.value = ""; $("join-error").textContent = "";
     $("formula-error").textContent = "";
     $("guide").open = !cfg.sticks.length;
-    syncForm(); syncServerForm();
+    syncForm(); syncServerForm(); syncVersion(); checkVersion(true);
     setSeg = "batch";
     showPage(cfg.sticks.length ? "root" : "add");
     dlg.showModal();
@@ -4353,6 +4378,72 @@ body.has-install main { padding-bottom: 220px; }
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker.register("sw.js").catch((e) => console.warn("Service worker not registered", e));
   }
+
+  // ---------- Версия приложения ----------
+  // Деплой кладёт version.json (1.<число коммитов>) и ту же версию в <meta name="app-version">.
+  // Приложение с главного экрана живёт долго, поэтому версию на сервере проверяем при запуске, при
+  // возвращении в приложение (не чаще раза в 10 минут) и раз в час; новая — карточка «Обновить».
+  const verMeta = document.querySelector('meta[name="app-version"]');
+  const APP_VERSION = verMeta ? verMeta.content : "dev";
+  let srvVersion = null, verCheckedAt = 0, verChecking = false;
+  const verNum = (v) => { const m = /^\d+\.(\d+)$/.exec(v || ""); return m ? Number(m[1]) : null; };
+  const isNewer = (v) => verNum(v) != null && verNum(APP_VERSION) != null && verNum(v) > verNum(APP_VERSION);
+  const verText = (v) => v === "dev" ? t("ver.dev") : v;
+  async function checkVersion(manual) {
+    if (verChecking || (!manual && Date.now() - verCheckedAt < 10 * 60e3)) return;
+    verChecking = true;
+    if (manual) { $("ver-msg").textContent = t("ver.checking"); $("ver-check").disabled = true; }
+    try {
+      const res = await fetch("version.json?t=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) throw new Error(String(res.status));
+      srvVersion = (await res.json()).version || null;
+      verCheckedAt = Date.now();
+      if (manual) $("ver-msg").textContent = isNewer(srvVersion) ? t("ver.newer") : t("ver.latest");
+    } catch (e) {
+      if (manual) $("ver-msg").textContent = t("ver.fail", { message: navigator.onLine ? e.message : t("ver.offline") });
+    } finally {
+      verChecking = false;
+      if (manual) $("ver-check").disabled = false;
+      syncVersion();
+      if (isNewer(srvVersion)) offerUpdate();
+    }
+  }
+  function syncVersion() {
+    const built = verMeta && verMeta.dataset.built;
+    $("ver-cur").textContent = verText(APP_VERSION) + (built ? ` · ${dateShort(Date.parse(built))}` : "");
+    $("ver-srv").textContent = srvVersion ? verText(srvVersion) : "—";
+    const newer = isNewer(srvVersion);
+    $("ver-check").hidden = newer; $("ver-update").hidden = !newer;
+  }
+  // Карточка внизу экрана — один раз на каждую новую версию («Позже» больше её не показывает).
+  function offerUpdate() {
+    let skip = null;
+    try { skip = localStorage.getItem("ispindel.updateSkip"); } catch { /* приватный режим */ }
+    if (skip === srvVersion || $("upd-pop")) return;
+    const pop = document.createElement("div");
+    pop.className = "upd-pop"; pop.id = "upd-pop"; pop.setAttribute("role", "alertdialog");
+    pop.innerHTML = `<b>${escapeHtml(t("ver.popTitle"))}</b><p>${escapeHtml(t("ver.popText", { v: srvVersion, cur: verText(APP_VERSION) }))}</p>
+      <div class="row2"><button type="button" class="secondary" data-upd-later>${escapeHtml(t("ver.later"))}</button>
+      <button type="button" class="primary" data-upd-go>${escapeHtml(t("ver.update"))}</button></div>`;
+    document.body.appendChild(pop);
+    pop.querySelector("[data-upd-later]").onclick = () => { try { localStorage.setItem("ispindel.updateSkip", srvVersion); } catch { /* ок */ } pop.remove(); };
+    pop.querySelector("[data-upd-go]").onclick = (e) => applyUpdate(e.currentTarget);
+  }
+  // Обновить: новый service worker, без кэша оболочки — и перезагрузка с сервера.
+  async function applyUpdate(btn) {
+    if (btn) { btn.classList.add("loading"); btn.disabled = true; }
+    try {
+      const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration() : null;
+      if (reg) await reg.update().catch(() => {});
+      if (window.caches) for (const k of await caches.keys()) if (k.startsWith("shell-")) await caches.delete(k);
+    } catch { /* перезагрузка всё равно возьмёт свежую страницу из сети */ }
+    location.reload();
+  }
+  $("ver-check").onclick = () => checkVersion(true);
+  $("ver-update").onclick = (e) => applyUpdate(e.currentTarget);
+  setTimeout(() => checkVersion(false), 4000);
+  setInterval(() => checkVersion(false), 60 * 60e3);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkVersion(false); });
 
   // Язык — маленькая кнопка: каждый клик переключает на следующий по кругу.
   const LANG_CYCLE = ["en", "uk", "ru", "es"];

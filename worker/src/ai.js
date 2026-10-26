@@ -142,7 +142,7 @@ export async function aiAsk(request, env, stick, json, cors) {
 // правилами web/recipe.js; при ошибках — одна попытка исправить. В лимит идёт как один вопрос.
 import "../../web/recipe.js";
 const IMPORT_MAX_TEXT = 40000;
-const IMPORT_MAX_RECIPES = 6;
+const IMPORT_MAX_RECIPES = 8;
 
 function importPrompt(lang, styles, file) {
   const L = LANGS[lang];
@@ -163,7 +163,8 @@ Rules:
 - If OG, FG, IBU, colour or ABV are missing, estimate them (IBU by Tinseth, colour in EBC); og > fg.
 - Priming: if the file gives sugar in g/L, convert it to vol_co2 = 0.86 + g/L ÷ 3.82 (sucrose; for dextrose divide g/L by 1.1 first).
 - 1-4 fermentation steps in order; until "done" for the last active step unless the file says otherwise.
-- Process details that do not fit the fields (mash steps rationale, dry-hop timing, variants, serving advice) go briefly into step notes (≤300 chars each) and "notes" (≤1500 chars).
+- A variant of a recipe (e.g. "variant without lactose", "alternative with oats") is a SEPARATE recipe. Never mix a variant's ingredients or steps into the main recipe: the main recipe uses only its main version.
+- Process details that do not fit the fields (mash steps rationale, dry-hop timing, serving advice) go briefly into step notes (≤300 chars each) and "notes" (≤1500 chars).
 - Ignore shopping lists, prices and shop names.`;
 }
 
@@ -230,7 +231,8 @@ export async function aiImport(request, env, stick, json, cors) {
   try {
     // 1. Какие рецепты есть в файле.
     const list = parse(await call(head.concat({ role: "user", content:
-      `List the beer recipes in the file: {"recipes":[{"title":"name as in the file"}],"say":"one short sentence in ${LANGS[lang]} if there are none"}. At most ${IMPORT_MAX_RECIPES}.` }), 400)) || {};
+      `List the beer recipes in the file: {"recipes":[{"title":"name as in the file"}],"say":"one short sentence in ${LANGS[lang]} if there are none"}. ` +
+      `A described variant of a recipe is its own entry right after it, titled "<recipe> — <variant>" in ${LANGS[lang]}. At most ${IMPORT_MAX_RECIPES}.` }), 500)) || {};
     found = (Array.isArray(list.recipes) ? list.recipes : []).map((x) => String(x && x.title || "").trim().slice(0, 120)).filter(Boolean).slice(0, IMPORT_MAX_RECIPES);
     if (!found.length) {
       const say = typeof list.say === "string" ? list.say.slice(0, 300) : "";
@@ -239,7 +241,9 @@ export async function aiImport(request, env, stick, json, cors) {
     }
     // 2. Каждый рецепт — отдельно и параллельно.
     results = await Promise.all(found.map(async (title, i) => {
-      const ask = head.concat({ role: "user", content: `Convert recipe ${i + 1} of ${found.length}, «${title}», to the recipe JSON. Use the file's common conditions (volume, efficiency, water, yeast handling, priming) where they apply. Reply with the recipe object only.` });
+      const ask = head.concat({ role: "user", content: `Convert recipe ${i + 1} of ${found.length}, «${title}», to the recipe JSON. Use the file's common conditions (volume, efficiency, water, yeast handling, priming) where they apply. ` +
+        `If it is a variant, take the main recipe and apply exactly the variant's changes (removed and added ingredients, mash temperature, priming, extra steps), recompute OG/FG/ABV/IBU, and name it after the variant. ` +
+        `If it is a main recipe, leave out everything that belongs only to its variants. All recipes in this file: ${found.map((x) => `«${x}»`).join(", ")}. Reply with the recipe object only.` });
       let raw = await call(ask, 3500), r = parse(raw);
       if (r && r.recipe && typeof r.recipe === "object") r = r.recipe;
       let err = r ? check(r) : ["reply is not valid JSON"];
