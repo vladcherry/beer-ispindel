@@ -298,6 +298,9 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 .ai-close { width: 100%; margin-top: 8px; }
 /* Заголовок чата остаётся сверху при прокрутке листа */
 .sheet .ai-head { flex-wrap: wrap; }
+.sheet .top-line.ai-head h2 { flex: none; overflow: visible; }
+.sheet .top-line.ai-head .ai-count { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.sheet .top-line.ai-head .xp { margin-left: auto; }
 .actbar button.ai { color: var(--violet); font-weight: 600; background: color-mix(in srgb, var(--violet) 9%, transparent); }
 /* AI-чат партии */
 .ai-count { font: 600 12px var(--body); border-radius: 999px; padding: 3px 9px; background: color-mix(in srgb, var(--violet) 13%, transparent); color: var(--violet); white-space: nowrap; }
@@ -321,9 +324,13 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 
 /* Карточка стиля и справочник — лист снизу */
 dialog.sheet {
-  margin: auto auto 0; width: min(560px, 100%); max-width: 100%; max-height: 88vh; overflow: auto;
-  border-radius: 18px 18px 0 0; padding: 0 16px calc(18px + env(safe-area-inset-bottom, 0px));
+  margin: auto auto 0; width: min(560px, 100%); max-width: 100%; max-height: 88vh; overflow: hidden;
+  border-radius: 18px 18px 0 0; padding: 0;
 }
+dialog.sheet[open] { display: flex; flex-direction: column; }
+#sheet-body { display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0; }
+.sheet-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 8px 16px calc(18px + env(safe-area-inset-bottom, 0px)); }
+#sheet-body > .rc-foot { position: static; margin: 0; flex: none; }
 /* На весь экран */
 dialog.sheet.full { width: 100%; height: 100%; max-height: 100%; max-height: 100dvh; border-radius: 0; margin: 0; }
 dialog.sheet.full .top-line { padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
@@ -484,7 +491,7 @@ dialog.sheet.full .top-line { padding-top: calc(14px + env(safe-area-inset-top, 
 @media (max-width: 380px) { .facts5 b { font-size: 17px; } .facts5 small { font-size: 10.5px; } }
 
 /* Карточка стиля (вариант A): шапка в цвете пива, шкалы диапазонов */
-.sty-hero { position: relative; margin: 0 -16px 4px; padding: 6px 16px 14px; overflow: hidden; }
+.sty-hero { position: relative; margin: -8px -16px 4px; padding: 6px 16px 14px; overflow: hidden; }
 .sty-hero h2 { max-width: calc(100% - 70px); margin-top: 6px !important; color: inherit; }
 .sty-hero .sub { max-width: calc(100% - 70px); }
 .sty-hero .star.big { margin-left: auto; color: rgba(255,255,255,.75); text-shadow: 0 1px 2px rgba(0,0,0,.25); }
@@ -557,17 +564,23 @@ dialog.sheet.full .top-line { padding-top: calc(14px + env(safe-area-inset-top, 
 
 /* Заголовок всплывающих окон с «Закрыть» — закреплён сверху; «Закрыть» — кнопкой, а не крестиком */
 /* Единый заголовок листа: ручка, назад, название, развернуть, «Закрыть». Прилипает к самому верху. */
-.sheet .top-line { position: sticky; top: 0; z-index: 4; display: flex; align-items: center; gap: 8px; margin: 0 -16px 8px; padding: 16px 16px 8px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.sheet .top-line { position: relative; flex: none; z-index: 4; display: flex; align-items: center; gap: 8px; margin: 0; padding: 16px 16px 8px; background: var(--surface); border-bottom: 1px solid var(--rule); }
 .sheet .top-line::before { content: ""; position: absolute; top: 5px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--rule); opacity: .9; }
 dialog.sheet.full .top-line::before { display: none; }
 .sheet .top-line h2 { flex: 1; min-width: 0; font: 600 22px/1.15 var(--display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0; }
 .sheet .top-line .back { flex: none; font-size: 22px; line-height: 1; padding: 6px 8px 6px 0; }
 /* Где есть «назад» или звезда — кнопки первой строкой, название второй (целиком, до двух строк) */
-.sheet .top-line:has(.back, .star, .link) { flex-wrap: wrap; row-gap: 4px; }
-.sheet .top-line:has(.back, .star, .link) h2 { order: 10; flex: 1 0 100%; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.1; }
+.sheet .top-line:not(.ai-head):has(.back, .star, .link) { flex-wrap: wrap; row-gap: 4px; }
+.sheet .top-line:not(.ai-head):has(.back, .star, .link) h2 { order: 10; flex: 1 0 100%; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.1; }
 .sheet .top-line .star.big, .sheet .top-line:not(:has(.star)) .xp { margin-left: auto; }
 .set-head h2 { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.1; }
 @media (max-width: 400px) { .set-head h2 { font-size: 20px; } }
+/* На телефоне в разделах стика: кнопки первой строкой, имя стика — второй целиком */
+@media (max-width: 480px) {
+  #settings .set-head:has(#set-back:not([hidden])) { flex-wrap: wrap; row-gap: 2px; }
+  #settings .set-head:has(#set-back:not([hidden])) h2 { order: 10; flex: 1 0 100%; }
+  #settings .set-head .xp { margin-left: auto; }
+}
 .sheet .xp, .set-head .xp { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--rule); background: var(--bg); color: var(--ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
 .sheet .xp svg, .set-head .xp svg { width: 18px; height: 18px; }
 .sheet .sty-top .xp { background: rgba(255,255,255,.55); border-color: transparent; color: #2b1d05; }
@@ -580,11 +593,20 @@ dialog.sheet.full .top-line::before { display: none; }
 .sheet .sty-top { border-bottom: 0; margin-bottom: 0; }
 .sheet .sty-top h2 { color: inherit; }
 .sheet .sty-top .x { background: rgba(255,255,255,.55); border-color: transparent; color: #2b1d05; }
-.sheet .sty-hero { margin-top: 0; padding-top: 2px; }
+.sheet .sty-hero { margin-top: -8px; padding-top: 2px; }
 .x-btn { flex: none; font: 600 14.5px var(--body); color: var(--ink); padding: 8px 14px; min-height: 38px; border: 1px solid var(--rule); border-radius: 999px; background: var(--bg); cursor: pointer; }
 .set-head { position: sticky; top: -22px; z-index: 5; background: var(--surface); margin: -22px -22px 0; padding: 14px 22px 10px; border-bottom: 1px solid var(--rule); }
 @media (max-width: 480px) { .set-head { top: -18px; margin: -18px -16px 0; padding: 12px 16px 10px; } }
 .rc-foot button.danger { color: var(--alert); border-color: color-mix(in srgb, var(--alert) 40%, transparent); }
+
+
+/* Настройки: заголовок и нижние кнопки на месте, прокручивается только середина */
+#settings[open] { display: flex; flex-direction: column; overflow: hidden; }
+#settings-form { display: flex; flex-direction: column; min-height: 0; flex: 1 1 auto; padding: 0; gap: 0; }
+#settings .set-head { position: static; flex: none; margin: 0; padding: 14px 22px 10px; }
+.set-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; overscroll-behavior: contain; padding: 16px 22px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-content: start; }
+#settings #set-actions { position: static; flex: none; margin: 0; padding: 12px 22px 18px; }
+@media (max-width: 480px) { #settings .set-head { padding: 12px 16px 10px; } .set-scroll { padding: 14px 16px; } #settings #set-actions { padding: 12px 16px 16px; } }
 
 /* Кто подключён к стику */
 .members { background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; padding: 12px; }
@@ -919,6 +941,7 @@ body.has-install main { padding-bottom: 220px; }
       <span class="tag" id="set-role" hidden></span>
       <button class="x-btn" type="button" id="set-close" data-i18n="settings.close"></button>
     </div>
+    <div class="set-scroll" id="set-scroll">
 
     <div class="set-page" data-page="root">
       <h3 class="gl" data-i18n="sticks.title"></h3>
@@ -1123,6 +1146,7 @@ body.has-install main { padding-bottom: 220px; }
       </div>
     </div>
 
+    </div>
     <div class="dialog-actions" id="set-actions">
       <button class="secondary" type="button" id="set-done" data-i18n="settings.close"></button>
       <button class="primary" value="save" id="set-save" data-i18n="settings.save"></button>
@@ -2046,14 +2070,32 @@ body.has-install main { padding-bottom: 220px; }
   document.addEventListener("click", (e) => { if (e.target.closest("[data-expand]")) setFull(!sheetFull); });
   $("settings").classList.toggle("full", sheetFull);
   addExpand($("settings"), sheetFull);
-  function openSheet(html) {
+  // Лист: заголовок (не прокручивается) → область прокрутки → нижние кнопки. Всё, что не заголовок
+  // и не нижняя панель, переносим в .sheet-scroll — полоса прокрутки начинается под заголовком.
+  const sheetScroll = () => $("sheet-body").querySelector(":scope > .sheet-scroll");
+  function frameSheet() {
+    const body = $("sheet-body"), kids = [...body.children];
+    const isTop = (k) => k.classList.contains("top-line"), isFoot = (k) => k.classList.contains("rc-foot");
+    let scroll = sheetScroll();
+    if (scroll && kids.every((k) => isTop(k) || isFoot(k) || k === scroll)) return;
+    if (!scroll) { scroll = document.createElement("div"); scroll.className = "sheet-scroll"; }
+    const top = kids.find(isTop), foot = kids.find(isFoot);
+    for (const k of kids) if (k !== top && k !== foot && k !== scroll) scroll.appendChild(k);
+    body.append(...[top, scroll, foot].filter(Boolean));
+  }
+  function setSheet(html, keepScroll = false) {
+    const y = keepScroll && sheetScroll() ? sheetScroll().scrollTop : 0;
     $("sheet-body").innerHTML = html;
+    frameSheet();
+    sheetScroll().scrollTop = y;
+  }
+  function openSheet(html) {
     sheet.classList.toggle("full", sheetFull);
+    setSheet(html);
     if (!sheet.open) sheet.showModal();
-    sheet.scrollTop = 0;
   }
   // Кнопка «развернуть» — в любом заголовке листа, как бы его ни перерисовали.
-  new MutationObserver(() => { if (!$("sheet-body").querySelector("[data-expand]")) addExpand($("sheet-body"), sheetFull); })
+  new MutationObserver(() => { frameSheet(); if (!$("sheet-body").querySelector("[data-expand]")) addExpand($("sheet-body"), sheetFull); })
     .observe($("sheet-body"), { childList: true, subtree: true });
   sheet.addEventListener("click", (e) => {
     if (e.target === sheet || e.target.closest("[data-close]")) sheet.close();
@@ -2082,7 +2124,7 @@ body.has-install main { padding-bottom: 220px; }
   function renderCatalog() {
     const keep = sheet.querySelector(".cat-search");
     const pos = keep ? keep.selectionStart : null;
-    $("sheet-body").innerHTML = catalogHtml();
+    setSheet(catalogHtml(), true);
     bindSearch(pos);
   }
   function bindSearch(pos) {
@@ -2544,7 +2586,7 @@ body.has-install main { padding-bottom: 220px; }
     return nx ? t("brew.next", { what: nx.text, in: mmss((leftMin - nx.min) * 60e3) }) : "";
   }
   function brewSave() { setBrew(cur(), brewView.b); }
-  function brewRerender() { const y = sheet.scrollTop; $("sheet-body").innerHTML = brewHtml(); sheet.scrollTop = y; }
+  function brewRerender() { setSheet(brewHtml(), true); }
   // Раз в секунду: время на таймере, «что дальше»; конец таймера — шаг отмечен, вибрация и уведомление.
   setInterval(() => {
     const st = cur(), b = st && getBrew(st);
@@ -3120,7 +3162,7 @@ body.has-install main { padding-bottom: 220px; }
       $("set-lang-v").textContent = I18N.name(I18N.lang());
     }
     showSeg(setSeg);
-    form.scrollTop = 0;
+    $("set-scroll").scrollTop = 0;
   }
   function showSeg(seg) {
     setSeg = seg;
@@ -3597,7 +3639,7 @@ body.has-install main { padding-bottom: 220px; }
     }
     const c = alertsCache[st.id];
     try { localStorage.setItem(clearedKey(st), String(Math.max(Date.now(), c && c.max || 0))); } catch { /* приватный режим */ }
-    $("sheet-body").innerHTML = alertsHtml(); renderBell();
+    setSheet(alertsHtml(), true); renderBell();
   }
   $("open-alerts").onclick = async () => {
     const st = cur();
@@ -3612,7 +3654,7 @@ body.has-install main { padding-bottom: 220px; }
   };
   sheet.addEventListener("click", (e) => {
     const f = e.target.closest("[data-afilter]");
-    if (f) { alertsFilter = f.dataset.afilter; $("sheet-body").innerHTML = alertsHtml(); }
+    if (f) { alertsFilter = f.dataset.afilter; setSheet(alertsHtml()); }
     if (e.target.closest("[data-alerts-clear]")) clearAlerts(e.target.closest("[data-alerts-clear]"));
     if (e.target.closest("[data-alerts-setup]")) {
       sheet.close();
@@ -3775,17 +3817,17 @@ body.has-install main { padding-bottom: 220px; }
       bottom = (chips ? `<div class="ai-chips">${chips}</div>` : "") + `
         <div class="ai-ask"><textarea id="ai-q" rows="1" maxlength="500" placeholder="${escapeHtml(ph)}">${escapeHtml(aiDraft)}</textarea>
           <button type="button" id="ai-send" aria-label="${escapeHtml(t("ai.send"))}" ${aiBusy ? "disabled" : ""}>${SEND_ICON}</button></div>
-        <p class="ai-foot">${escapeHtml(t("ai.foot", { in: resetIn(c.resetAt), lang: I18N.name(I18N.lang()) }))}</p>`;
+        <p class="ai-foot">${count} ${escapeHtml(t("ai.foot", { in: resetIn(c.resetAt), lang: I18N.name(I18N.lang()) }))}</p>`;
     }
     const empty = !rows && !wait && c.enabled ? `<p class="hint">${escapeHtml(t("ai.empty"))}</p>` : "";
     const mode = rs ? `<div class="ai-mode">${AI_ICON}<span>${escapeHtml(t("rcai.mode"))}${rs.baseName ? ` · ${escapeHtml(t("rcai.on", { name: rs.baseName }))}` : ""}</span><button type="button" class="link" data-rs-exit>${escapeHtml(t("rcai.exit"))} ✕</button></div>` : "";
-    return `<div class="top-line ai-head"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${count}${closeBtn()}${mode}</div>
+    return `<div class="top-line ai-head"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${closeBtn()}${mode}</div>
       <div class="ai-thread" id="ai-thread">${rows}${wait}</div>${empty}${rs && c.enabled ? rsExtras(st, rs) : ""}${bottom}
       <button type="button" class="secondary ai-close" data-close>${escapeHtml(t("ai.close"))}</button>`;
   }
   function renderAi(pending) {
-    $("sheet-body").innerHTML = aiHtml(pending);
-    sheet.scrollTop = sheet.scrollHeight;
+    setSheet(aiHtml(pending));
+    sheetScroll().scrollTop = sheetScroll().scrollHeight;
     const q = $("ai-q");
     if (q) q.oninput = () => { aiDraft = q.value; };
   }
