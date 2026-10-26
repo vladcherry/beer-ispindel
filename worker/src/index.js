@@ -13,7 +13,7 @@
 //   POST /api/members/revoke — {id}: админ отключает пользователя, другого админа или неоткрытую ссылку
 //   POST /api/members/admin — {id, admin}: админ выдаёт или снимает права админа у подключённого
 //   POST /api/history/clear — владелец удаляет все показания стика, кроме последнего
-//   GET  /api/alerts        — журнал событий стика (?since=ts)
+//   GET  /api/alerts        — журнал событий стика (?since=ts); POST /api/alerts/clear — админ удаляет весь журнал
 //   GET  /api/push/key      — публичный ключ VAPID для подписки браузера
 //   POST /api/push/subscribe|unsubscribe|state|test — {endpoint, …}: push-подписка этого устройства на стик
 //   GET  /api/ai            — AI-помощник: включён ли, лимит на сегодня, чат текущей партии
@@ -79,6 +79,14 @@ export default {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
         if (!stick) return json({ error: "unknown access key" }, 401, cors);
         return await setAdmin(request, env, stick, cors);
+      }
+      if (request.method === "POST" && url.pathname === "/api/alerts/clear") {
+        // Журнал уведомлений стика общий — удаляет только админ.
+        const stick = await stickByAccess(env, request.headers.get("X-Access"), request);
+        if (!stick) return json({ error: "unknown access key" }, 401, cors);
+        if (stick.key_kind !== "owner") return json({ error: "only an admin can clear notifications" }, 403, cors);
+        await env.DB.prepare("DELETE FROM alert_log WHERE token_hash = ?1").bind(stick.hash).run();
+        return json({ ok: true }, 200, cors);
       }
       if (request.method === "POST" && url.pathname === "/api/history/clear") {
         const stick = await stickByAccess(env, request.headers.get("X-Access"), request);

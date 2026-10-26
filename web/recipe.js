@@ -17,7 +17,7 @@
   const isNum = (v, lo, hi) => typeof v === "number" && Number.isFinite(v) && v >= lo && v <= hi;
   const isText = (v, max = 120) => (typeof v === "string" && v.trim().length > 0 && v.length <= max) ||
     (v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).length > 0 &&
-      Object.entries(v).every(([k, s]) => LANGS.includes(k) && typeof s === "string" && s.length <= max) && !!(v.en || v.ru));
+      Object.entries(v).every(([k, s]) => LANGS.includes(k) && typeof s === "string" && s.length <= max) && Object.values(v).some((s) => s.trim()));
 
   // Ошибки рецепта (пустой массив — всё хорошо). styleIds — известные стили (в воркере их нет — только шаблон).
   function check(r, styleIds) {

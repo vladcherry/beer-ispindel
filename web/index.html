@@ -553,6 +553,18 @@ dialog.sheet::before { content: ""; display: block; width: 40px; height: 4px; bo
 .link.ai { color: var(--violet); }
 .ai-err { color: var(--alert) !important; border-color: color-mix(in srgb, var(--alert) 40%, transparent) !important; margin: 4px 0 8px; }
 
+/* Заголовок всплывающих окон с «Закрыть» — закреплён сверху; «Закрыть» — кнопкой, а не крестиком */
+.sheet .top-line:not(.ai-head) { position: sticky; top: -10px; z-index: 4; margin: -10px -16px 6px; padding: 10px 16px 8px; background: var(--surface); border-bottom: 1px solid var(--rule); }
+.sheet .x { flex: none; margin-left: auto; font: 600 14.5px var(--body); color: var(--ink); padding: 8px 14px; min-height: 38px; border: 1px solid var(--rule); border-radius: 999px; background: var(--bg); cursor: pointer; }
+.sheet .star.big + .x { margin-left: 8px; }
+.sheet .sty-top { border-bottom: 0; margin-bottom: 0; }
+.sheet .sty-top .x { background: rgba(255,255,255,.55); border-color: transparent; color: #2b1d05; }
+.sheet .sty-hero { margin-top: 0; padding-top: 2px; }
+.x-btn { flex: none; font: 600 14.5px var(--body); color: var(--ink); padding: 8px 14px; min-height: 38px; border: 1px solid var(--rule); border-radius: 999px; background: var(--bg); cursor: pointer; }
+.set-head { position: sticky; top: -22px; z-index: 5; background: var(--surface); margin: -22px -22px 0; padding: 14px 22px 10px; border-bottom: 1px solid var(--rule); }
+@media (max-width: 480px) { .set-head { top: -18px; margin: -18px -16px 0; padding: 12px 16px 10px; } }
+.rc-foot button.danger { color: var(--alert); border-color: color-mix(in srgb, var(--alert) 40%, transparent); }
+
 /* Кто подключён к стику */
 .members { background: var(--bg); border: 1px solid var(--rule); border-radius: 12px; padding: 12px; }
 .members h4 { margin: 0 0 6px; font: 600 16px/1.2 var(--display); }
@@ -884,7 +896,7 @@ body.has-install main { padding-bottom: 220px; }
       <button class="set-icon back" type="button" id="set-back" hidden data-i18n-label="set.back">‹</button>
       <h2 id="set-title"></h2>
       <span class="tag" id="set-role" hidden></span>
-      <button class="set-icon" type="button" id="set-close" data-i18n-label="settings.cancel">✕</button>
+      <button class="x-btn" type="button" id="set-close" data-i18n="settings.close"></button>
     </div>
 
     <div class="set-page" data-page="root">
@@ -1698,7 +1710,7 @@ body.has-install main { padding-bottom: 220px; }
     const alarm = a.alarm ? `<p class="st-alarm-text ${a.alarm.id === "stalled" ? "bad" : "warn"}">${escapeHtml(t("stage.since", { stage: t("stage." + a.alarm.id), time: dayTime(a.alarm.from) }))}</p>` : "";
     const foot = canMark ? `<div class="rc-foot"><button type="button" data-close>${escapeHtml(t("settings.close"))}</button>
       <button type="button" data-new-batch>${ACT_ICONS.play}${escapeHtml(t("act.newBatch"))}</button></div>` : "";
-    openSheet(`<div class="top-line"><h2>${escapeHtml(t("stage.listTitle"))}</h2>${closeBtn}</div>${alarm}<ul class="stage-list">${rows}${ahead}</ul>${note}
+    openSheet(`<div class="top-line"><h2>${escapeHtml(t("stage.listTitle"))}</h2>${closeBtn()}</div>${alarm}<ul class="stage-list">${rows}${ahead}</ul>${note}
       <p class="hint">${escapeHtml(t("stage.manualNote"))}</p>${foot}`);
   }
   async function setStageMarks(marks, btn) {
@@ -1991,7 +2003,8 @@ body.has-install main { padding-bottom: 220px; }
   const sheet = $("sheet");
   let catState = { cat: "all", q: "", tab: "styles", rf: null };
   const COLOURS = { pale: "#e8c55c", amber: "#c4782a", dark: "#4a2c1d" };
-  const closeBtn = `<button class="x" type="button" data-close aria-label="${escapeHtml(t("sheet.close"))}">×</button>`;
+  // «Закрыть» словом, а не крестиком: на телефоне в крестик трудно попасть.
+  const closeBtn = () => `<button class="x" type="button" data-close>${escapeHtml(t("settings.close"))}</button>`;
   function openSheet(html) {
     $("sheet-body").innerHTML = html;
     if (!sheet.open) sheet.showModal();
@@ -2047,7 +2060,7 @@ body.has-install main { padding-bottom: 220px; }
     const tabs = ["styles", "recipes"].map((k) => `<button type="button" data-tab="${k}" aria-pressed="${k === catState.tab}">${escapeHtml(t("catalog.tab." + k))}</button>`).join("");
     const body = catState.tab === "recipes" ? recipesHtml()
       : `<div class="cats">${cats}</div>${rows ? `<ul class="cat-list">${rows}</ul>` : `<p class="hint">${escapeHtml(t("catalog.empty"))}</p>`}`;
-    return `<div class="top-line"><h2>${escapeHtml(t("catalog.guide"))}</h2>${closeBtn}</div>
+    return `<div class="top-line"><h2>${escapeHtml(t("catalog.guide"))}</h2>${closeBtn()}</div>
       <div class="tabs2" role="group">${tabs}</div>
       <input class="cat-search" type="search" value="${escapeHtml(catState.q)}" placeholder="${escapeHtml(t(catState.tab === "recipes" ? "rc.search" : "catalog.search"))}" autocomplete="off">
       <div id="cat-body">${body}</div>`;
@@ -2056,9 +2069,9 @@ body.has-install main { padding-bottom: 220px; }
   // Карточка стиля: шапка в цвете пива с бокалом, диапазоны стиля шкалами с отметкой партии,
   // советы, рецепты этого стиля, ссылки; кнопки — внизу.
   const HERO = {
-    pale: { bg: "linear-gradient(160deg,#f6e3a0,#e8c55c 60%,#d9ad3c)", ink: "#3a2a08", sub: "#6b4a0c", beer: "#e2a733" },
-    amber: { bg: "linear-gradient(160deg,#e7a35a,#c4782a 60%,#9c5a1c)", ink: "#2e1704", sub: "#4f2c0b", beer: "#b8651f" },
-    dark: { bg: "linear-gradient(160deg,#6a3a1c,#3a1e10)", ink: "#fff", sub: "#f3d9b0", beer: "#1c0e08" },
+    pale: { top: "#f2dc8c", bg: "linear-gradient(170deg,#f2dc8c,#e8c55c 60%,#d9ad3c)", ink: "#3a2a08", sub: "#6b4a0c", beer: "#e2a733" },
+    amber: { top: "#e09a52", bg: "linear-gradient(170deg,#e09a52,#c4782a 60%,#9c5a1c)", ink: "#2e1704", sub: "#4f2c0b", beer: "#b8651f" },
+    dark: { top: "#643619", bg: "linear-gradient(170deg,#643619,#3a1e10)", ink: "#fff", sub: "#f3d9b0", beer: "#1c0e08" },
   };
   const glassSvg = (beer, dark) => `<svg class="sty-glass" viewBox="0 0 56 78" aria-hidden="true"><path d="M8 4h40l-4 66a5 5 0 0 1-5 4H17a5 5 0 0 1-5-4z" fill="rgba(255,255,255,${dark ? .12 : .35})" stroke="${dark ? "rgba(255,230,190,.6)" : "rgba(90,60,8,.55)"}" stroke-width="2"/><path d="M11 20h34l-3 48a3 3 0 0 1-3 3H17a3 3 0 0 1-3-3z" fill="${beer}"/><path d="M8 4h40v14c-6 4-34 4-40 0z" fill="${dark ? "#efdcb8" : "#fffaf0"}"/></svg>`;
   const TIP_ICONS = ["🧫", "🌡️", "⏱️", "🍺"];
@@ -2110,10 +2123,9 @@ body.has-install main { padding-bottom: 220px; }
     if (st && view && view.hasBatch && !isCurrent) action = `<button type="button" class="main" data-choose="${id}">${escapeHtml(t("sheet.choose"))}</button>`;
     else if (st && view && !view.hasBatch) action = `<button type="button" class="main" data-choose="${id}">${escapeHtml(t("sheet.startWith"))}</button>`;
     const foot = action || recs.length ? `<div class="rc-foot">${recs.length ? `<button type="button" data-sty-recipes>${escapeHtml(t("sty.recipesN", { n: recs.length }))}</button>` : ""}${action}</div>` : "";
-    openSheet(`<div class="sty-hero" style="background:${h.bg};color:${h.ink}">
-        <div class="top-line">${fromCatalog ? `<button class="back" type="button" data-back style="color:${h.sub}">← ${escapeHtml(t("act.catalog"))}</button>` : ""}
-          <button type="button" class="star big" data-fav-style="${id}" aria-pressed="${isFavStyle(id)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button>
-          <button class="x" type="button" data-close aria-label="${escapeHtml(t("sheet.close"))}" style="color:${h.sub}">×</button></div>
+    openSheet(`<div class="top-line sty-top" style="background:${h.top};color:${h.ink}">${fromCatalog ? `<button class="back" type="button" data-back style="color:${h.sub}">← ${escapeHtml(t("act.catalog"))}</button>` : ""}
+          <button type="button" class="star big" data-fav-style="${id}" aria-pressed="${isFavStyle(id)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button>${closeBtn()}</div>
+      <div class="sty-hero" style="background:${h.bg};color:${h.ink}">
         <h2>${escapeHtml(name)}</h2>
         <div class="sub" style="color:${h.sub}">${escapeHtml([x.name.en !== name ? x.name.en : null, "BJCP " + StyleGuide.code(id)].filter(Boolean).join(" · "))}</div>
         <div class="pills">${pills}</div>${glassSvg(h.beer, colour === "dark")}</div>
@@ -2321,7 +2333,7 @@ body.has-install main { padding-bottom: 220px; }
         <button type="button" data-rc-ferment>${escapeHtml(t("rc.fermentNow"))}</button>
         <button type="button" class="main" data-rc-brew>${BREW_ICON}${escapeHtml(t("rc.brew"))}</button></div>` : "";
     return `<div class="top-line"><button class="back" type="button" data-back>← ${escapeHtml(t("act.catalog"))}</button>
-        <button type="button" class="star big" data-fav="${ref}" aria-pressed="${isFav(ref)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button>${closeBtn}</div>
+        <button type="button" class="star big" data-fav="${ref}" aria-pressed="${isFav(ref)}" aria-label="${escapeHtml(t("rc.fav"))}">★</button>${closeBtn()}</div>
       <h2>${escapeHtml(rloc(r.name))}</h2>
       <div class="sub">${escapeHtml(sub)}</div>
       ${isCur ? `<span class="current-mark">✓ ${escapeHtml(t("rc.current"))}</span>` : ""}
@@ -2472,7 +2484,7 @@ body.has-install main { padding-bottom: 220px; }
       return `<li class="${done ? "done" : isCur ? "cur" : ""}"><button type="button" class="chk" data-step="${i}" aria-pressed="${done}" aria-label="${escapeHtml(t("brew.mark"))}">${done ? "✓" : i + 1}</button>
         <div class="bs"><div class="bt"><b>${escapeHtml(s.title)}</b>${timer}</div>${s.sub ? `<small>${escapeHtml(s.sub)}</small>` : ""}${next}</div></li>`;
     }).join("");
-    return `<div class="top-line brew-top"><h2>${escapeHtml(t("brew.title", { name: b.name }))}</h2>${closeBtn}</div>
+    return `<div class="top-line brew-top"><h2>${escapeHtml(t("brew.title", { name: b.name }))}</h2>${closeBtn()}</div>
       <div class="sub">${escapeHtml(fmtL(b.liters))} · ${escapeHtml(curI < 0 ? t("brew.allDone") : t("brew.stepOf", { i: curI + 1, n: steps.length }))}</div>
       <ol class="brew">${items}</ol>
       <p class="hint">${escapeHtml(t("brew.hint"))}</p>
@@ -2560,7 +2572,7 @@ body.has-install main { padding-bottom: 220px; }
     const styles = Brew.STYLES.map((x) => [x.id, x.name[lang] || x.name.en]).sort((p, q) => p[1].localeCompare(q[1], I18N.locale()))
       .map(([id, name]) => `<option value="${id}"${id === r.style ? " selected" : ""}>${escapeHtml(name)}</option>`).join("");
     const num = (name, v, step) => `<input name="${name}" type="number" inputmode="decimal" step="${step}" value="${v ?? ""}" required>`;
-    openSheet(`<div class="top-line"><h2>${escapeHtml(t(isNew ? "ed.new" : "ed.title"))}</h2>${closeBtn}</div>
+    openSheet(`<div class="top-line"><h2>${escapeHtml(t(isNew ? "ed.new" : "ed.title"))}</h2>${closeBtn()}</div>
       <form class="rc-edit" id="rc-edit" novalidate>
         <label>${escapeHtml(t("ed.name"))}<input name="name" maxlength="80" required value="${escapeHtml(rloc(r.name))}"></label>
         <label>${escapeHtml(t("batchdlg.style"))}<select name="style">${styles}</select></label>
@@ -3509,8 +3521,8 @@ body.has-install main { padding-bottom: 220px; }
       : d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short" });
   }
   function alertsHtml() {
-    const st = cur(), c = alertsCache[st.id] || { list: [] }, seen = getSeen(st);
-    const list = c.list.filter((a) => ALERT_KINDS[a.key] && (alertsFilter === "all" || ALERT_KINDS[a.key][1] === alertsFilter));
+    const st = cur(), c = alertsCache[st.id] || { list: [] }, seen = getSeen(st), cleared = getCleared(st);
+    const list = c.list.filter((a) => a.ts > cleared && ALERT_KINDS[a.key] && (alertsFilter === "all" || ALERT_KINDS[a.key][1] === alertsFilter));
     const chips = ["all", "temp", "link", "ferm"].map((f) =>
       `<button type="button" data-afilter="${f}" aria-pressed="${f === alertsFilter}">${escapeHtml(t("alerts.f." + f))}</button>`).join("");
     let day = "", rows = "";
@@ -3523,9 +3535,26 @@ body.has-install main { padding-bottom: 220px; }
         <span class="t">${new Date(a.ts).toLocaleTimeString(I18N.locale(), { hour: "2-digit", minute: "2-digit" })}</span>
         <small>${escapeHtml(txt.body)}</small></li>`;
     }
-    return `<div class="top-line"><h2>${escapeHtml(t("alerts.title"))}</h2><button type="button" class="link" data-alerts-setup>${escapeHtml(t("alerts.setup"))}</button>${closeBtn}</div>
+    return `<div class="top-line"><h2>${escapeHtml(t("alerts.title"))}</h2><button type="button" class="link" data-alerts-setup>${escapeHtml(t("alerts.setup"))}</button>${closeBtn()}</div>
       <div class="cats">${chips}</div>
-      ${rows ? `<ul class="alerts">${rows}</ul>` : `<p class="hint">${escapeHtml(t("alerts.empty"))}</p>`}`;
+      ${rows ? `<ul class="alerts">${rows}</ul>` : `<p class="hint">${escapeHtml(t("alerts.empty"))}</p>`}
+      ${c.list.some((a) => a.ts > cleared) ? `<div class="rc-foot"><button type="button" class="danger" data-alerts-clear>${escapeHtml(t("alerts.clear"))}</button></div>` : ""}`;
+  }
+  // Очистить: админ удаляет журнал на сервере у всех, остальные — скрывают у себя (до текущего момента).
+  const clearedKey = (st) => `ispindel.alertsCleared.${st.id}`;
+  const getCleared = (st) => { try { return Number(localStorage.getItem(clearedKey(st))) || 0; } catch { return 0; } };
+  async function clearAlerts(btn) {
+    const st = cur(), admin = isAdmin(st);
+    if (!confirm(t(admin ? "alerts.clearConfirmAdmin" : "alerts.clearConfirm"))) return;
+    if (admin) {
+      btn.classList.add("loading"); btn.disabled = true;
+      try { await post("/api/alerts/clear", {}, st.access); }
+      catch (e) { btn.classList.remove("loading"); btn.disabled = false; alert(t("alerts.clearError", { message: e.message })); return; }
+      const c = alertsCache[st.id]; if (c) c.list = [];
+    }
+    const c = alertsCache[st.id];
+    try { localStorage.setItem(clearedKey(st), String(Math.max(Date.now(), c && c.max || 0))); } catch { /* приватный режим */ }
+    $("sheet-body").innerHTML = alertsHtml(); renderBell();
   }
   $("open-alerts").onclick = async () => {
     const st = cur();
@@ -3541,6 +3570,7 @@ body.has-install main { padding-bottom: 220px; }
   sheet.addEventListener("click", (e) => {
     const f = e.target.closest("[data-afilter]");
     if (f) { alertsFilter = f.dataset.afilter; $("sheet-body").innerHTML = alertsHtml(); }
+    if (e.target.closest("[data-alerts-clear]")) clearAlerts(e.target.closest("[data-alerts-clear]"));
     if (e.target.closest("[data-alerts-setup]")) {
       sheet.close();
       $("open-settings").click();
@@ -3706,7 +3736,7 @@ body.has-install main { padding-bottom: 220px; }
     }
     const empty = !rows && !wait && c.enabled ? `<p class="hint">${escapeHtml(t("ai.empty"))}</p>` : "";
     const mode = rs ? `<div class="ai-mode">${AI_ICON}<span>${escapeHtml(t("rcai.mode"))}${rs.baseName ? ` · ${escapeHtml(t("rcai.on", { name: rs.baseName }))}` : ""}</span><button type="button" class="link" data-rs-exit>${escapeHtml(t("rcai.exit"))} ✕</button></div>` : "";
-    return `<div class="top-line ai-head"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${count}${closeBtn}${mode}</div>
+    return `<div class="top-line ai-head"><h2>${AI_ICON.replace("<svg", '<svg width="22" height="22"')} ${escapeHtml(t("ai.title"))}</h2>${count}${closeBtn()}${mode}</div>
       <div class="ai-thread" id="ai-thread">${rows}${wait}</div>${empty}${rs && c.enabled ? rsExtras(st, rs) : ""}${bottom}
       <button type="button" class="secondary ai-close" data-close>${escapeHtml(t("ai.close"))}</button>`;
   }

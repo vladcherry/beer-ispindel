@@ -208,6 +208,18 @@ export async function aiRecipe(request, env, stick, json, cors) {
     r.v = 1;
     r.id = String(r.id || "").toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 34) || "ai-recipe";
     if (r.og > r.fg && !(r.abv > 0)) r.abv = null;
+    // Тексты: строка → объект на языке ответа, слишком длинные — обрезаем (не повод браковать рецепт).
+    const txt = (v, max) => {
+      if (typeof v === "string") v = { [lang]: v };
+      if (!v || typeof v !== "object") return undefined;
+      const o = {};
+      for (const [k, s] of Object.entries(v)) if (LANGS[k] && typeof s === "string" && s.trim()) o[k] = s.trim().slice(0, max);
+      return Object.keys(o).length ? o : undefined;
+    };
+    r.name = txt(r.name, 80) || { [lang]: "AI recipe" };
+    if ("notes" in r) r.notes = txt(r.notes, 2000);
+    if (Array.isArray(r.fermentation)) r.fermentation.forEach((s) => { if (s && "note" in s) s.note = txt(s.note, 300); });
+    for (const k of ["fermentables", "other"]) if (Array.isArray(r[k])) r[k].forEach((x) => { if (x && typeof x.name === "string") x.name = x.name.slice(0, 120); else if (x) x.name = txt(x.name, 120); });
     return r;
   };
   try {
