@@ -79,7 +79,8 @@
     return err;
   }
 
-  const summary = (r) => ({ id: r.id, style: r.style, name: r.name, og: r.og, fg: r.fg, abv: r.abv ?? null, ibu: r.ibu ?? null, ebc: r.ebc ?? null });
+  const summary = (r) => ({ id: r.id, style: r.style, name: r.name, og: r.og, fg: r.fg, abv: r.abv ?? null, ibu: r.ibu ?? null, ebc: r.ebc ?? null,
+    tags: Array.isArray(r.tags) ? r.tags : undefined, base: r.origin && r.origin.base || undefined });
 
   // Норма температуры для оповещений — от минимума до максимума всех шагов брожения.
   function range(r) {
