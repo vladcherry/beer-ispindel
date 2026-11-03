@@ -781,6 +781,8 @@ button.loading::before { content: ""; display: inline-block; width: 13px; height
 .upd-pop { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 60; max-width: 460px; margin: 0 auto;
   background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 16px; box-shadow: 0 10px 34px rgba(0,0,0,.25);
   padding: 14px 14px 12px; display: grid; gap: 8px; animation: install-in .25s ease-out; }
+.upd-pop .hd { display: flex; align-items: center; gap: 10px; }
+.upd-pop .hd img { width: 40px; height: 40px; border-radius: 10px; flex: none; }
 .upd-pop b { font: 600 18px/1.2 var(--display); }
 .upd-pop p { margin: 0; font-size: 14px; color: var(--muted); }
 .upd-pop .row2 { display: flex; gap: 8px; }
@@ -2853,7 +2855,7 @@ body.has-install main { padding-bottom: 220px; }
       setBrew(st, b);
       try { navigator.vibrate && navigator.vibrate([300, 150, 300]); } catch { /* нет вибрации */ }
       if ("Notification" in window && Notification.permission === "granted" && navigator.serviceWorker) {
-        navigator.serviceWorker.ready.then((reg) => reg.showNotification(t("brew.timerDone"), { body: b.name, tag: "brew", icon: "icons/icon-192.png" })).catch(() => {});
+        navigator.serviceWorker.ready.then((reg) => reg.showNotification(t("brew.timerDone"), { body: b.name, tag: "brew", icon: "icons/icon-192.png", badge: "icons/badge-96.png" })).catch(() => {});
       }
       if (brewView && sheet.open && sheet.querySelector(".brew")) { brewView.b = b; brewRerender(); }
       const banner = $("brew-banner"); if (banner) banner.outerHTML = brewBanner(st);
@@ -4423,7 +4425,7 @@ body.has-install main { padding-bottom: 220px; }
     if (skip === srvVersion || $("upd-pop")) return;
     const pop = document.createElement("div");
     pop.className = "upd-pop"; pop.id = "upd-pop"; pop.setAttribute("role", "alertdialog");
-    pop.innerHTML = `<b>${escapeHtml(t("ver.popTitle"))}</b><p>${escapeHtml(t("ver.popText", { v: srvVersion, cur: verText(APP_VERSION) }))}</p>
+    pop.innerHTML = `<div class="hd"><img src="icons/icon-192.png" alt="" width="40" height="40"><b>${escapeHtml(t("ver.popTitle"))}</b></div><p>${escapeHtml(t("ver.popText", { v: srvVersion, cur: verText(APP_VERSION) }))}</p>
       <div class="row2"><button type="button" class="secondary" data-upd-later>${escapeHtml(t("ver.later"))}</button>
       <button type="button" class="primary" data-upd-go>${escapeHtml(t("ver.update"))}</button></div>`;
     document.body.appendChild(pop);

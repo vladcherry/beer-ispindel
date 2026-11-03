@@ -30,6 +30,7 @@ const SHELL_FILES = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/apple-touch-icon.png",
+  "./icons/badge-96.png",
 ];
 const STATIC_HOSTS = ["fonts.googleapis.com", "fonts.gstatic.com"];
 
@@ -123,11 +124,13 @@ async function data(req, url) {
 }
 
 // Push: сервер присылает {title, body, tag, url}. Нажатие открывает приложение на нужном стике.
+// icon — иконка приложения рядом с текстом; badge — одноцветный значок в строке состояния Android
+// (без него там значок браузера).
 self.addEventListener("push", (event) => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch { d = { body: event.data && event.data.text() }; }
   event.waitUntil(self.registration.showNotification(d.title || "iSpindel", {
-    body: d.body || "", tag: d.tag, renotify: !!d.tag, icon: "./icons/icon-192.png", data: { url: d.url || "./" },
+    body: d.body || "", tag: d.tag, renotify: !!d.tag, icon: "./icons/icon-192.png", badge: "./icons/badge-96.png", data: { url: d.url || "./" },
   }));
 });
 
