@@ -193,8 +193,10 @@ const setState = (env, hash, kind, active, at, ref = null) => env.DB.prepare(
 ).bind(hash, kind, active ? 1 : 0, at, ref).run();
 
 // После приёма показания. prev — предыдущее показание этого устройства (из latest) или null.
-// stick: hash, id, batch_start, t_lo, t_hi, t_offset (поправка к температуре, °C).
+// stick: hash, id, batch_start, batch_end, t_lo, t_hi, t_offset (поправка к температуре, °C).
+// Партия остановлена («Стоп», batch_end) — шпиндель обычно вынут и моется: ни проверок, ни уведомлений.
 export async function onReading(env, stick, row, prev) {
+  if (stick.batch_end) return;
   const state = await getState(env, stick.hash);
   const now = row.ts, name = row.device;
 
@@ -240,7 +242,7 @@ export async function onSchedule(env, now = Date.now()) {
   const { results: sticks } = await env.DB.prepare(
     `SELECT t.hash, t.id, t.batch_start, l.device, l.ts, l.interval_s
      FROM tokens t JOIN latest l ON l.owner = t.hash
-     WHERE l.ts > ?1 AND l.ts = (SELECT MAX(ts) FROM latest WHERE owner = t.hash)`
+     WHERE t.batch_end IS NULL AND l.ts > ?1 AND l.ts = (SELECT MAX(ts) FROM latest WHERE owner = t.hash)`
   ).bind(now - 14 * 86400e3).all();
   const hourly = new Date(now).getUTCMinutes() < 15;
   for (const s of sticks) {

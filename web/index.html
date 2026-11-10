@@ -288,6 +288,9 @@ body.is-demo .hero::before, body.is-demo .charts::before {
 }
 .actbar button + button { border-left: 1px solid var(--rule); }
 .actbar button.main { color: var(--amber-deep); font-weight: 600; }
+.actbar button.main.stop { color: var(--alert); }
+.ended-line { margin: 2px 0 6px; font-size: 14px; color: var(--muted); }
+.ended-line .link { font-size: 14px; }
 .actbar button:hover { background: var(--amber-soft); }
 .actbar button:first-child { border-bottom-left-radius: 12px; } .actbar button:last-child { border-bottom-right-radius: 12px; }
 .actbar svg { width: 20px; height: 20px; }
@@ -1440,7 +1443,8 @@ body.has-install main { padding-bottom: 220px; }
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
-    if ("start" in body) { if (body.start !== st.batchStart) { st.marks = []; st.og = null; } st.batchStart = body.start; }
+    if ("start" in body) { if (body.start !== st.batchStart) { st.marks = []; st.og = null; st.batchEnd = null; } st.batchStart = body.start; }
+    if ("end" in body) st.batchEnd = body.end;
     if ("og" in body) st.og = body.og;
     if ("style" in body) st.style = body.style;
     if ("fg" in body) st.fg = body.fg;
@@ -1545,6 +1549,7 @@ body.has-install main { padding-bottom: 220px; }
       if ("style" in data) { st.style = data.style; st.fg = data.fg; save(); }
       if ("recipe" in data && st.recipe !== data.recipe) { st.recipe = data.recipe; save(); }
       if ("og" in data && (st.og ?? null) !== data.og) { st.og = data.og; save(); }
+      if ("end" in data && (st.batchEnd ?? null) !== data.end) { st.batchEnd = data.end; save(); }
       if ("marks" in data && JSON.stringify(st.marks || []) !== JSON.stringify(data.marks)) { st.marks = data.marks; save(); }
       const recipe = st.recipe ? await loadRecipe(st.recipe, st).catch(() => null) : null;
       // Норма температуры для оповещений — из рецепта (все шаги плана) или стиля; сервер их не знает.
@@ -1818,9 +1823,27 @@ body.has-install main { padding-bottom: 220px; }
     const note = Object.keys(eta).length ? `<p class="hint">${escapeHtml(t("stage.etaNote"))}</p>` : "";
     const alarm = a.alarm ? `<p class="st-alarm-text ${a.alarm.id === "stalled" ? "bad" : "warn"}">${escapeHtml(t("stage.since", { stage: t("stage." + a.alarm.id), time: dayTime(a.alarm.from) }))}</p>` : "";
     const foot = canMark ? `<div class="rc-foot"><button type="button" data-close>${escapeHtml(t("settings.close"))}</button>
-      <button type="button" data-new-batch>${ACT_ICONS.play}${escapeHtml(t("act.newBatch"))}</button></div>` : "";
+      <button type="button" data-stop-batch>${ACT_ICONS.stop}${escapeHtml(t("act.stopBatch"))}</button></div>` : "";
     openSheet(`<div class="top-line"><h2>${escapeHtml(t("stage.listTitle"))}</h2>${closeBtn()}</div>${alarm}<ul class="stage-list">${rows}${ahead}</ul>${note}
       <p class="hint">${escapeHtml(t("stage.manualNote"))}</p>${foot}`);
+  }
+  // «Стоп»: партия завершена — сервер больше не проверяет температуру и не шлёт уведомлений по стику,
+  // анализ замирает на этом моменте. В историю она уйдёт, когда начнётся новая партия.
+  async function stopBatch(btn) {
+    const st = cur();
+    if (!st || !st.batchStart || !confirm(t("batch.stopConfirm"))) return;
+    if (btn) { btn.classList.add("loading"); btn.disabled = true; }
+    try { await postBatch(st, { end: Date.now() }); }
+    catch (e) { notice(escapeHtml(t("err.batch", { message: e.message })), "error"); if (btn) { btn.classList.remove("loading"); btn.disabled = false; } return; }
+    if (sheet.open) sheet.close();
+    refresh();
+  }
+  async function resumeBatch(btn) {
+    const st = cur();
+    if (btn) btn.disabled = true;
+    try { await postBatch(st, { end: null }); }
+    catch (e) { notice(escapeHtml(t("err.batch", { message: e.message })), "error"); if (btn) btn.disabled = false; return; }
+    refresh();
   }
   async function setStageMarks(marks, btn) {
     const st = cur();
@@ -1839,6 +1862,7 @@ body.has-install main { padding-bottom: 220px; }
     } else if (undo && st) {
       setStageMarks((st.marks || []).filter((m) => rank(m.id) < rank(undo.dataset.stageUndo)));
     } else if (e.target.closest("[data-new-batch]")) { sheet.close(); openBatchDialog(); }
+    else if (e.target.closest("[data-stop-batch]")) stopBatch(e.target.closest("[data-stop-batch]"));
   });
   $("batchp").addEventListener("click", (e) => {
     if (e.target.closest("#stages-btn")) stagesSheet();
@@ -2094,6 +2118,9 @@ body.has-install main { padding-bottom: 220px; }
   function renderMain(rows, valid, last, hasBatch, batt, now) {
     $("hero").hidden = false;
     const st = cur() || demoStick;
+    // Партия остановлена («Стоп»): все расчёты — по замерам до остановки, шпиндель мог уже вынут.
+    const ended = hasBatch && st.batchEnd ? st.batchEnd : null;
+    if (ended) { rows = rows.filter((r) => r.ts <= ended); valid = valid.filter((r) => r.ts <= ended); now = Math.min(now, ended); }
     const baseStyle = st.style ? Brew.byId[st.style] || null : null;
     const current = median(valid.slice(-5).map((r) => r.g));
     // Начальная плотность — заданная вручную в «Изменить партию», иначе по первым замерам партии.
@@ -2155,7 +2182,8 @@ body.has-install main { padding-bottom: 220px; }
     let row = "";
     if (a.rate != null) row += `<span>${escapeHtml(t("info.speed", { rate: fmt(a.rate, 1) }))}</span>`;
     if (a.peak) row += `<span>${escapeHtml(t("info.peak", { rate: fmt(a.peak.rate, 1), ago: ago(a.peak.ts) }))}</span>`;
-    info.innerHTML = t("info." + stateKey, {
+    if (ended) info.className = "info ok";
+    info.innerHTML = ended ? t("info.ended", { date: escapeHtml(dayTime(ended)) }) : t("info." + stateKey, {
       rate: a.rate != null ? fmt(a.rate, 1) : "–", peak: a.peak ? fmt(a.peak.rate, 1) : "–",
       hours: hasBatch ? Math.round((now - st.batchStart) / 3600e3) : "–",
     }) + (row ? `<div class="row">${row}</div>` : "");
@@ -2165,13 +2193,15 @@ body.has-install main { padding-bottom: 220px; }
     if (hasBatch) {
       const days = (now - st.batchStart) / 86400e3;
       const basis = { manual: t("batch.basis.manual"), style: t("batch.basis.style", { style: styleName(style) }), default: t("batch.basis.default") }[a.fgSource] || "";
-      let html = brewBanner(st) + `<h3>${escapeHtml(t("batch.title"))}<small>${escapeHtml(t("batch.since", { days: fmt(days, 1), date: dayTime(st.batchStart) }))}</small></h3>` +
+      let html = brewBanner(st) + `<h3>${escapeHtml(t("batch.title"))}<small>${escapeHtml(ended ? t("batch.endedSince", { days: fmt(days, 1), from: dateShort(st.batchStart), to: dateShort(ended) })
+        : t("batch.since", { days: fmt(days, 1), date: dayTime(st.batchStart) }))}</small></h3>` +
+        (ended ? `<p class="ended-line">■ ${escapeHtml(t("batch.ended", { date: dayTime(ended) }))} · <button type="button" class="link" id="resume-batch">${escapeHtml(t("batch.resume"))}</button></p>` : "") +
         (recipe ? `<button type="button" class="rc-line" data-open-recipe>${ACT_ICONS.book}<b>${escapeHtml(rloc(recipe.name))}</b><small>${escapeHtml(style ? styleName(style) : "")}</small></button>`
           : `<div class="style">${escapeHtml(style ? styleName(style) : t("batch.noStyle"))}</div>`);
       if (a.progress != null) {
         html += stageScale(a, style) +
           `<div class="scale"><span>${escapeHtml(t("batch.ogShort", { og: fmt(og, 1) }))}</span><span>${escapeHtml(t("batch.now", { g: fmt(current, 1) }))}</span><span>${escapeHtml(t("batch.target", { fg: fmt(a.fg, 1) }))}</span></div>` +
-          stageNow(a, style, rstep);
+          (ended ? "" : stageNow(a, style, rstep));
       }
       // НП по рецепту и фактическая: при разнице больше 1 °P прогноз алкоголя — от фактической.
       if (recipe && og != null) {
@@ -2182,10 +2212,12 @@ body.has-install main { padding-bottom: 220px; }
       const left = a.eta ? (a.eta.hi === 0 ? t("batch.ready") : t("batch.leftDays", { lo: fmt(a.eta.lo, a.eta.lo < 2 ? 1 : 0), hi: fmt(a.eta.hi, a.eta.hi < 2 ? 1 : 0) })) : "–";
       html += `<div class="kv">
           <div><small>${escapeHtml(t("batch.attenuation"))}</small><b>${a.attenuation != null ? fmt(a.attenuation, 0) + "%" : "–"}</b></div>
-          <div><small>${escapeHtml(t("batch.abv"))}</small><b>${a.abvNow != null ? fmt(a.abvNow, 1) + "%" : "–"}${a.projAbv != null ? ` <span style="font-size:.6em;opacity:.7">→ ${fmt(a.projAbv, 1)}%</span>` : ""}</b></div>
-          <div><small>${escapeHtml(t("batch.left"))}</small><b>${escapeHtml(left)}</b></div>
+          <div><small>${escapeHtml(t("batch.abv"))}</small><b>${a.abvNow != null ? fmt(a.abvNow, 1) + "%" : "–"}${a.projAbv != null && !ended ? ` <span style="font-size:.6em;opacity:.7">→ ${fmt(a.projAbv, 1)}%</span>` : ""}</b></div>
+          ${ended ? `<div><small>${escapeHtml(t("batch.took"))}</small><b>${escapeHtml(t("batch.tookDays", { n: fmt(days, 1) }))}</b></div>`
+            : `<div><small>${escapeHtml(t("batch.left"))}</small><b>${escapeHtml(left)}</b></div>`}
         </div>`;
-      if (a.ready && a.eta.hi > 0) {
+      if (ended) { /* итоги уже выше; прогнозов у остановленной партии нет */ }
+      else if (a.ready && a.eta.hi > 0) {
         html += `<p class="eta">${t("batch.readyBy", { lo: escapeHtml(dateShort(a.ready.lo)), hi: escapeHtml(dateShort(a.ready.hi)) })} · ${escapeHtml(basis)}</p>`;
       } else if (og == null) {
         html += `<p class="eta">${escapeHtml(t("batch.waiting", { date: dayTime(st.batchStart) }))}</p>`;
@@ -2193,15 +2225,17 @@ body.has-install main { padding-bottom: 220px; }
       if (a.stage === "done" || a.stage === "ready") html += batchPrimingHtml(rows, a, recipe, style, st, now);
       // Пока в калькуляторе сахара что-то вводят, ежеминутное обновление панель не перерисовывает.
       if (!(document.activeElement && bp.contains(document.activeElement) && document.activeElement.closest(".prime"))) {
-        bp.innerHTML = html + actionBar(t("act.newBatch"), !!(a.stages && a.stage !== "ready"), st.id !== "demo");
+        bp.innerHTML = html + actionBar(ended ? "new" : a.stages && a.stage !== "ready" ? "next" : st.id === "demo" ? "new" : "stop", st.id !== "demo");
         fitStageLabels(); fillPrimes(bp);
       }
     } else {
-      bp.innerHTML = (st.id !== "demo" ? brewBanner(st) : "") + `<p class="hint">${escapeHtml(t("batch.none"))}</p>` + actionBar(t("batch.startNow"));
+      bp.innerHTML = (st.id !== "demo" ? brewBanner(st) : "") + `<p class="hint">${escapeHtml(t("batch.none"))}</p>` + actionBar("start");
     }
     if ($("new-batch")) $("new-batch").onclick = () => openBatchDialog();
     if ($("next-stage")) $("next-stage").onclick = () => stagesSheet();
     if ($("edit-batch")) $("edit-batch").onclick = () => openBatchEdit();
+    if ($("stop-batch")) $("stop-batch").onclick = (e) => stopBatch(e.currentTarget);
+    if ($("resume-batch")) $("resume-batch").onclick = (e) => resumeBatch(e.currentTarget);
     if ($("ai-btn")) $("ai-btn").onclick = () => openAi();
     $("about-style").onclick = () => style ? openStyle(style.id) : openCatalog();
     $("open-catalog").onclick = () => openCatalog();
@@ -2214,7 +2248,7 @@ body.has-install main { padding-bottom: 220px; }
         <ul>${p.msgs.map((m) => `<li class="${m.level}">${escapeHtml(msgText(m))}</li>`).join("")}</ul></div>`;
     };
     const recs = section("temp", "recs.temp") + section("gravity", "recs.gravity") + section("abv", "recs.abv");
-    $("recs").hidden = !recs;
+    $("recs").hidden = !recs || !!ended;
     $("recs").innerHTML = `<h2>${escapeHtml(t("recs.title"))}</h2>${recs}`;
 
     seenInfo = { ts: last.ts, expected: (last.interval_s || 900) * 1000 };
@@ -2227,16 +2261,19 @@ body.has-install main { padding-bottom: 220px; }
     play: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l5.5-3.5z" fill="currentColor"/></svg>`,
     book: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5z"/><path d="M4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5"/></svg>`,
     list: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>`,
+    stop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><rect x="8.75" y="8.75" width="6.5" height="6.5" rx="1" fill="currentColor"/></svg>`,
     edit: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>`,
     ext: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>`,
   };
   const BREW_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 9h14v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M3 9h18"/><path d="M9 5.5c0-1 .7-1.5 1.5-1.5M13 5.5c0-1 .7-1.5 1.5-1.5"/></svg>`;
   const BOTTLE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 2h4v4l1.5 3v11a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2V9L10 6z"/><path d="M8.5 13h7"/></svg>`;
-  // Пока партия идёт — главная кнопка «Следующий этап» (список стадий с «Завершено»), «Новая партия» — в том списке.
-  const actionBar = (first, nextStage, edit) => `<div class="actbar">
+  // Главная кнопка панели: пока партия идёт — «Следующий этап» (список стадий с «Завершено»); когда брожение
+  // готово — «Стоп» (партия завершена); после «Стоп» — «Новая партия»; без партии — «Начать партию».
+  const actionBar = (main, edit) => `<div class="actbar">
       ${edit ? `<button type="button" id="edit-batch">${ACT_ICONS.edit}${escapeHtml(t("act.editBatch"))}</button>` : ""}
-      ${nextStage ? `<button type="button" class="main" id="next-stage">${ACT_ICONS.next}${escapeHtml(t("act.nextStage"))}</button>`
-        : `<button type="button" class="main" id="new-batch">${ACT_ICONS.play}${escapeHtml(first)}</button>`}
+      ${main === "next" ? `<button type="button" class="main" id="next-stage">${ACT_ICONS.next}${escapeHtml(t("act.nextStage"))}</button>`
+        : main === "stop" ? `<button type="button" class="main stop" id="stop-batch">${ACT_ICONS.stop}${escapeHtml(t("act.stop"))}</button>`
+        : `<button type="button" class="main" id="new-batch">${ACT_ICONS.play}${escapeHtml(t(main === "start" ? "batch.startNow" : "act.newBatch"))}</button>`}
       <button type="button" id="about-style">${ACT_ICONS.book}${escapeHtml(t("act.style"))}</button>
       <button type="button" id="open-catalog">${ACT_ICONS.list}${escapeHtml(t("act.catalog"))}</button>
       ${aiButton()}
@@ -2374,7 +2411,7 @@ body.has-install main { padding-bottom: 220px; }
     const q = catState.q.trim().toLowerCase();
     const days = (ms) => Math.max(1, Math.round(ms / 86400e3));
     const nowItem = st.batchStart && view && view.st === st ? `<li class="bh-item now"><div class="bh-top"><b>${escapeHtml(view.recipe ? rloc(view.recipe.name) : view.style ? styleName(view.style) : t("hist.noName"))}</b>
-        <span class="tag">${escapeHtml(t("hist.now"))}</span></div><small>${escapeHtml(t("hist.since", { date: dateShort(st.batchStart), n: days(Date.now() - st.batchStart) }))}</small></li>` : "";
+        <span class="tag">${escapeHtml(t(st.batchEnd ? "hist.stopped" : "hist.now"))}</span></div><small>${escapeHtml(t("hist.since", { date: dateShort(st.batchStart), n: days(Date.now() - st.batchStart) }))}</small></li>` : "";
     const rows = list.filter((b) => !q || [histName(b), b.style && styleName(Brew.byId[b.style])].some((v) => v && v.toLowerCase().includes(q))).map((b) => {
       const style = b.style && Brew.byId[b.style];
       const r = b.recipe && recipeItems().find((x) => x.ref === b.recipe);
@@ -4187,7 +4224,8 @@ body.has-install main { padding-bottom: 220px; }
     if (og != null) p.push(`OG${r1(og)}`);
     if (current != null) p.push(`g${r1(current)}P`);
     if (a.fg != null) p.push(`FG~${r1(a.fg)}`);
-    if (st.batchStart) p.push(`d${r1((Date.now() - st.batchStart) / 86400e3)}`);
+    if (st.batchStart) p.push(`d${r1(((st.batchEnd || Date.now()) - st.batchStart) / 86400e3)}`);
+    if (st.batchEnd) p.push("STOPPED(batch finished, no monitoring)");
     if (a.stage) p.push(`st=${a.stage}`);
     if (a.alarm) p.push(`alarm=${a.alarm.id}`);
     if (a.rate != null) p.push(`r${r1(a.rate)}`);
